@@ -100,55 +100,20 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
                         ),
                     ],
                   ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF4A9E9C),
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF4A9E9C).withValues(alpha: 0.3),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+                  _buildEditButton(
+                    onTap: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AllergySelectionScreen(isPro: _isPremium),
                         ),
-                      ],
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(8),
-                        onTap: () async {
-                          final result = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AllergySelectionScreen(isPro: _isPremium),
-                            ),
-                          );
-                          
-                          // Refresh allergies data and premium status when returning from allergy selection screen
-                          if (result != null) {
-                            _loadAllergies();
-                            _loadPremiumStatus();
-                          }
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.edit, color: Colors.white, size: 14),
-                              SizedBox(width: 6),
-                              Text(
-                                'Edit',
-                                style: GoogleFonts.nunito(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                      );
+
+                      if (result != null) {
+                        _loadAllergies();
+                        _loadPremiumStatus();
+                      }
+                    },
                   ),
                 ],
               ),
@@ -451,6 +416,51 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
             label: 'Settings',
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEditButton({
+    required VoidCallback onTap,
+    String label = 'Edit',
+    IconData icon = Icons.edit,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF4A9E9C),
+        borderRadius: BorderRadius.circular(6),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF4A9E9C).withValues(alpha: 0.25),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: Colors.white, size: 12),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: GoogleFonts.nunito(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
