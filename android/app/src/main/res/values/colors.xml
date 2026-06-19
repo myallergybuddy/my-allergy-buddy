@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="splash_background">#E3F2FD</color>  <!-- Light blue gradient start -->
+	<color name="ic_launcher_background">#E3F2FD</color>
+    <color name="transparent">#00000000</color>  <!-- Completely transparent -->
+</resources> 

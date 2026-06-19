@@ -1,0 +1,65 @@
+name: my_allergy_buddy
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  google_fonts: ^6.1.0
+  shared_preferences: ^2.2.2
+  url_launcher: ^6.2.1
+  mobile_scanner: ^7.2.0
+  flutter_lucide: ^1.6.2
+  package_info_plus: ^8.3.0
+  path_provider: ^2.1.2
+  geolocator: ^10.1.0
+  permission_handler: ^11.0.1
+  encrypt: ^5.0.3
+  crypto: ^3.0.3
+  flutter_secure_storage: ^9.0.0
+  # purchases_flutter: ^6.30.2  # Temporarily disabled due to dependency conflicts
+  flutter_local_notifications: ^17.2.2
+  intl: ^0.20.2
+  firebase_core: ^2.27.0
+  firebase_crashlytics: ^3.4.16
+  firebase_analytics: ^10.8.10
+  firebase_messaging: ^14.7.20
+  firebase_auth: ^4.17.9
+  cloud_firestore: ^4.15.9
+  firebase_storage: ^11.6.10
+  http: ^1.1.0
+  camera: ^0.10.5+4
+  google_mlkit_text_recognition: ^0.11.0
+  image_picker: ^1.1.0
+  path: ^1.8.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/images/icon.png
+    - assets/images/icon2.png
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/icon2.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#E3F2FD"
+  adaptive_icon_foreground: "assets/images/icon2.png"
+  adaptive_icon_padding: true
+  remove_alpha_ios: true
+  image_path_ios: "assets/images/icon2.png"

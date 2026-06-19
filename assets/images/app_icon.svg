@@ -1,0 +1,69 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="512" cy="512" r="512" fill="#4A9E9C"/>
+  
+  <!-- Inner circle for depth -->
+  <circle cx="512" cy="512" r="460" fill="#3A8E8C"/>
+  
+  <!-- Main icon container -->
+  <circle cx="512" cy="512" r="400" fill="#FFFFFF"/>
+  
+  <!-- Barcode scanner frame -->
+  <rect x="312" y="312" width="400" height="400" rx="20" fill="none" stroke="#4A9E9C" stroke-width="8"/>
+  
+  <!-- Corner brackets for scanner -->
+  <path d="M 312 332 L 332 332 L 332 312 L 312 312 Z" fill="#4A9E9C"/>
+  <path d="M 692 332 L 712 332 L 712 312 L 692 312 Z" fill="#4A9E9C"/>
+  <path d="M 312 692 L 332 692 L 332 712 L 312 712 Z" fill="#4A9E9C"/>
+  <path d="M 692 692 L 712 692 L 712 712 L 692 712 Z" fill="#4A9E9C"/>
+  
+  <!-- Barcode lines -->
+  <rect x="340" y="420" width="4" height="184" fill="#4A9E9C"/>
+  <rect x="350" y="420" width="8" height="184" fill="#4A9E9C"/>
+  <rect x="364" y="420" width="2" height="184" fill="#4A9E9C"/>
+  <rect x="372" y="420" width="6" height="184" fill="#4A9E9C"/>
+  <rect x="384" y="420" width="3" height="184" fill="#4A9E9C"/>
+  <rect x="392" y="420" width="10" height="184" fill="#4A9E9C"/>
+  <rect x="408" y="420" width="2" height="184" fill="#4A9E9C"/>
+  <rect x="416" y="420" width="7" height="184" fill="#4A9E9C"/>
+  <rect x="428" y="420" width="4" height="184" fill="#4A9E9C"/>
+  <rect x="438" y="420" width="9" height="184" fill="#4A9E9C"/>
+  <rect x="452" y="420" width="2" height="184" fill="#4A9E9C"/>
+  <rect x="460" y="420" width="6" height="184" fill="#4A9E9C"/>
+  <rect x="472" y="420" width="3" height="184" fill="#4A9E9C"/>
+  <rect x="480" y="420" width="8" height="184" fill="#4A9E9C"/>
+  <rect x="494" y="420" width="2" height="184" fill="#4A9E9C"/>
+  <rect x="502" y="420" width="5" height="184" fill="#4A9E9C"/>
+  <rect x="512" y="420" width="3" height="184" fill="#4A9E9C"/>
+  <rect x="520" y="420" width="7" height="184" fill="#4A9E9C"/>
+  <rect x="532" y="420" width="2" height="184" fill="#4A9E9C"/>
+  <rect x="540" y="420" width="9" height="184" fill="#4A9E9C"/>
+  <rect x="554" y="420" width="4" height="184" fill="#4A9E9C"/>
+  <rect x="564" y="420" width="6" height="184" fill="#4A9E9C"/>
+  <rect x="576" y="420" width="2" height="184" fill="#4A9E9C"/>
+  <rect x="584" y="420" width="8" height="184" fill="#4A9E9C"/>
+  <rect x="598" y="420" width="3" height="184" fill="#4A9E9C"/>
+  <rect x="606" y="420" width="7" height="184" fill="#4A9E9C"/>
+  <rect x="618" y="420" width="2" height="184" fill="#4A9E9C"/>
+  <rect x="626" y="420" width="5" height="184" fill="#4A9E9C"/>
+  <rect x="636" y="420" width="9" height="184" fill="#4A9E9C"/>
+  <rect x="650" y="420" width="3" height="184" fill="#4A9E9C"/>
+  <rect x="658" y="420" width="6" height="184" fill="#4A9E9C"/>
+  <rect x="670" y="420" width="2" height="184" fill="#4A9E9C"/>
+  <rect x="678" y="420" width="8" height="184" fill="#4A9E9C"/>
+  
+  <!-- Scanning line animation effect -->
+  <rect x="312" y="512" width="400" height="4" fill="#FF6B6B" opacity="0.8"/>
+  
+  <!-- Medical cross symbol -->
+  <circle cx="512" cy="280" r="40" fill="#FF6B6B"/>
+  <rect x="500" y="260" width="24" height="40" fill="white"/>
+  <rect x="490" y="270" width="44" height="20" fill="white"/>
+  
+  <!-- Safety shield -->
+  <path d="M 512 200 L 580 230 L 580 300 C 580 350 550 400 512 420 C 474 400 444 350 444 300 L 444 230 Z" fill="#4A9E9C"/>
+  <path d="M 512 210 L 570 235 L 570 300 C 570 345 545 390 512 410 C 479 390 454 345 454 300 L 454 235 Z" fill="#FFFFFF"/>
+  
+  <!-- Checkmark for safety -->
+  <path d="M 490 300 L 510 320 L 540 290" stroke="#4A9E9C" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg> 

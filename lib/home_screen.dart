@@ -1,0 +1,502 @@
+import 'package:flutter/material.dart';
+import 'scan_label_screen.dart';
+import 'scan_history_screen.dart';
+import 'profile_screen.dart';
+import 'my_allergies_screen.dart';
+import 'settings_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'emergency_contacts_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'widgets/premium_upgrade_widget.dart';
+import 'services/revenue_cat_service.dart';
+import 'widgets/user_guide_prompt.dart';
+
+
+
+class HomeScreen extends StatefulWidget {
+  final Function(int)? onTabChanged;
+
+  const HomeScreen({super.key, this.onTabChanged});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String _userName = '';
+  bool _isPremium = false;
+
+  @override
+  void initState() {
+    super.initState();
+    debugPrint('HomeScreen: initState called');
+    _loadUserName();
+    _loadPremiumStatus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UserGuidePrompt.showIfNeeded(context);
+    });
+  }
+
+  Future<void> _loadUserName() async {
+    try {
+      debugPrint('HomeScreen: Loading user name...');
+      final prefs = await SharedPreferences.getInstance();
+      final name = prefs.getString('profile_name') ?? '';
+      debugPrint('HomeScreen: User name loaded: $name');
+      if (mounted) {
+        setState(() {
+          _userName = name;
+        });
+      }
+    } catch (e) {
+      debugPrint('HomeScreen: Error loading user name: $e');
+      if (mounted) {
+        setState(() {
+          _userName = '';
+        });
+      }
+    }
+  }
+
+  Future<void> _loadPremiumStatus() async {
+    try {
+      debugPrint('HomeScreen: Loading premium status...');
+      final isPremium = await RevenueCatService.hasPremiumAccess();
+      debugPrint('HomeScreen: Premium status loaded: $isPremium');
+      if (mounted) {
+        setState(() {
+          _isPremium = isPremium;
+        });
+      }
+    } catch (e) {
+      debugPrint('HomeScreen: Error loading premium status: $e');
+      if (mounted) {
+        setState(() {
+          _isPremium = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    debugPrint('HomeScreen: build method called');
+    final size = MediaQuery.of(context).size;
+
+    // Simple fallback if there are any issues
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      appBar: AppBar(
+        title: Text(
+          'My Allergy Buddy',
+          style: GoogleFonts.nunito(
+            color: Colors.teal,
+            fontWeight: FontWeight.bold,
+            fontSize: 32,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        toolbarHeight: 80,
+        titleSpacing: 0,
+        automaticallyImplyLeading: false,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          child: Column(
+            children: [
+              const SizedBox(height: 16),
+              const SizedBox(height: 24), // Additional space to bring welcome message down
+              Text(
+                _userName.isNotEmpty ? 'Welcome Back, $_userName!' : 'Welcome Back!',
+                style: GoogleFonts.nunito(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'What would you like to do today?',
+                style: GoogleFonts.nunito(
+                  fontSize: 16,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              Center(
+                child: GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 1.1,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: (size.width - (size.width * 0.85)) / 2,
+                  ),
+                  children: [
+                    _buildMenuCard(
+                      context,
+                      'Scan a Label',
+                      Icons.label_important,
+                      Colors.blue,
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ScanLabelScreen()),
+                      ),
+                      isPro: false,
+                    ),
+
+                    _buildMenuCard(
+                      context,
+                      'Profile',
+                      Icons.person,
+                      Colors.teal,
+                      () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                        );
+                        // Refresh the user name when returning from profile
+                        _loadUserName();
+                      },
+                      isPro: false,
+                    ),
+                    _buildMenuCard(
+                      context,
+                      'My Allergies',
+                      Icons.health_and_safety,
+                      Colors.green,
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const MyAllergiesScreen()),
+                      ),
+                      isPro: false,
+                    ),
+                    _buildMenuCard(
+                      context,
+                      'Emergency Contacts',
+                      Icons.emergency,
+                      Colors.red,
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const EmergencyContactsScreen(),
+                        ),
+                      ),
+                      isPro: false,
+                    ),
+                    _buildMenuCard(
+                      context,
+                      'Settings',
+                      Icons.settings,
+                      Colors.purple,
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                      ),
+                      isPro: false,
+                    ),
+                    _buildMenuCard(
+                      context,
+                      'Scan History',
+                      Icons.history,
+                      Colors.orange,
+                      () {
+                        if (_isPremium) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const ScanHistoryScreen()),
+                          );
+                        } else {
+                          showDialog(
+                            context: context,
+                            builder: (context) => Dialog(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Container(
+                                constraints: BoxConstraints(
+                                  maxWidth: MediaQuery.of(context).size.width * 0.9,
+                                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Header
+                                    Container(
+                                      padding: const EdgeInsets.all(20),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF4A9E9C).withValues(alpha: 0.1),
+                                        borderRadius: const BorderRadius.only(
+                                          topLeft: Radius.circular(16),
+                                          topRight: Radius.circular(16),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.history,
+                                            color: const Color(0xFF4A9E9C),
+                                            size: 24,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              'Upgrade to Premium',
+                                              style: GoogleFonts.nunito(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black,
+                                                fontSize: 18,
+                                              ),
+                                            ),
+                                          ),
+                                          IconButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            icon: const Icon(Icons.close),
+                                            color: Colors.grey[600],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    // Scrollable content
+                                    Flexible(
+                                      child: SingleChildScrollView(
+                                        padding: const EdgeInsets.all(20),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Scan History is a Premium feature. Upgrade to view your complete scan history and advanced analytics.',
+                                              style: GoogleFonts.nunito(
+                                                fontSize: 16,
+                                                color: Colors.black87,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 20),
+                                            const PremiumUpgradeWidget(),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    // Footer with action button
+                                    Container(
+                                      padding: const EdgeInsets.all(20),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade50,
+                                        borderRadius: const BorderRadius.only(
+                                          bottomLeft: Radius.circular(16),
+                                          bottomRight: Radius.circular(16),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            child: Text(
+                                              'Maybe Later',
+                                              style: GoogleFonts.nunito(
+                                                color: Colors.grey[600],
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      isPro: true,
+                    ),
+                    
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Upgrade Button
+              Center(
+                child: TextButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => Dialog(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            maxWidth: 450,
+                            maxHeight: 700,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Text(
+                                  'Upgrade to Premium',
+                                  style: GoogleFonts.nunito(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                    fontSize: 20,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: const PremiumUpgradeWidget(),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: Text(
+                                        'Maybe Later',
+                                        style: GoogleFonts.nunito(
+                                          color: Colors.grey[600],
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.star, color: Colors.amber, size: 20),
+                  label: Text(
+                    'Upgrade to Premium',
+                    style: GoogleFonts.nunito(
+                      color: Colors.amber,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        const Shadow(
+                          color: Colors.black,
+                          offset: Offset(0, 0),
+                          blurRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuCard(
+    BuildContext context,
+    String title,
+    IconData icon,
+    Color color,
+    VoidCallback onTap, {
+    required bool isPro,
+  }) {
+    // Helper function to get display title
+    String getDisplayTitle(String originalTitle) {
+      switch (originalTitle) {
+        case 'Emergency Contacts':
+          return 'Emergency\nContacts';
+        case 'Scan History':
+          return 'Scan\nHistory';
+        default:
+          return originalTitle;
+      }
+    }
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                color.withValues(alpha: 0.7),
+                color,
+              ],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 26,
+                  color: Colors.white,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  getDisplayTitle(title),
+                  style: GoogleFonts.nunito(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                ),
+                if (isPro) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: Colors.amber,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star, color: Colors.white, size: 8),
+                        const SizedBox(width: 2),
+                        Text(
+                          'Premium',
+                          style: GoogleFonts.nunito(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
