@@ -714,43 +714,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                           ),
                         ),
                       ),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF4A9E9C),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF4A9E9C).withValues(alpha: 0.3),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(8),
-                            onTap: _showPersonalInfoEditDialog,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.edit, color: Colors.white, size: 14),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Edit',
-                                    style: GoogleFonts.nunito(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                      _buildEditButton(onTap: _showPersonalInfoEditDialog),
                     ],
                   ),
                 ),
@@ -863,48 +827,12 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF4A9E9C),
-                                  borderRadius: BorderRadius.circular(8),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF4A9E9C).withValues(alpha: 0.3),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(8),
-                                    onTap: () {
-                                      // Navigate directly to my allergies screen to edit
-                                      Navigator.pushNamed(context, '/my_allergies').then((_) {
-                                        // Refresh data when returning from my allergies screen
-                                        _refreshData();
-                                      });
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      child: Row(
-                                        children: [
-                                          const Icon(Icons.edit, color: Colors.white, size: 14),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            'Edit',
-                                            style: GoogleFonts.nunito(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                              _buildEditButton(
+                                onTap: () {
+                                  Navigator.pushNamed(context, '/my_allergies').then((_) {
+                                    _refreshData();
+                                  });
+                                },
                               ),
                             ],
                           ),
@@ -1150,57 +1078,18 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF4A9E9C),
-                                  borderRadius: BorderRadius.circular(8),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF4A9E9C).withValues(alpha: 0.3),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(8),
-                                    onTap: () {
-                                      if (_isEditingSavedMedications) {
-                                        // Navigate to add medication
-                                        _showAddMedicationDialog();
-                                      } else {
-                                        // Toggle edit mode
-                                        setState(() {
-                                          _isEditingSavedMedications = true;
-                                        });
-                                      }
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            _isEditingSavedMedications ? Icons.add : Icons.edit,
-                                            color: Colors.white,
-                                            size: 14,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            _isEditingSavedMedications ? 'Add' : 'Edit',
-                                            style: GoogleFonts.nunito(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                              _buildEditButton(
+                                onTap: () {
+                                  if (_isEditingSavedMedications) {
+                                    _showAddMedicationDialog();
+                                  } else {
+                                    setState(() {
+                                      _isEditingSavedMedications = true;
+                                    });
+                                  }
+                                },
+                                label: _isEditingSavedMedications ? 'Add' : 'Edit',
+                                icon: _isEditingSavedMedications ? Icons.add : Icons.edit,
                               ),
                             ],
                           ),
@@ -1338,40 +1227,19 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                                   ? Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF4A9E9C),
-                                            borderRadius: BorderRadius.circular(6),
+                                        _buildIconActionButton(
+                                          onTap: () => _showEditMedicationDialog(
+                                            medication,
+                                            _medications.indexOf(medication),
                                           ),
-                                          child: Material(
-                                            color: Colors.transparent,
-                                            child: InkWell(
-                                              borderRadius: BorderRadius.circular(6),
-                                              onTap: () => _showEditMedicationDialog(medication, _medications.indexOf(medication)),
-                                              child: Padding(
-                                                padding: const EdgeInsets.all(6),
-                                                child: Icon(Icons.edit, color: Colors.white, size: 16),
-                                              ),
-                                            ),
-                                          ),
+                                          icon: Icons.edit,
+                                          color: const Color(0xFF4A9E9C),
                                         ),
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.red,
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: Material(
-                                            color: Colors.transparent,
-                                            child: InkWell(
-                                              borderRadius: BorderRadius.circular(6),
-                                              onTap: () => _deleteMedication(medication),
-                                              child: Padding(
-                                                padding: const EdgeInsets.all(6),
-                                                child: Icon(Icons.delete, color: Colors.white, size: 16),
-                                              ),
-                                            ),
-                                          ),
+                                        const SizedBox(width: 6),
+                                        _buildIconActionButton(
+                                          onTap: () => _deleteMedication(medication),
+                                          icon: Icons.delete,
+                                          color: Colors.red,
                                         ),
                                       ],
                                     )
@@ -1539,33 +1407,40 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
         Flexible(
           child: TextButton(
             onPressed: onCancel ?? onEditToggle,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
             child: Text(
               'Cancel',
               style: GoogleFonts.nunito(
                 color: Colors.grey[600],
-                fontSize: 13,
+                fontSize: 11,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 4),
         Flexible(
           child: ElevatedButton(
             onPressed: onSave,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4A9E9C),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
               ),
-              elevation: 3,
+              elevation: 2,
             ),
             child: Text(
               'Save',
               style: GoogleFonts.nunito(
-                fontSize: 14,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -1574,48 +1449,78 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
       ];
     } else {
       return [
-        Flexible(
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF4A9E9C),
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF4A9E9C).withValues(alpha: 0.3),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
+        Flexible(child: _buildEditButton(onTap: onEditToggle)),
+      ];
+    }
+  }
+
+  Widget _buildEditButton({
+    required VoidCallback onTap,
+    String label = 'Edit',
+    IconData icon = Icons.edit,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF4A9E9C),
+        borderRadius: BorderRadius.circular(6),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF4A9E9C).withValues(alpha: 0.25),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: Colors.white, size: 12),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: GoogleFonts.nunito(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: onEditToggle,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.edit, color: Colors.white, size: 14),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Edit',
-                        style: GoogleFonts.nunito(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
           ),
         ),
-      ];
-    }
+      ),
+    );
+  }
+
+  Widget _buildIconActionButton({
+    required VoidCallback onTap,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(5),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: Icon(icon, color: Colors.white, size: 12),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildTextField({

@@ -81,7 +81,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     debugPrint('HomeScreen: build method called');
-    final size = MediaQuery.of(context).size;
 
     // Simple fallback if there are any issues
     return Scaffold(
@@ -92,54 +91,63 @@ class _HomeScreenState extends State<HomeScreen> {
           style: GoogleFonts.nunito(
             color: Colors.teal,
             fontWeight: FontWeight.bold,
-            fontSize: 32,
+            fontSize: 26,
           ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        toolbarHeight: 80,
+        toolbarHeight: 56,
         titleSpacing: 0,
         automaticallyImplyLeading: false,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Column(
             children: [
-              const SizedBox(height: 16),
-              const SizedBox(height: 24), // Additional space to bring welcome message down
               Text(
                 _userName.isNotEmpty ? 'Welcome Back, $_userName!' : 'Welcome Back!',
                 style: GoogleFonts.nunito(
-                  fontSize: 32,
+                  fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Text(
                 'What would you like to do today?',
                 style: GoogleFonts.nunito(
-                  fontSize: 16,
+                  fontSize: 14,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 32),
-              Center(
-                child: GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 1.1,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: (size.width - (size.width * 0.85)) / 2,
-                  ),
-                  children: [
+              const SizedBox(height: 10),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    const crossAxisCount = 2;
+                    const rowCount = 3;
+                    const mainAxisSpacing = 8.0;
+                    const crossAxisSpacing = 8.0;
+                    final cellWidth =
+                        (constraints.maxWidth - crossAxisSpacing) / crossAxisCount;
+                    final cellHeight = (constraints.maxHeight -
+                            mainAxisSpacing * (rowCount - 1)) /
+                        rowCount;
+                    final aspectRatio = cellWidth / cellHeight;
+
+                    return GridView.count(
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: crossAxisCount,
+                      mainAxisSpacing: mainAxisSpacing,
+                      crossAxisSpacing: crossAxisSpacing,
+                      childAspectRatio: aspectRatio,
+                      children: [
                     _buildMenuCard(
                       context,
                       'Scan a Label',
@@ -319,14 +327,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                       isPro: true,
                     ),
-                    
-                  ],
+                      ],
+                    );
+                  },
                 ),
               ),
-              const SizedBox(height: 24),
-              // Upgrade Button
-              Center(
-                child: TextButton.icon(
+              TextButton.icon(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                   onPressed: () {
                     showDialog(
                       context: context,
@@ -380,21 +391,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.star, color: Colors.amber, size: 20),
-                  label: Text(
-                    'Upgrade to Premium',
-                    style: GoogleFonts.nunito(
-                      color: Colors.amber,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        const Shadow(
-                          color: Colors.black,
-                          offset: Offset(0, 0),
-                          blurRadius: 2,
-                        ),
-                      ],
-                    ),
+                icon: const Icon(Icons.star, color: Colors.amber, size: 16),
+                label: Text(
+                  'Upgrade to Premium',
+                  style: GoogleFonts.nunito(
+                    color: Colors.amber,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    shadows: const [
+                      Shadow(
+                        color: Colors.black,
+                        offset: Offset(0, 0),
+                        blurRadius: 2,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -446,21 +456,21 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(10.0),
+            padding: const EdgeInsets.all(8.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   icon,
-                  size: 26,
+                  size: 22,
                   color: Colors.white,
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   getDisplayTitle(title),
                   style: GoogleFonts.nunito(
                     color: Colors.white,
-                    fontSize: 15,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,

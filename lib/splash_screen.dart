@@ -198,7 +198,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         ),
         child: SafeArea(
         child: Center(
-          child: Column(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: size.height - MediaQuery.of(context).padding.vertical - 48),
+              child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
                 // Logo/Image Section with animations
@@ -344,7 +348,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 ),
               ],
             ),
+            ),
           ),
+        ),
         ),
       ),
     );
