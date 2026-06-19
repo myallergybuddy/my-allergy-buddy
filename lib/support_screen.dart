@@ -205,26 +205,6 @@ class _SupportScreenState extends State<SupportScreen> {
               physics: const BouncingScrollPhysics(),
               child: Column(
                 children: [
-                  // Contact Support
-                  _buildSection(
-                    title: 'Contact Support',
-                    children: [
-                      _buildListTile(
-                        title: 'Contact Support',
-                        subtitle: 'Submit a support request via form',
-                        icon: Icons.support_agent,
-                        onTap: _sendEmail,
-                      ),
-                                             _buildListTile(
-                         title: 'Email Address',
-                         subtitle: 'myallergybuddy@gmail.com',
-                         icon: Icons.copy,
-                         onTap: _copyEmailAddress,
-                         trailing: const Icon(Icons.copy, color: Color(0xFF4A9E9C)),
-                       ),
-                    ],
-                  ),
-
                   // Help and Resources
                   _buildSection(
                     title: 'Help and Resources',
@@ -260,7 +240,25 @@ class _SupportScreenState extends State<SupportScreen> {
                     ],
                   ),
 
-
+                  // Contact Support
+                  _buildSection(
+                    title: 'Contact Support',
+                    children: [
+                      _buildListTile(
+                        title: 'Contact Support',
+                        subtitle: 'Submit a support request via form',
+                        icon: Icons.support_agent,
+                        onTap: _sendEmail,
+                      ),
+                      _buildListTile(
+                        title: 'Email Address',
+                        subtitle: 'myallergybuddy@gmail.com',
+                        icon: Icons.copy,
+                        onTap: _copyEmailAddress,
+                        trailing: const Icon(Icons.copy, color: Color(0xFF4A9E9C)),
+                      ),
+                    ],
+                  ),
 
                   // Emergency Information
                   _buildSection(

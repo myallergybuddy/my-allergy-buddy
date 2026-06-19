@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'profile_screen.dart';
+import 'my_allergies_screen.dart';
+import 'scan_label_screen.dart';
+import 'emergency_contacts_screen.dart';
+import 'settings_screen.dart';
 
 class UserGuideScreen extends StatelessWidget {
   const UserGuideScreen({super.key});
@@ -14,6 +19,8 @@ class UserGuideScreen extends StatelessWidget {
       description:
           'From the home screen, tap Profile to add your name and personal details. This helps personalise your experience.',
       icon: Icons.person,
+      color: Colors.teal,
+      destination: _GuideDestination.profile,
     ),
     _GuideStep(
       number: 2,
@@ -21,6 +28,8 @@ class UserGuideScreen extends StatelessWidget {
       description:
           'Tap My Allergies on the home screen and select the allergens you need to avoid. Set the severity for each one so scan results match your needs.',
       icon: Icons.health_and_safety,
+      color: Colors.green,
+      destination: _GuideDestination.myAllergies,
     ),
     _GuideStep(
       number: 3,
@@ -28,6 +37,8 @@ class UserGuideScreen extends StatelessWidget {
       description:
           'Tap Scan a Label, allow camera access, and point your phone at the product barcode. You can also enter a barcode manually or use Photo Scan to capture the ingredients label.',
       icon: Icons.qr_code_scanner,
+      color: Colors.blue,
+      destination: _GuideDestination.scanLabel,
     ),
     _GuideStep(
       number: 4,
@@ -35,6 +46,8 @@ class UserGuideScreen extends StatelessWidget {
       description:
           'After scanning, check the product name, ingredients, and any detected allergens. Look for definite allergens and any “may contain” warnings before deciding whether the product is safe for you.',
       icon: Icons.fact_check,
+      color: Colors.orange,
+      destination: _GuideDestination.scanLabel,
     ),
     _GuideStep(
       number: 5,
@@ -42,6 +55,8 @@ class UserGuideScreen extends StatelessWidget {
       description:
           'Tap Emergency Contacts on the home screen to save people who should be notified in an emergency. Keep this list up to date.',
       icon: Icons.emergency,
+      color: Colors.red,
+      destination: _GuideDestination.emergencyContacts,
     ),
     _GuideStep(
       number: 6,
@@ -49,8 +64,28 @@ class UserGuideScreen extends StatelessWidget {
       description:
           'Use Settings for notifications, privacy, and premium options. For FAQs, this guide, or to contact support, go to Settings > Support.',
       icon: Icons.settings,
+      color: Colors.purple,
+      destination: _GuideDestination.settings,
     ),
   ];
+
+  void _openStepScreen(BuildContext context, _GuideDestination destination) {
+    final Widget screen;
+    switch (destination) {
+      case _GuideDestination.profile:
+        screen = const ProfileScreen();
+      case _GuideDestination.myAllergies:
+        screen = const MyAllergiesScreen();
+      case _GuideDestination.scanLabel:
+        screen = const ScanLabelScreen();
+      case _GuideDestination.emergencyContacts:
+        screen = const EmergencyContactsScreen();
+      case _GuideDestination.settings:
+        screen = const SettingsScreen();
+    }
+
+    Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +128,7 @@ class UserGuideScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  const Icon(Icons.book, color: _primaryColor, size: 32),
+                  const Icon(Icons.book, color: _primaryColor, size: 33),
                   const SizedBox(height: 12),
                   Text(
                     'Getting Started',
@@ -117,7 +152,7 @@ class UserGuideScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            ..._steps.map(_buildStepCard),
+            ..._steps.map((step) => _buildStepCard(context, step)),
             const SizedBox(height: 8),
             Container(
               width: double.infinity,
@@ -130,7 +165,7 @@ class UserGuideScreen extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.info_outline, color: Colors.amber[800], size: 20),
+                  Icon(Icons.info_outline, color: Colors.amber[800], size: 21),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -151,7 +186,7 @@ class UserGuideScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStepCard(_GuideStep step) {
+  Widget _buildStepCard(BuildContext context, _GuideStep step) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -173,8 +208,8 @@ class UserGuideScreen extends StatelessWidget {
           Container(
             width: 36,
             height: 36,
-            decoration: const BoxDecoration(
-              color: _primaryColor,
+            decoration: BoxDecoration(
+              color: step.color,
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
@@ -194,8 +229,6 @@ class UserGuideScreen extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(step.icon, color: _primaryColor, size: 20),
-                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         step.title,
@@ -206,6 +239,8 @@ class UserGuideScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    _buildStepActionIcon(context, step),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -224,6 +259,31 @@ class UserGuideScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildStepActionIcon(BuildContext context, _GuideStep step) {
+    return Material(
+      color: step.color.withValues(alpha: 0.15),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: () => _openStepScreen(context, step.destination),
+        borderRadius: BorderRadius.circular(8),
+        splashColor: step.color.withValues(alpha: 0.25),
+        highlightColor: step.color.withValues(alpha: 0.1),
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: Icon(step.icon, color: step.color, size: 19),
+        ),
+      ),
+    );
+  }
+}
+
+enum _GuideDestination {
+  profile,
+  myAllergies,
+  scanLabel,
+  emergencyContacts,
+  settings,
 }
 
 class _GuideStep {
@@ -231,11 +291,15 @@ class _GuideStep {
   final String title;
   final String description;
   final IconData icon;
+  final Color color;
+  final _GuideDestination destination;
 
   const _GuideStep({
     required this.number,
     required this.title,
     required this.description,
     required this.icon,
+    required this.color,
+    required this.destination,
   });
 }

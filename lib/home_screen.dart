@@ -86,12 +86,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: Text(
-          'My Allergy Buddy',
-          style: GoogleFonts.nunito(
-            color: Colors.teal,
-            fontWeight: FontWeight.bold,
-            fontSize: 26,
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            'My Allergy Buddy',
+            maxLines: 1,
+            style: GoogleFonts.nunito(
+              color: Colors.teal,
+              fontWeight: FontWeight.bold,
+              fontSize: 26,
+            ),
           ),
         ),
         centerTitle: true,
@@ -109,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(
                 _userName.isNotEmpty ? 'Welcome Back, $_userName!' : 'Welcome Back!',
                 style: GoogleFonts.nunito(
-                  fontSize: 24,
+                  fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
@@ -121,33 +125,38 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(
                 'What would you like to do today?',
                 style: GoogleFonts.nunito(
-                  fontSize: 14,
+                  fontSize: 17,
                   color: Theme.of(context).colorScheme.onSurface,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     const crossAxisCount = 2;
                     const rowCount = 3;
-                    const mainAxisSpacing = 8.0;
-                    const crossAxisSpacing = 8.0;
+                    const mainAxisSpacing = 6.0;
+                    const crossAxisSpacing = 6.0;
+                    final gridWidth = constraints.maxWidth * 0.9;
+                    final gridHeight = constraints.maxHeight * 0.72;
                     final cellWidth =
-                        (constraints.maxWidth - crossAxisSpacing) / crossAxisCount;
-                    final cellHeight = (constraints.maxHeight -
-                            mainAxisSpacing * (rowCount - 1)) /
-                        rowCount;
+                        (gridWidth - crossAxisSpacing) / crossAxisCount;
+                    final cellHeight =
+                        (gridHeight - mainAxisSpacing * (rowCount - 1)) / rowCount;
                     final aspectRatio = cellWidth / cellHeight;
 
-                    return GridView.count(
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: crossAxisCount,
-                      mainAxisSpacing: mainAxisSpacing,
-                      crossAxisSpacing: crossAxisSpacing,
-                      childAspectRatio: aspectRatio,
-                      children: [
+                    return Center(
+                      child: SizedBox(
+                        width: gridWidth,
+                        height: gridHeight,
+                        child: GridView.count(
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisCount: crossAxisCount,
+                          mainAxisSpacing: mainAxisSpacing,
+                          crossAxisSpacing: crossAxisSpacing,
+                          childAspectRatio: aspectRatio,
+                          children: [
                     _buildMenuCard(
                       context,
                       'Scan a Label',
@@ -328,6 +337,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       isPro: true,
                     ),
                       ],
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -391,12 +402,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   },
-                icon: const Icon(Icons.star, color: Colors.amber, size: 16),
+                icon: const Icon(Icons.star, color: Colors.amber, size: 22),
                 label: Text(
                   'Upgrade to Premium',
                   style: GoogleFonts.nunito(
                     color: Colors.amber,
-                    fontSize: 14,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     shadows: const [
                       Shadow(
@@ -436,16 +447,16 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Card(
-      elevation: 4,
+      elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -456,7 +467,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(6.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -470,7 +481,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   getDisplayTitle(title),
                   style: GoogleFonts.nunito(
                     color: Colors.white,
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
@@ -478,23 +489,23 @@ class _HomeScreenState extends State<HomeScreen> {
                   maxLines: 2,
                 ),
                 if (isPro) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                    padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
                     decoration: BoxDecoration(
                       color: Colors.amber,
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.star, color: Colors.white, size: 8),
+                        const Icon(Icons.star, color: Colors.white, size: 9),
                         const SizedBox(width: 2),
                         Text(
                           'Premium',
                           style: GoogleFonts.nunito(
                             color: Colors.white,
-                            fontSize: 9,
+                            fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

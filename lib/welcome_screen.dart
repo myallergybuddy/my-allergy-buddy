@@ -74,13 +74,20 @@ class WelcomeScreen extends StatelessWidget {
                       color: const Color(0xFF4A9E9C),
                     ),
                   ),
-                  Text(
-                    'My Allergy Buddy',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.nunito(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF4A9E9C),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width - 48,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'My Allergy Buddy',
+                        maxLines: 1,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.nunito(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF4A9E9C),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),

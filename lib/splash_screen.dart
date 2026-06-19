@@ -257,16 +257,23 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           padding: const EdgeInsets.symmetric(horizontal: 32.0),
                 child: Column(
                   children: [
-                              Text(
-                      'My Allergy Buddy',
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF4A9E9C),
-                                  letterSpacing: -0.5,
-                      ),
-                    ),
+                              SizedBox(
+                                width: size.width - 64,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    'My Allergy Buddy',
+                                    maxLines: 1,
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF4A9E9C),
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
+                                ),
+                              ),
                               const SizedBox(height: 16),
                     Text(
                       'Your Personal Allergy Assistant',
