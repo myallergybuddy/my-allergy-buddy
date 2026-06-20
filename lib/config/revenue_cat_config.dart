@@ -33,7 +33,7 @@ class RevenueCatConfig {
 
   /// Public RevenueCat API key for Android (starts with goog_).
   /// RevenueCat → Project Settings → API Keys → App-specific keys → Android
-  static const String androidApiKey = 'goog_YOUR_ANDROID_API_KEY';
+  static const String androidApiKey = 'goog_CuJuvZUFSeqNpuglnSeOloqEmjZ';
 
   /// Public RevenueCat API key for iOS (starts with appl_).
   /// Optional until iOS launch — placeholder is fine for Android-only builds.
