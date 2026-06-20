@@ -572,12 +572,6 @@ class NotificationService {
         await Permission.location.request();
       }
 
-      // Check SMS permissions
-      final smsPermission = await Permission.sms.status;
-      if (smsPermission.isDenied) {
-        await Permission.sms.request();
-      }
-
       // Check notification permissions
       final notificationPermission = await Permission.notification.status;
       if (notificationPermission.isDenied) {
@@ -673,17 +667,9 @@ class NotificationService {
     }
   }
 
-  // Check SMS permissions and premium status
+  // Check premium SMS usage limits (sends via sms: intent, no SEND_SMS permission needed)
   Future<bool> _checkSmsPermissions() async {
     try {
-      // Check SMS permission
-      final smsPermission = await Permission.sms.status;
-      if (!smsPermission.isGranted) {
-        debugPrint('SMS permission not granted');
-        return false;
-      }
-
-      // Check premium service for SMS limits
       final canSendSms = await PremiumService.canSendSms();
       if (!canSendSms) {
         debugPrint('SMS limit reached or premium required');

@@ -3,9 +3,6 @@
     <!-- Location permissions for emergency services -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- SMS permissions for emergency contacts -->
-    <uses-permission android:name="android.permission.SEND_SMS" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <!-- Internet permission -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Billing permission for Google Play -->
