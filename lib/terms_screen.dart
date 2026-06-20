@@ -156,7 +156,7 @@ class TermsScreenState extends State<TermsScreen> {
                   ],
                 ),
               ),
-              Text('Last updated: July 2025', style: GoogleFonts.nunito(fontSize: 15, color: Colors.grey[700], fontWeight: FontWeight.w600)),
+              Text('Last updated: May 2026', style: GoogleFonts.nunito(fontSize: 15, color: Colors.grey[700], fontWeight: FontWeight.w600)),
               const SizedBox(height: 20),
               _sectionTitle('1. Acceptance of Terms'),
               _bulletList([

@@ -152,7 +152,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                         ],
                       ),
                     ),
-              Text('Last updated: March 2026', style: GoogleFonts.nunito(fontSize: 15, color: Colors.grey[700], fontWeight: FontWeight.w600)),
+              Text('Last updated: May 2026', style: GoogleFonts.nunito(fontSize: 15, color: Colors.grey[700], fontWeight: FontWeight.w600)),
               const SizedBox(height: 20),
               _sectionTitle('1. Introduction'),
               _sectionBody('My Allergy Buddy (“we”, “us”) respects your privacy. This Privacy Policy describes what information the app may collect, how it is used, and your choices. By using the app, you agree to this policy together with our Terms of Use.'),
