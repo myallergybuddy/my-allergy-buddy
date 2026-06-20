@@ -64,7 +64,10 @@ class _PremiumUpgradeWidgetState extends State<PremiumUpgradeWidget> {
       
       if (success != null && success['hasPremium'] == true) {
         await _checkPremiumStatus();
-        
+        setState(() {
+          _isLoading = false;
+        });
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -73,7 +76,7 @@ class _PremiumUpgradeWidgetState extends State<PremiumUpgradeWidget> {
             ),
           );
         }
-        
+
         widget.onUpgradeComplete?.call();
       } else {
         setState(() {
@@ -98,9 +101,12 @@ class _PremiumUpgradeWidgetState extends State<PremiumUpgradeWidget> {
 
       final customerInfo = await RevenueCatService.restorePurchases();
       
-      if (customerInfo != null) {
+      if (customerInfo != null && customerInfo['hasPremium'] == true) {
         await _checkPremiumStatus();
-        
+        setState(() {
+          _isLoading = false;
+        });
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -109,11 +115,13 @@ class _PremiumUpgradeWidgetState extends State<PremiumUpgradeWidget> {
             ),
           );
         }
-        
+
         widget.onUpgradeComplete?.call();
       } else {
         setState(() {
-          _errorMessage = 'No purchases found to restore.';
+          _errorMessage = customerInfo != null
+              ? 'No active premium subscription found.'
+              : 'No purchases found to restore.';
           _isLoading = false;
         });
       }
@@ -419,7 +427,8 @@ class _PremiumUpgradeWidgetState extends State<PremiumUpgradeWidget> {
   }
 
   Widget _buildSubscriptionCard(Map<String, dynamic> product) {
-    final isPopular = product['identifier']?.toString().contains('monthly') == true;
+    final id = product['identifier']?.toString() ?? '';
+    final isPopular = id.contains('yearly');
     
     return Container(
       margin: const EdgeInsets.only(bottom: 8),

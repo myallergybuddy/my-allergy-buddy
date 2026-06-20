@@ -23,7 +23,7 @@ dependencies:
   encrypt: ^5.0.3
   crypto: ^3.0.3
   flutter_secure_storage: ^9.0.0
-  # purchases_flutter: ^6.30.2  # Temporarily disabled due to dependency conflicts
+  purchases_flutter: ^8.10.1
   flutter_local_notifications: ^17.2.2
   intl: ^0.20.2
   firebase_core: ^2.27.0
