@@ -1,9 +1,7 @@
 import 'package:geolocator/geolocator.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'premium_service.dart';
-import 'package:flutter/foundation.dart';
 
 class LocationService {
   static const String _locationKey = 'last_known_location';
@@ -65,7 +63,7 @@ class LocationService {
       
       return position;
     } catch (e) {
-      debugPrint('Error getting location: $e');
+      print('Error getting location: $e');
       return null;
     }
   }
@@ -93,7 +91,7 @@ class LocationService {
       }
       return null;
     } catch (e) {
-      debugPrint('Error getting last known location: $e');
+      print('Error getting last known location: $e');
       return null;
     }
   }
@@ -117,7 +115,7 @@ class LocationService {
       
       await prefs.setString(_locationKey, jsonEncode(locationData));
     } catch (e) {
-      debugPrint('Error saving location: $e');
+      print('Error saving location: $e');
     }
   }
   
@@ -134,12 +132,6 @@ class LocationService {
   /// Share location via SMS
   static Future<bool> shareLocationViaSMS(String phoneNumber, String contactName) async {
     try {
-      // Check SMS permission for basic users
-      final canSend = await PremiumService.canSendSms();
-      if (!canSend) {
-        return false; // User has reached SMS limit or doesn't have permission
-      }
-      
       Position? position = await getCurrentLocation();
       if (position == null) {
         // Try to get last known location
@@ -150,7 +142,7 @@ class LocationService {
       }
       
       String locationText = generateLocationText(position.latitude, position.longitude);
-      String message = 'EMERGENCY: $contactName, I am having an allergic reaction. $locationText';
+      String message = 'EMERGENCY: $contactName, I need help! $locationText';
       
       // Create SMS URL
       final Uri smsUri = Uri(
@@ -159,15 +151,9 @@ class LocationService {
         queryParameters: {'body': message},
       );
       
-      bool success = await launchUrl(smsUri);
-      if (success) {
-        // Increment SMS usage for basic users
-        await PremiumService.incrementSmsUsage();
-      }
-      
-      return success;
+      return await launchUrl(smsUri);
     } catch (e) {
-      debugPrint('Error sharing location via SMS: $e');
+      print('Error sharing location via SMS: $e');
       return false;
     }
   }
@@ -185,10 +171,10 @@ class LocationService {
       
       // In a real implementation, this would connect to emergency services API
       // For now, we'll just return success
-      debugPrint('Location shared with emergency services: \\${position.latitude}, \\${position.longitude}');
+      print('Location shared with emergency services: ${position.latitude}, ${position.longitude}');
       return true;
     } catch (e) {
-      debugPrint('Error sharing location with emergency services: $e');
+      print('Error sharing location with emergency services: $e');
       return false;
     }
   }
@@ -201,12 +187,6 @@ class LocationService {
       
       if (contactsJson.isEmpty) {
         return true; // No contacts to notify
-      }
-      
-      // Check SMS permission for basic users
-      final canSend = await PremiumService.canSendSms();
-      if (!canSend) {
-        return false; // User has reached SMS limit or doesn't have permission
       }
       
       Position? position = await getCurrentLocation();
@@ -234,7 +214,7 @@ class LocationService {
       
       return allSuccess;
     } catch (e) {
-      debugPrint('Error notifying emergency contacts: $e');
+      print('Error notifying emergency contacts: $e');
       return false;
     }
   }
@@ -257,7 +237,7 @@ class LocationService {
         'permissionStatus': permission.toString(),
       };
     } catch (e) {
-      debugPrint('Error getting location status: $e');
+      print('Error getting location status: $e');
       return {
         'locationEnabled': false,
         'serviceEnabled': false,
