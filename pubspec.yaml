@@ -1,5 +1,5 @@
 name: my_allergy_buddy
-description: "A new Flutter project."
+description: "My Allergy Buddy — scan food labels and barcodes to identify potential allergens."
 publish_to: 'none'
 
 version: 1.0.0+1

@@ -2,9 +2,12 @@ import 'package:flutter/foundation.dart';
 
 /// RevenueCat configuration constants.
 ///
+/// Launch focus: Android first. Configure [androidApiKey] before release;
+/// [iosApiKey] is optional until iOS launch.
+///
 /// Manual setup:
 /// 1. Create a RevenueCat project at https://app.revenuecat.com
-/// 2. Add Android app (package: com.myallergybuddy.app) and iOS app
+/// 2. Add Android app (package: com.myallergybuddy.app); add iOS when ready
 /// 3. Paste the public API keys below (Android: goog_..., iOS: appl_...)
 /// 4. Create entitlement identifier [entitlementId] and attach subscription products
 /// 5. Create products in Google Play Console / App Store Connect with matching IDs
@@ -33,6 +36,7 @@ class RevenueCatConfig {
   static const String androidApiKey = 'goog_YOUR_ANDROID_API_KEY';
 
   /// Public RevenueCat API key for iOS (starts with appl_).
+  /// Optional until iOS launch — placeholder is fine for Android-only builds.
   /// RevenueCat → Project Settings → API Keys → App-specific keys → iOS
   static const String iosApiKey = 'appl_YOUR_IOS_API_KEY';
 
