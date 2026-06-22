@@ -56,10 +56,10 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/launcher_icon.png"
+  image_path: "assets/images/icon2.png"
   min_sdk_android: 21
   adaptive_icon_background: "#E3F2FD"
-  adaptive_icon_foreground: "assets/images/launcher_icon.png"
+  adaptive_icon_foreground: "assets/images/icon2.png"
   adaptive_icon_padding: true
   remove_alpha_ios: true
-  image_path_ios: "assets/images/launcher_icon.png"
+  image_path_ios: "assets/images/icon2.png"
