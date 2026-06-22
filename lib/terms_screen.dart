@@ -301,7 +301,6 @@ class TermsScreenState extends State<TermsScreen> {
               _sectionBody('For help, questions, or billing issues, contact:'),
               const SizedBox(height: 8),
               Text('📧 myallergybuddy@gmail.com', style: GoogleFonts.nunito(fontSize: 16, color: Colors.black87)),
-              Text('📍 My Allergy Buddy, Australia', style: GoogleFonts.nunito(fontSize: 16, color: Colors.black87)),
               const SizedBox(height: 32),
               // Acceptance button
               if (!widget.isReadOnly) ...[

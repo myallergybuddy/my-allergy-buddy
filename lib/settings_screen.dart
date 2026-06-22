@@ -14,8 +14,6 @@ import 'notifications_settings_screen.dart';
 import 'services/location_service.dart';
 import 'services/encryption_service.dart';
 import 'services/premium_service.dart';
-import 'services/firebase_service.dart';
-
 import 'widgets/premium_upgrade_widget.dart';
 
 
@@ -1398,60 +1396,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ),
-                      _buildListTile(
-                        title: 'Test Crash',
-                        subtitle: 'Trigger a test crash',
-                        icon: Icons.bug_report,
-                        onTap: () {
-                          FirebaseService.testCrash();
-                        },
-                      ),
-                      _buildListTile(
-                        title: 'Test Analytics',
-                        subtitle: 'Log test analytics events',
-                        icon: Icons.analytics,
-                        onTap: () async {
-                          // Test various analytics events
-                          await FirebaseService.logProductScan(
-                            productName: 'Test Product',
-                            hasAllergens: true,
-                            detectedAllergens: ['Peanuts', 'Milk'],
-                          );
-                          
-                          await FirebaseService.logAllergyAdded(
-                            allergyName: 'Test Allergy',
-                            severity: 'High',
-                          );
-                          
-                          await FirebaseService.logEmergencyContactAdded(
-                            relationship: 'Family',
-                          );
-                          
-                          await FirebaseService.logSettingsViewed();
-                          
-                          await FirebaseService.logFeatureUsage(
-                            featureName: 'test_analytics',
-                            additionalParams: {
-                              'test_mode': true,
-                              'timestamp': DateTime.now().millisecondsSinceEpoch,
-                            },
-                          );
-                          
-                          if (mounted) {
-                            _showSuccessSnackBar('Analytics events logged successfully!');
-                          }
-                        },
-                      ),
-
-
-                      
-
-
-
-
-
-
-
                     ],
                   ),
 
