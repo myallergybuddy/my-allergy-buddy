@@ -507,7 +507,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildTextField(
-                label: 'Full Name',
+                label: 'Name',
                 controller: _nameController,
                 icon: Icons.person,
                 enabled: true,
@@ -643,7 +643,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                       if (_isEditingPersonal) ...[
                         // Show form fields when editing
                         _buildTextField(
-                          label: 'Full Name',
+                          label: 'Name',
                           controller: _nameController,
                           icon: Icons.person,
                           enabled: _isEditingPersonal,

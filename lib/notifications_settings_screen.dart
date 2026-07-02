@@ -149,7 +149,7 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
                   });
                   _updateNotificationSetting(settingKey, newValue);
            },
-           activeColor: isEmergency ? Colors.red : const Color(0xFF4A9E9C),
+           activeThumbColor: isEmergency ? Colors.red : const Color(0xFF4A9E9C),
           inactiveThumbColor: Colors.grey[300],
           inactiveTrackColor: Colors.grey[200],
         ),

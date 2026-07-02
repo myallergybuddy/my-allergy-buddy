@@ -110,16 +110,18 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Column(
             children: [
-              Text(
-                _userName.isNotEmpty ? 'Welcome Back, $_userName!' : 'Welcome Back!',
-                style: GoogleFonts.nunito(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
+              SizedBox(
+                width: double.infinity,
+                child: Text(
+                  _userName.isNotEmpty ? 'Welcome Back, $_userName!' : 'Welcome Back!',
+                  style: GoogleFonts.nunito(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
+                  softWrap: true,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
               Text(
