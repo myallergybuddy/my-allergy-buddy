@@ -162,7 +162,7 @@ class TermsScreenState extends State<TermsScreen> {
               _sectionTitle('1. Acceptance of Terms'),
               _sectionBody('By downloading, installing, or using My Allergy Buddy ("the App"), you agree that:'),
               _bulletList([
-                'You are at least 14 years old (or the minimum age required in your jurisdiction)',
+                'You are at least 13 years old (or the minimum age required in your jurisdiction)',
                 'You have read and agree to these Terms and our Privacy Policy',
                 'You understand the App is provided for informational and personal use only',
                 'You accept full responsibility for how you use the App and any decisions made based on it',
