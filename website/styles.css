@@ -242,3 +242,42 @@ footer a:hover {
         grid-template-columns: 1fr;
     }
 }
+
+/* =========================
+   Hero two-column layout
+   ========================= */
+.hero-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 40px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+.hero-text {
+    flex: 1;
+    text-align: left;
+}
+.hero-image {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px dashed rgba(255, 255, 255, 0.5);
+    border-radius: 16px;
+    padding: 60px 30px;
+    text-align: center;
+    backdrop-filter: blur(4px);
+}
+.hero-image p {
+    margin: 0;
+    font-size: 1.1rem;
+    opacity: 0.95;
+}
+@media (max-width: 768px) {
+    .hero-container {
+        flex-direction: column;
+        text-align: center;
+    }
+    .hero-text {
+        text-align: center;
+    }
+}
