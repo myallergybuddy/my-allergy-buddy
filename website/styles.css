@@ -132,8 +132,18 @@ footer a:hover {
     box-shadow: 0 2px 12px rgba(44, 122, 123, 0.1);
 }
 .logo {
-    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-size: 1.1rem;
+}
+.logo-img {
+    height: 36px;
+    width: auto;
+    display: block;
+}
+.logo span {
+    font-weight: bold;
     color: #2c7a7b;
 }
 .nav-links {
@@ -183,9 +193,14 @@ footer a:hover {
     z-index: 1000;
 }
 .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.1rem;
+}
+.logo span {
     font-weight: bold;
     color: #2c7a7b;
-    font-size: 1.1rem;
 }
 .nav-links a {
     margin-left: 15px;
