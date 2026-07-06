@@ -211,3 +211,34 @@ footer a:hover {
     font-size: 1.2rem;
     margin-bottom: 25px;
 }
+
+/* =========================
+   Screenshots
+   ========================= */
+.screenshots {
+    background-color: #eaf6f8;
+    text-align: center;
+}
+.screenshot-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 20px;
+}
+.screenshot {
+    background: white;
+    border: 1px solid #b2dfdb;
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    color: #2c7a7b;
+}
+.screenshot p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+@media (max-width: 768px) {
+    .screenshot-grid {
+        grid-template-columns: 1fr;
+    }
+}
