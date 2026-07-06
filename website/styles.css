@@ -707,3 +707,80 @@ main.narrow {
         font-size: 2rem;
     }
 }
+
+/* =========================
+   Background alignment overrides
+   (Flutter app – cascade wins)
+   ========================= */
+
+html {
+    background-color: var(--color-bg);
+}
+
+body {
+    background-color: var(--color-bg);
+}
+
+/* Index – section bands */
+.features {
+    background-color: var(--color-surface);
+}
+
+.screenshots {
+    background-color: var(--color-bg-tint);
+}
+
+.about {
+    background-color: var(--color-surface);
+}
+
+.contact {
+    background-color: var(--color-bg);
+}
+
+.cta {
+    background: var(--gradient-cta);
+}
+
+footer,
+.site-footer {
+    background-color: var(--color-bg-tint);
+}
+
+/* Hero / page banners – app teal gradient */
+.hero,
+header.hero,
+.page-banner {
+    background: var(--gradient-hero);
+}
+
+/* Subpages – terms/privacy/about_developer scaffold */
+body:has(.site-header) {
+    background-color: var(--color-bg);
+}
+
+body:has(.site-header) main {
+    background-color: transparent;
+}
+
+/* Cards & content surfaces */
+.card,
+.screenshot,
+.content-block,
+.legal-content {
+    background-color: var(--color-surface);
+}
+
+.screenshot {
+    background-color: var(--color-surface);
+    border-color: var(--color-secondary);
+}
+
+.feature-card,
+.contact-card {
+    background-color: var(--color-surface);
+}
+
+.cta-banner {
+    background: var(--gradient-cta);
+}
