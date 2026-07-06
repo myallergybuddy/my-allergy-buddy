@@ -115,3 +115,55 @@ footer a:hover {
 .store-button:hover {
     background-color: #285e61;
 }
+
+/* =========================
+   Navbar
+   ========================= */
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 2px 12px rgba(44, 122, 123, 0.1);
+}
+.logo {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #2c7a7b;
+}
+.nav-links {
+    display: flex;
+    gap: 24px;
+}
+.nav-links a {
+    color: #2c7a7b;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+.nav-links a:hover {
+    color: #4fb6c6;
+}
+
+/* =========================
+   Hero
+   ========================= */
+.hero {
+    background: linear-gradient(135deg, #4fb6c6, #7bd389);
+    color: white;
+    text-align: center;
+    padding: 80px 20px;
+}
+.hero h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+.hero p {
+    font-size: 1.2rem;
+    margin-bottom: 25px;
+}
