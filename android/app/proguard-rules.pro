@@ -12,13 +12,12 @@
 #   public *;
 #}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Preserve line numbers for Crashlytics / stack traces
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
+-keepattributes *Annotation*
+-keepattributes Signature
+-keepattributes Exceptions
 
 # Suppress accessibility warnings
 -dontwarn android.view.accessibility.**
@@ -38,10 +37,15 @@
 -keep class com.google.firebase.** { *; }
 -keep class com.google.android.gms.** { *; }
 
-# Keep camera and scanner related classes
+# Keep camera, scanner, and ML Kit classes
 -keep class com.google.android.gms.vision.** { *; }
 -keep class com.google.android.gms.common.** { *; }
+-keep class com.google.mlkit.** { *; }
+
+# Keep RevenueCat / Play Billing
+-keep class com.revenuecat.purchases.** { *; }
+-keep class com.android.billingclient.** { *; }
 
 # Suppress reflection warnings
 -dontwarn sun.misc.**
--dontwarn java.lang.reflect.** 
+-dontwarn java.lang.reflect.**
