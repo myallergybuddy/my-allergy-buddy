@@ -149,8 +149,12 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
                   });
                   _updateNotificationSetting(settingKey, newValue);
            },
-           activeThumbColor: isEmergency ? Colors.red : const Color(0xFF4A9E9C),
-          inactiveThumbColor: Colors.grey[300],
+          thumbColor: WidgetStateProperty.resolveWith<Color?>((states) {
+            if (states.contains(WidgetState.selected)) {
+              return isEmergency ? Colors.red : const Color(0xFF4A9E9C);
+            }
+            return Colors.grey[300];
+          }),
           inactiveTrackColor: Colors.grey[200],
         ),
       ),
