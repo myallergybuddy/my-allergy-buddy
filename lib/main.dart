@@ -17,9 +17,6 @@ import 'services/revenue_cat_service.dart';
 import 'emergency_contacts_screen.dart';
 import 'settings_screen.dart';
 import 'australian_database_screen.dart';
-import 'test_australian_database.dart';
-import 'test_cross_contamination.dart';
-import 'test_parsing.dart';
 import 'profile_screen.dart';
 
 void main() {
@@ -118,9 +115,6 @@ class MyApp extends StatelessWidget {
         '/emergency_contacts': (context) => const EmergencyContactsScreen(),
         '/settings': (context) => const SettingsScreen(),
         '/australian_database': (context) => const AustralianDatabaseScreen(),
-                    '/test_database': (context) => const TestAustralianDatabase(),
-            '/test_cross_contamination': (context) => const TestCrossContamination(),
-            '/test_parsing': (context) => const TestParsing(),
       },
       debugShowCheckedModeBanner: false,
     );
