@@ -51,14 +51,9 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        
-        // Phones: ARM. Emulators: x86_64 (recommended) or legacy x86 AVDs.
-        ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-        }
     }
 
     signingConfigs {
@@ -84,11 +79,21 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Store builds: real devices only (skip emulator ABIs).
+            ndk {
+                abiFilters.clear()
+                abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+            }
         }
         debug {
             isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Debug: include emulator ABIs for local testing.
+            ndk {
+                abiFilters.clear()
+                abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            }
         }
     }
 }
