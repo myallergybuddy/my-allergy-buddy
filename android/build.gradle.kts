@@ -22,6 +22,29 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+
+// Register before evaluationDependsOn so already-evaluated projects don't break.
+subprojects {
+    afterEvaluate {
+        extensions.findByName("android")?.let { androidExt ->
+            try {
+                val setCompileSdk = androidExt.javaClass.methods.find {
+                    it.name == "setCompileSdk" && it.parameterTypes.size == 1
+                }
+                if (setCompileSdk != null) {
+                    setCompileSdk.invoke(androidExt, 36)
+                } else {
+                    androidExt.javaClass
+                        .getMethod("setCompileSdkVersion", Int::class.javaPrimitiveType)
+                        .invoke(androidExt, 36)
+                }
+            } catch (_: Exception) {
+                // Non-Android subprojects
+            }
+        }
+    }
+}
+
 subprojects {
     project.evaluationDependsOn(":app")
 }

@@ -42,6 +42,23 @@ class AustralianCuratedProductDatabase {
       'isAustralianProduct': true,
       'image': null,
     },
+    // Twin snack-pack barcode from Open Food Facts (2 x 170 g). Ingredients
+    // matched to Goulburn Valley Peaches in Juice label (same brand family).
+    '9310093999893': {
+      'name': 'Peaches in Juice',
+      'brand': 'Goulburn Valley',
+      'ingredients': [
+        'australian grown sliced peaches (62%)',
+        'refined fruit juice',
+        'antioxidant (ascorbic acid)',
+      ],
+      'allergens': <String>[],
+      'mayContainItems': <String>[],
+      'crossContamination': <String>[],
+      'isAustralianProduct': true,
+      'image':
+          'https://images.openfoodfacts.org/images/products/931/009/399/9893/front_en.3.400.jpg',
+    },
     '9316401202464': {
       'name': 'Bhuja Original Mix',
       'brand': 'Bhuja',

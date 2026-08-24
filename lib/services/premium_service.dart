@@ -19,6 +19,11 @@ class PremiumService {
   
   /// Check if user has premium access
   static Future<bool> isPremiumUser() async {
+    // Debug/test builds: unlock all premium features without payment.
+    if (kDebugMode) {
+      return true;
+    }
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final isPremium = prefs.getBool(_premiumKey) ?? false;
