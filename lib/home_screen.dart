@@ -86,22 +86,25 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            'My Allergy Buddy',
-            maxLines: 1,
-            style: GoogleFonts.nunito(
-              color: Colors.teal,
-              fontWeight: FontWeight.bold,
-              fontSize: 26,
+        title: Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              'My Allergy Buddy',
+              maxLines: 1,
+              style: GoogleFonts.nunito(
+                color: Colors.teal,
+                fontWeight: FontWeight.bold,
+                fontSize: 34,
+              ),
             ),
           ),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        toolbarHeight: 56,
+        toolbarHeight: 72,
         titleSpacing: 0,
         automaticallyImplyLeading: false,
       ),
@@ -132,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
@@ -140,15 +143,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     const rowCount = 3;
                     const mainAxisSpacing = 6.0;
                     const crossAxisSpacing = 6.0;
-                    final gridWidth = constraints.maxWidth * 0.9;
-                    final gridHeight = constraints.maxHeight * 0.72;
+                    final gridWidth = constraints.maxWidth * 0.81;
+                    final gridHeight = constraints.maxHeight * 0.83;
                     final cellWidth =
                         (gridWidth - crossAxisSpacing) / crossAxisCount;
                     final cellHeight =
                         (gridHeight - mainAxisSpacing * (rowCount - 1)) / rowCount;
                     final aspectRatio = cellWidth / cellHeight;
 
-                    return Center(
+                    return Align(
+                      alignment: Alignment.topCenter,
                       child: SizedBox(
                         width: gridWidth,
                         height: gridHeight,
@@ -409,7 +413,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   'Upgrade to Premium',
                   style: GoogleFonts.nunito(
                     color: Colors.amber,
-                    fontSize: 18,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                     shadows: const [
                       Shadow(
@@ -483,7 +487,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   getDisplayTitle(title),
                   style: GoogleFonts.nunito(
                     color: Colors.white,
-                    fontSize: 14,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
