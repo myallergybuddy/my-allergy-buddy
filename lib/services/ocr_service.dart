@@ -107,6 +107,9 @@ class OCRService {
       
       // If we're in the ingredient section, parse this line
       if (foundIngredientSection && !ingredientPatterns.any((p) => p.hasMatch(trimmedLine))) {
+        if (_isNutritionSectionHeader(trimmedLine)) {
+          break;
+        }
         ingredients.addAll(_parseIngredientList(trimmedLine));
       }
     }
@@ -117,11 +120,27 @@ class OCRService {
     }
     
     // Remove duplicates and clean up
-    return ingredients
+    final cleaned = ingredients
         .map((ingredient) => _cleanIngredient(ingredient))
         .where((ingredient) => ingredient.isNotEmpty && ingredient.length > 2)
         .toSet()
         .toList();
+
+    final withoutNutrition = <String>[];
+    for (final ingredient in cleaned) {
+      if (_isNutritionSectionHeader(ingredient)) break;
+      withoutNutrition.add(ingredient);
+    }
+    return withoutNutrition;
+  }
+
+  static bool _isNutritionSectionHeader(String line) {
+    final text = line.toLowerCase();
+    return text.contains('nutritional information') ||
+        text.contains('nutrition information') ||
+        text.contains('nutrition facts') ||
+        text.startsWith('servings per package') ||
+        text.contains('exporting to the world');
   }
   
   /// Parse ingredient list from a string
@@ -187,6 +206,7 @@ class OCRService {
     try {
       final XFile? image = await _imagePicker.pickImage(
         source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.rear,
         maxWidth: 1920,
         maxHeight: 1080,
         imageQuality: 85,
@@ -200,7 +220,7 @@ class OCRService {
       if (kDebugMode) {
         print('OCR: Error picking image from camera: $e');
       }
-      return null;
+      rethrow;
     }
   }
   
@@ -222,7 +242,7 @@ class OCRService {
       if (kDebugMode) {
         print('OCR: Error picking image from gallery: $e');
       }
-      return null;
+      rethrow;
     }
   }
   

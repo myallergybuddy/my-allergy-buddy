@@ -160,6 +160,12 @@ class OpenFoodFactsService {
     if (barcode == '9310072013312') {
       candidates.add('931007201332');
     }
+    if (barcode == '9310072037496') {
+      candidates.add('9310072037493');
+    }
+    if (barcode == '9310072037493') {
+      candidates.add('9310072037496');
+    }
     return candidates.toList();
   }
 

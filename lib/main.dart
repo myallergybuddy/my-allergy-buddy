@@ -6,6 +6,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'services/firebase_service.dart';
 import 'services/api_credentials_service.dart';
 import 'services/product_database_service.dart';
+import 'services/user_learned_product_store.dart';
 import 'splash_screen.dart';
 import 'welcome_screen.dart';
 import 'terms_screen.dart';
@@ -31,6 +32,7 @@ void main() {
         await RevenueCatService.initialize();
         await ApiCredentialsService.initialize();
         await ProductDatabaseService.initialize();
+        await UserLearnedProductStore.initialize();
       }
     } catch (e) {
       debugPrint('Firebase initialization failed: $e');

@@ -979,6 +979,8 @@ class ProductDatabaseService {
   };
 
   static Future<Map<String, dynamic>?> getProductByBarcode(String barcode) async {
+    await initialize();
+
     // Simulate API delay
     await Future.delayed(const Duration(milliseconds: 500));
     
@@ -1486,15 +1488,15 @@ class ProductDatabaseService {
   static bool _initialized = false;
 
   /// Merge curated manual databases into the local fallback catalog.
+  ///
+  /// Curated entries always win on barcode collisions so synthetic
+  /// `9300605000xxx` placeholders cannot shadow pack-accurate data.
   static Future<void> initialize() async {
     if (_initialized) return;
     _initialized = true;
 
     for (final entry in OpenFoodFactsService.manualProductDatabase.entries) {
-      _productDatabase.putIfAbsent(
-        entry.key,
-        () => Map<String, dynamic>.from(entry.value),
-      );
+      _productDatabase[entry.key] = Map<String, dynamic>.from(entry.value);
     }
 
     if (kDebugMode) {
@@ -1502,8 +1504,45 @@ class ProductDatabaseService {
     }
   }
 
+  /// True for bundled fake SKUs in the Nestlé-prefix `93006050000xx` range
+  /// that are not curated demo aliases. Those must not block live lookup.
+  static bool isUnverifiedSyntheticBarcode(String barcode) {
+    if (!barcode.startsWith('93006050000')) return false;
+    return !OpenFoodFactsService.manualProductDatabase.containsKey(barcode);
+  }
+
   static void addProduct(String barcode, Map<String, dynamic> product) {
-    _productDatabase[barcode] = product;
+    final existing = _productDatabase[barcode];
+    if (existing != null) {
+      _productDatabase[barcode] = {
+        ...Map<String, dynamic>.from(existing),
+        ...product,
+      };
+    } else {
+      _productDatabase[barcode] = Map<String, dynamic>.from(product);
+    }
+  }
+
+  /// Replace a runtime entry entirely (used to restore curated data).
+  static void replaceProduct(String barcode, Map<String, dynamic> product) {
+    _productDatabase[barcode] = Map<String, dynamic>.from(product);
+  }
+
+  /// True when an ingredient row is a may-contain / traces statement, not a recipe item.
+  static bool isMayContainStatement(String item) {
+    final text = item.toLowerCase().trim();
+    return text.contains('may contain') ||
+        text.contains('may be present') ||
+        text.contains('contains traces') ||
+        text.startsWith('traces of');
+  }
+
+  /// Ingredient chips should not also list the may-contain sentence.
+  static List<String> ingredientsExcludingMayContain(List<String> ingredients) {
+    return ingredients
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty && !isMayContainStatement(item))
+        .toList();
   }
 
   // Method to get all products (for testing)

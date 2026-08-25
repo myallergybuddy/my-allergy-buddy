@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
+import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -13,6 +14,8 @@ import 'services/revenue_cat_service.dart';
 import 'services/australian_food_database_service.dart';
 import 'services/spoonacular_service.dart';
 import 'services/ocr_service.dart';
+import 'services/user_learned_product_store.dart';
+import 'services/australian_curated_product_database.dart';
 import 'models/enhanced_scan_result.dart';
 import 'widgets/premium_upgrade_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -45,13 +48,25 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
   
   // Photo scan integration
   bool _showPhotoScanOptions = false;
+  bool _isPickingImage = false;
   File? _selectedImage;
 
   late final MobileScannerController _scannerController;
 
+  // Slow detections so a brief glimpse does not instantly lock a result.
+  // mobile_scanner defaults to 250ms; 500ms is 2x that interval.
+  static const int _detectionTimeoutMs = 500;
+  static const Duration _scanConfirmDelay = Duration(milliseconds: 400);
+  static const Duration _scanStaleAfter = Duration(milliseconds: 900);
+  String? _pendingBarcode;
+  DateTime? _pendingBarcodeAt;
+  DateTime? _pendingLastSeenAt;
+
   String _extractedText = '';
   List<String> _extractedIngredients = [];
   List<Map<String, dynamic>> _photoDetectedAllergens = [];
+  String? _photoSavedBarcode;
+  String? _photoSavedProductName;
 
   @override
   void initState() {
@@ -67,6 +82,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
         BarcodeFormat.qrCode,
       ],
       detectionSpeed: DetectionSpeed.normal,
+      detectionTimeoutMs: _detectionTimeoutMs,
       facing: CameraFacing.back,
     );
     _animationController = AnimationController(
@@ -219,6 +235,30 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
     }
     
     if (code != null && code.isNotEmpty) {
+      final now = DateTime.now();
+      final isStale = _pendingLastSeenAt == null ||
+          now.difference(_pendingLastSeenAt!) > _scanStaleAfter;
+      if (_pendingBarcode != code || isStale) {
+        // First sighting, a different code, or the previous code left the frame.
+        _pendingBarcode = code;
+        _pendingBarcodeAt = now;
+        _pendingLastSeenAt = now;
+        if (kDebugMode) {
+          print('Scanner: Pending barcode $code; waiting ${_scanConfirmDelay.inMilliseconds}ms to confirm');
+        }
+        return;
+      }
+
+      _pendingLastSeenAt = now;
+      if (_pendingBarcodeAt == null ||
+          now.difference(_pendingBarcodeAt!) < _scanConfirmDelay) {
+        if (kDebugMode) {
+          print('Scanner: Barcode $code seen again but confirm delay not elapsed');
+        }
+        return;
+      }
+
+      _clearPendingBarcode();
       if (kDebugMode) {
         print('Scanner: Processing barcode: $code');
       }
@@ -228,6 +268,12 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
         print('Scanner: Barcode code is null or empty');
       }
     }
+  }
+
+  void _clearPendingBarcode() {
+    _pendingBarcode = null;
+    _pendingBarcodeAt = null;
+    _pendingLastSeenAt = null;
   }
 
   Future<void> _processBarcode(String barcode) async {
@@ -248,6 +294,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
     }
 
     try {
+      await UserLearnedProductStore.rememberLastScan(barcode: barcode);
       if (kDebugMode) {
         print('ScanLabelScreen: About to call ProductLookupService.getScanResult');
         print('ScanLabelScreen: Barcode: $barcode');
@@ -404,8 +451,16 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
         
         // Check if ingredients are available
         final baseIngredients = List<String>.from(result['product']['ingredients'] ?? []);
-        final allIngredients = [...baseIngredients, ...additionalIngredients];
-        final ingredients = allIngredients.toSet().toList(); // Remove duplicates
+        final curatedProduct = AustralianCuratedProductDatabase.products[barcode];
+        final curatedIngredients = curatedProduct == null
+            ? <String>[]
+            : List<String>.from(curatedProduct['ingredients'] ?? []);
+        final allIngredients = curatedIngredients.isNotEmpty
+            ? curatedIngredients
+            : [...baseIngredients, ...additionalIngredients];
+        final rawIngredients = allIngredients.toSet().toList();
+        final ingredients =
+            ProductDatabaseService.ingredientsExcludingMayContain(rawIngredients);
         final hasIngredients = ingredients.isNotEmpty;
         
 
@@ -485,8 +540,19 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
         
         final productForMayContain = Map<String, dynamic>.from(result['product'] ?? {});
         productForMayContain['crossContaminationWarnings'] = crossContaminationWarnings;
+        if (curatedProduct != null) {
+          productForMayContain['mayContainItems'] =
+              curatedProduct['mayContainItems'] ?? productForMayContain['mayContainItems'];
+          productForMayContain['traces'] =
+              curatedProduct['traces'] ?? productForMayContain['traces'];
+          productForMayContain['traces_tags'] =
+              curatedProduct['traces_tags'] ?? productForMayContain['traces_tags'];
+          productForMayContain['crossContamination'] =
+              curatedProduct['crossContamination'] ??
+                  productForMayContain['crossContamination'];
+        }
         final mayContainItems = ProductDatabaseService.collectMayContainItems(
-          ingredients: ingredients,
+          ingredients: rawIngredients,
           product: productForMayContain,
         );
 
@@ -582,6 +648,13 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
           showResults = true;
           isLoading = false;
         });
+
+        await UserLearnedProductStore.rememberLastScan(
+          barcode: barcode,
+          name: scanResultData.productName,
+          brand: scanResultData.brand,
+          image: scanResultData.image,
+        );
         
         if (kDebugMode) {
           print('ScanLabelScreen: UI updated successfully');
@@ -867,7 +940,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                     Text(
                       'Allergens Found in Ingredients',
                       style: GoogleFonts.nunito(
-                        fontSize: 16,
+                        fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: Colors.red[700],
                       ),
@@ -900,7 +973,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                     Text(
                       'May Contain Warnings',
                       style: GoogleFonts.nunito(
-                        fontSize: 16,
+                        fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: Colors.orange[700],
                       ),
@@ -956,6 +1029,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
               Text(
                 allergenName,
                 style: GoogleFonts.nunito(
+                  fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: severityColor,
                 ),
@@ -971,7 +1045,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                   isDefinite ? severity : 'MAY CONTAIN',
                   style: GoogleFonts.nunito(
                     color: Colors.white,
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -982,14 +1056,14 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
           Text(
             'Detection Method: $detectionMethod',
             style: GoogleFonts.nunito(
-              fontSize: 12,
+              fontSize: 13,
               color: Colors.grey[600],
             ),
           ),
           Text(
             'Confidence: ${(confidence * 100).toStringAsFixed(1)}%',
             style: GoogleFonts.nunito(
-              fontSize: 12,
+              fontSize: 13,
               color: Colors.grey[600],
             ),
           ),
@@ -997,7 +1071,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
             Text(
               'Found in: ${allergen['matchedIngredient']}',
               style: GoogleFonts.nunito(
-                fontSize: 12,
+                fontSize: 13,
                 color: Colors.grey[600],
               ),
             ),
@@ -1005,7 +1079,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
             Text(
               'Warning: ${allergen['crossContaminationWarning']}',
               style: GoogleFonts.nunito(
-                fontSize: 12,
+                fontSize: 13,
                 color: Colors.orange[700],
                 fontStyle: FontStyle.italic,
               ),
@@ -1418,21 +1492,116 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
   }
 
   // Photo scan methods
-  void _togglePhotoScanOptions() {
+  Future<void> _togglePhotoScanOptions() async {
+    final opening = !_showPhotoScanOptions;
     setState(() {
-      _showPhotoScanOptions = !_showPhotoScanOptions;
-      if (!_showPhotoScanOptions) {
+      _showPhotoScanOptions = opening;
+      if (!opening) {
         _selectedImage = null;
         _extractedText = '';
         _extractedIngredients = [];
         _photoDetectedAllergens = [];
+        _photoSavedBarcode = null;
+        _photoSavedProductName = null;
       }
     });
+    if (opening) {
+      // Release the barcode camera so image_picker can open camera/gallery.
+      await _stopBarcodeScanner();
+    } else {
+      await _startBarcodeScanner();
+    }
+  }
+
+  Future<void> _stopBarcodeScanner() async {
+    try {
+      await _scannerController.stop();
+    } catch (e) {
+      if (kDebugMode) {
+        print('ScanLabel: Could not stop barcode scanner: $e');
+      }
+    }
+  }
+
+  Future<void> _startBarcodeScanner() async {
+    if (!mounted || !hasCameraPermission || !isCameraInitialized) return;
+    if (_showPhotoScanOptions || !isScanning || showResults || isLoading) return;
+    try {
+      await _scannerController.start();
+    } catch (e) {
+      if (kDebugMode) {
+        print('ScanLabel: Could not start barcode scanner: $e');
+      }
+    }
+  }
+
+  Future<bool> _ensureCameraPermission() async {
+    var status = await Permission.camera.status;
+    if (status.isGranted) return true;
+
+    if (status.isDenied) {
+      status = await Permission.camera.request();
+      if (status.isGranted) {
+        if (mounted) {
+          setState(() {
+            hasCameraPermission = true;
+            scannerStatus = 'Camera ready';
+            isCameraInitialized = true;
+            cameraError = null;
+          });
+        }
+        return true;
+      }
+    }
+
+    if (!mounted) return false;
+
+    final permanentlyBlocked = status.isPermanentlyDenied || status.isRestricted;
+    _showPermissionDeniedSnackBar(
+      permanentlyBlocked
+          ? 'Camera access is turned off. Enable it in Settings to photograph ingredient labels.'
+          : 'Camera access is required to photograph ingredient labels.',
+      offerSettings: permanentlyBlocked,
+    );
+    return false;
+  }
+
+  String _pickerErrorMessage(Object error, {required bool fromCamera}) {
+    if (error is PlatformException) {
+      switch (error.code) {
+        case 'camera_access_denied':
+        case 'camera_access_restricted':
+          return 'Camera access is required to photograph ingredient labels. Enable it in Settings.';
+        case 'photo_access_denied':
+        case 'photo_access_restricted':
+          return 'Photo library access is required to choose a label image. Enable it in Settings.';
+      }
+    }
+    return fromCamera
+        ? 'Failed to open the camera. Please try again.'
+        : 'Failed to open the photo library. Please try again.';
+  }
+
+  bool _isPermissionPickerError(Object error) {
+    if (error is! PlatformException) return false;
+    return error.code == 'camera_access_denied' ||
+        error.code == 'camera_access_restricted' ||
+        error.code == 'photo_access_denied' ||
+        error.code == 'photo_access_restricted';
   }
 
   Future<void> _pickImageFromCamera() async {
+    if (_isPickingImage) return;
+    setState(() {
+      _isPickingImage = true;
+    });
     try {
+      final allowed = await _ensureCameraPermission();
+      if (!allowed || !mounted) return;
+
+      await _stopBarcodeScanner();
       final image = await OCRService.pickImageFromCamera();
+      if (!mounted) return;
       if (image != null) {
         setState(() {
           _selectedImage = image;
@@ -1444,13 +1613,32 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
       if (kDebugMode) {
         print('ScanLabel: Error picking image from camera: $e');
       }
-      _showErrorSnackBar('Failed to capture image: $e');
+      if (mounted) {
+        _showPermissionDeniedSnackBar(
+          _pickerErrorMessage(e, fromCamera: true),
+          offerSettings: _isPermissionPickerError(e),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPickingImage = false;
+        });
+      } else {
+        _isPickingImage = false;
+      }
     }
   }
 
   Future<void> _pickImageFromGallery() async {
+    if (_isPickingImage) return;
+    setState(() {
+      _isPickingImage = true;
+    });
     try {
+      await _stopBarcodeScanner();
       final image = await OCRService.pickImageFromGallery();
+      if (!mounted) return;
       if (image != null) {
         setState(() {
           _selectedImage = image;
@@ -1462,7 +1650,20 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
       if (kDebugMode) {
         print('ScanLabel: Error picking image from gallery: $e');
       }
-      _showErrorSnackBar('Failed to pick image: $e');
+      if (mounted) {
+        _showPermissionDeniedSnackBar(
+          _pickerErrorMessage(e, fromCamera: false),
+          offerSettings: _isPermissionPickerError(e),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPickingImage = false;
+        });
+      } else {
+        _isPickingImage = false;
+      }
     }
   }
 
@@ -1506,6 +1707,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
         isLoading = false;
       });
       _showErrorSnackBar('Failed to process image: $e');
+      await _startBarcodeScanner();
     }
   }
 
@@ -1565,14 +1767,65 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
 
   Future<void> _createPhotoScanResult(Map<String, dynamic> safetyAssessment) async {
     try {
-      final scanResult = EnhancedScanResult(
-        barcode: 'PHOTO_${DateTime.now().millisecondsSinceEpoch}',
-        productName: 'Product from Photo',
-        brand: 'Unknown Brand',
-        ingredients: _extractedIngredients,
+      final sessionBarcode = UserLearnedProductStore.isRealBarcode(barcodeText)
+          ? barcodeText
+          : (scanResult != null &&
+                  UserLearnedProductStore.isRealBarcode(scanResult!.barcode)
+              ? scanResult!.barcode
+              : null);
+      final linked = await UserLearnedProductStore.resolveBarcodeForPhoto(
+        sessionBarcode: sessionBarcode,
+        sessionName: scanResult?.productName,
+        sessionBrand: scanResult?.brand,
+        sessionImage: scanResult?.image,
+      );
+
+      var saved = false;
+      if (linked != null && _extractedIngredients.isNotEmpty) {
+        saved = await UserLearnedProductStore.savePhotoIngredients(
+          barcode: linked['barcode'].toString(),
+          ingredients: _extractedIngredients,
+          name: linked['name']?.toString(),
+          brand: linked['brand']?.toString(),
+          image: linked['image']?.toString(),
+        );
+      }
+
+      final linkedBarcode = saved ? linked!['barcode'].toString() : null;
+      final linkedName = saved
+          ? (linked!['name']?.toString().trim().isNotEmpty == true
+              ? linked['name'].toString()
+              : null)
+          : null;
+      final linkedBrand = saved
+          ? (linked!['brand']?.toString().trim().isNotEmpty == true
+              ? linked['brand'].toString()
+              : null)
+          : null;
+
+      final photoIngredients = ProductDatabaseService.ingredientsExcludingMayContain(
+        UserLearnedProductStore.trimNutritionNoise(_extractedIngredients),
+      );
+      final linkedCurated = linkedBarcode != null
+          ? AustralianCuratedProductDatabase.products[linkedBarcode]
+          : null;
+
+      final photoScanResult = EnhancedScanResult(
+        barcode: linkedBarcode ?? 'PHOTO_${DateTime.now().millisecondsSinceEpoch}',
+        productName: linkedName ?? 'Product from Photo',
+        brand: linkedBrand ?? 'Unknown Brand',
+        ingredients: photoIngredients,
         mayContainItems: ProductDatabaseService.collectMayContainItems(
           ingredients: _extractedIngredients,
-          product: {'crossContaminationWarnings': []},
+          product: {
+            'crossContaminationWarnings': [],
+            if (linkedCurated != null) ...{
+              'mayContainItems': linkedCurated['mayContainItems'],
+              'traces': linkedCurated['traces'],
+              'traces_tags': linkedCurated['traces_tags'],
+              'crossContamination': linkedCurated['crossContamination'],
+            },
+          },
         ),
         detectedAllergens: _photoDetectedAllergens,
         crossContaminationWarnings: [],
@@ -1611,26 +1864,64 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
           'processingFacility': 'No information available'
         },
       );
-      
-      // Save to scan history
+
       final prefs = await SharedPreferences.getInstance();
       final scanHistory = prefs.getStringList('scan_history') ?? [];
-      scanHistory.add(jsonEncode(scanResult.toJson()));
+      scanHistory.add(jsonEncode(photoScanResult.toJson()));
       await prefs.setStringList('scan_history', scanHistory);
-      
-      // Log analytics
+
+      await _saveToScanHistory(photoScanResult);
+
       await FirebaseService.logProductScan(
-        productName: scanResult.productName,
-        hasAllergens: scanResult.detectedAllergens.isNotEmpty,
-        detectedAllergens: scanResult.detectedAllergens
+        productName: photoScanResult.productName,
+        hasAllergens: photoScanResult.detectedAllergens.isNotEmpty,
+        detectedAllergens: photoScanResult.detectedAllergens
             .map((allergen) => allergen['name'] as String)
             .toList(),
       );
-      
-      if (kDebugMode) {
-        print('ScanLabel: Photo scan result saved to history');
+
+      if (!mounted) return;
+      setState(() {
+        scanResult = photoScanResult;
+        _photoSavedBarcode = linkedBarcode;
+        _photoSavedProductName = linkedName;
+        if (linkedBarcode != null) {
+          barcodeText = linkedBarcode;
+        }
+      });
+
+      if (!mounted) return;
+      if (saved && linkedBarcode != null) {
+        final label = linkedName ?? linkedBarcode;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Saved ingredients for $label. The next barcode scan will use them.',
+              style: GoogleFonts.nunito(),
+            ),
+            backgroundColor: const Color(0xFF4A9E9C),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } else if (_extractedIngredients.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Showing ingredients from the photo. Scan the barcode first to save them for later.',
+              style: GoogleFonts.nunito(),
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 5),
+          ),
+        );
       }
-      
+
+      if (kDebugMode) {
+        print(
+          'ScanLabel: Photo scan saved=${saved ? linkedBarcode : 'not linked'} '
+          '(${_extractedIngredients.length} ingredients)',
+        );
+      }
     } catch (e) {
       if (kDebugMode) {
         print('ScanLabel: Error creating photo scan result: $e');
@@ -1643,6 +1934,22 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  void _showPermissionDeniedSnackBar(String message, {bool offerSettings = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        action: offerSettings
+            ? SnackBarAction(
+                label: 'Settings',
+                textColor: Colors.white,
+                onPressed: openAppSettings,
+              )
+            : null,
       ),
     );
   }
@@ -1792,89 +2099,9 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                     controller: _scannerController,
                   ),
                 
-                // Photo scan options overlay
-                if (_showPhotoScanOptions)
-                  Container(
-                    color: Colors.black.withValues(alpha: 0.8),
-                    child: Center(
-                      child: Container(
-                        margin: const EdgeInsets.all(32),
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Photo Scan',
-                              style: GoogleFonts.nunito(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF2A4C4A),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Take a photo of the product label to extract ingredient information',
-                              style: GoogleFonts.nunito(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 24),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    onPressed: _pickImageFromCamera,
-                                    icon: const Icon(Icons.camera_alt),
-                                    label: const Text('Camera'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF4A9E9C),
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(vertical: 16),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    onPressed: _pickImageFromGallery,
-                                    icon: const Icon(Icons.photo_library),
-                                    label: const Text('Gallery'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF4A9E9C),
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(vertical: 16),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                
                 // Camera error or initialization state
-                if (!hasCameraPermission || !isCameraInitialized)
+                if ((!hasCameraPermission || !isCameraInitialized) &&
+                    !_showPhotoScanOptions)
                   Container(
                     color: Colors.black,
                     child: Center(
@@ -1919,15 +2146,17 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                       ),
                     ),
                   ),
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 2,
+                IgnorePointer(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.white,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    margin: const EdgeInsets.all(40),
                   ),
-                  margin: const EdgeInsets.all(40),
                 ),
                 AnimatedBuilder(
                   animation: _scanAnimation,
@@ -1936,13 +2165,97 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                       top: 40 + (_scanAnimation.value * (MediaQuery.of(context).size.height * 0.6 - 80)),
                       left: 40,
                       right: 40,
-                      child: Container(
-                        height: 2,
-                        color: const Color(0xFF4A9E9C),
+                      child: IgnorePointer(
+                        child: Container(
+                          height: 2,
+                          color: const Color(0xFF4A9E9C),
+                        ),
                       ),
                     );
                   },
                 ),
+
+                // Keep Photo Scan on top so Camera/Gallery taps are not eaten
+                // by the scan frame or camera-error overlay.
+                if (_showPhotoScanOptions)
+                  Container(
+                    color: Colors.black.withValues(alpha: 0.8),
+                    child: Center(
+                      child: Container(
+                        margin: const EdgeInsets.all(32),
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Photo Scan',
+                              style: GoogleFonts.nunito(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF2A4C4A),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Take a photo of the product label to extract ingredient information',
+                              style: GoogleFonts.nunito(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 24),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: _isPickingImage ? null : _pickImageFromCamera,
+                                    icon: const Icon(Icons.camera_alt),
+                                    label: const Text('Camera'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF4A9E9C),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: _isPickingImage ? null : _pickImageFromGallery,
+                                    icon: const Icon(Icons.photo_library),
+                                    label: const Text('Gallery'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF4A9E9C),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -1979,10 +2292,13 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                   children: [
                     ElevatedButton.icon(
                        onPressed: () {
+                         _clearPendingBarcode();
                          setState(() {
                            isScanning = true;
                            showResults = false;
                            scanResult = null;
+                           _photoSavedBarcode = null;
+                           _photoSavedProductName = null;
                          });
                        },
                        icon: const Icon(Icons.refresh),
@@ -2085,7 +2401,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                                      child: Text(
                                        scanResult!.productName,
                                        style: GoogleFonts.nunito(
-                                         fontSize: 20,
+                                         fontSize: 21,
                                          fontWeight: FontWeight.bold,
                                          color: const Color(0xFF2A4C4A),
                                        ),
@@ -2114,7 +2430,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                                            Text(
                                              'PREMIUM',
                                              style: GoogleFonts.nunito(
-                                               fontSize: 10,
+                                               fontSize: 11,
                                                fontWeight: FontWeight.bold,
                                                color: Colors.amber[700],
                                              ),
@@ -2143,7 +2459,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                                            Text(
                                              'PHOTO',
                                              style: GoogleFonts.nunito(
-                                               fontSize: 10,
+                                               fontSize: 11,
                                                fontWeight: FontWeight.bold,
                                                color: Colors.blue[700],
                                              ),
@@ -2165,7 +2481,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                            child: Text(
                              scanResult!.isSafe ? 'SAFE' : 'UNSAFE',
                              style: GoogleFonts.nunito(
-                               fontSize: 12,
+                               fontSize: 13,
                                fontWeight: FontWeight.bold,
                                color: scanResult!.isSafe ? Colors.green[700] : Colors.red[700],
                              ),
@@ -2177,7 +2493,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                      Text(
                        'Brand: ${scanResult!.brand}',
                        style: GoogleFonts.nunito(
-                         fontSize: 14,
+                         fontSize: 15,
                          color: Colors.grey[600],
                        ),
                      ),
@@ -2186,17 +2502,29 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                        Text(
                          'Analysis Method: OCR Text Recognition',
                          style: GoogleFonts.nunito(
-                           fontSize: 12,
+                           fontSize: 13,
                            color: Colors.blue[600],
                            fontStyle: FontStyle.italic,
                          ),
                        ),
+                       if (_photoSavedBarcode != null) ...[
+                         const SizedBox(height: 4),
+                         Text(
+                           'Saved to local database for barcode $_photoSavedBarcode'
+                           '${_photoSavedProductName != null ? ' (${_photoSavedProductName!})' : ''}. '
+                           'The next barcode scan will show these ingredients.',
+                           style: GoogleFonts.nunito(
+                             fontSize: 13,
+                             color: const Color(0xFF2A4C4A),
+                           ),
+                         ),
+                       ],
                      ] else ...[
                        const SizedBox(height: 8),
                        Text(
                          'Data Source: ${scanResult!.dataSource}',
                          style: GoogleFonts.nunito(
-                           fontSize: 12,
+                           fontSize: 13,
                            color: Colors.grey[600],
                          ),
                        ),
@@ -2205,7 +2533,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                      Text(
                        'Product Not Found',
                        style: GoogleFonts.nunito(
-                         fontSize: 20,
+                         fontSize: 21,
                          fontWeight: FontWeight.bold,
                          color: const Color(0xFF2A4C4A),
                        ),
@@ -2214,6 +2542,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                      Text(
                        'This barcode is not in our database',
                        style: GoogleFonts.nunito(
+                         fontSize: 15,
                          color: Colors.grey[600],
                        ),
                      ),
@@ -2259,9 +2588,11 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                          Icon(LucideIcons.list, color: const Color(0xFF4A9E9C)),
                          const SizedBox(width: 8),
                          Text(
-                           'Ingredients',
+                           AustralianCuratedProductDatabase.products[scanResult!.barcode]?['allergenStatementsOnly'] == true
+                               ? 'Contains'
+                               : 'Ingredients',
                            style: GoogleFonts.nunito(
-                             fontSize: 16,
+                             fontSize: 17,
                              fontWeight: FontWeight.bold,
                              color: const Color(0xFF2A4C4A),
                            ),
@@ -2292,7 +2623,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                              child: Text(
                                ingredient,
                                style: GoogleFonts.nunito(
-                                 fontSize: 12,
+                                 fontSize: 13,
                                  color: isAllergen ? Colors.red[700] : Colors.grey[700],
                                  fontWeight: isAllergen ? FontWeight.bold : FontWeight.normal,
                                ),
@@ -2309,6 +2640,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                            Text(
                              'No ingredients information available',
                              style: GoogleFonts.nunito(
+                               fontSize: 15,
                                color: Colors.grey[600],
                                fontStyle: FontStyle.italic,
                              ),
@@ -2331,7 +2663,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                                      Text(
                                        'Limited Information',
                                        style: GoogleFonts.nunito(
-                                         fontSize: 12,
+                                         fontSize: 13,
                                          fontWeight: FontWeight.bold,
                                          color: Colors.orange[700],
                                        ),
@@ -2342,7 +2674,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                                  Text(
                                    'This product was found in our database but ingredient information is not available. Please check the product label manually for allergen information.',
                                    style: GoogleFonts.nunito(
-                                     fontSize: 11,
+                                     fontSize: 12,
                                      color: Colors.orange[700],
                                    ),
                                  ),
@@ -2370,7 +2702,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                                Text(
                                  'May Contain (from label)',
                                  style: GoogleFonts.nunito(
-                                   fontSize: 14,
+                                   fontSize: 15,
                                    fontWeight: FontWeight.bold,
                                    color: Colors.orange[800],
                                  ),
@@ -2382,7 +2714,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                              Text(
                                'No "may contain" statement found on this product\'s ingredient listing.',
                                style: GoogleFonts.nunito(
-                                 fontSize: 13,
+                                 fontSize: 14,
                                  color: Colors.grey[700],
                                  fontStyle: FontStyle.italic,
                                ),
@@ -2394,7 +2726,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                                  child: Text(
                                    '• $item',
                                    style: GoogleFonts.nunito(
-                                     fontSize: 13,
+                                     fontSize: 14,
                                      color: Colors.orange[900],
                                    ),
                                  ),
@@ -2434,7 +2766,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                            Text(
                              'Raw Extracted Text',
                              style: GoogleFonts.nunito(
-                               fontSize: 16,
+                               fontSize: 17,
                                fontWeight: FontWeight.bold,
                                color: Colors.blue[600],
                              ),
@@ -2452,7 +2784,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                          child: Text(
                            _extractedText,
                            style: GoogleFonts.nunito(
-                             fontSize: 12,
+                             fontSize: 13,
                              color: Colors.grey[700],
                              height: 1.4,
                            ),
@@ -2472,6 +2804,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: () {
+                        _clearPendingBarcode();
                         setState(() {
                           isScanning = true;
                           showResults = false;
@@ -2481,6 +2814,8 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                           _extractedIngredients = [];
                           _photoDetectedAllergens = [];
                           _showPhotoScanOptions = false;
+                          _photoSavedBarcode = null;
+                          _photoSavedProductName = null;
                         });
                       },
                       icon: const Icon(Icons.refresh),

@@ -1,11 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'api_credentials_service.dart';
+import 'australian_curated_product_database.dart';
 import 'australian_food_database_service.dart';
 import 'open_food_facts_service.dart';
 import 'product_database_service.dart';
 import 'usda_fooddata_service.dart';
 import 'edamam_service.dart';
 import 'nutritionix_service.dart';
+import 'user_learned_product_store.dart';
 
 class ProductLookupService {
   static const bool _enableOnlineLookup = true;
@@ -31,11 +33,34 @@ class ProductLookupService {
     }
 
     await ProductDatabaseService.initialize();
+    await UserLearnedProductStore.initialize();
+    final result = await _lookupProductByBarcodeFromSources(barcode);
+    return UserLearnedProductStore.applyToLookupResult(barcode, result);
+  }
 
-    // 1. Local bundled database (fastest)
+  static Future<Map<String, dynamic>> _lookupProductByBarcodeFromSources(
+    String barcode,
+  ) async {
+    // 1. Local bundled / curated database (fastest).
+    // Unverified synthetic 93006050000xx SKUs are deferred so they cannot
+    // shadow a real Open Food Facts product on the same barcode.
+    final curated = AustralianCuratedProductDatabase.products[barcode];
+    if (curated != null &&
+        !ProductDatabaseService.isUnverifiedSyntheticBarcode(barcode)) {
+      if (kDebugMode) {
+        print('ProductLookup: Using curated allergen statements for $barcode');
+      }
+      return _productResult(
+        'Local Database',
+        Map<String, dynamic>.from(curated),
+      );
+    }
+
+    Map<String, dynamic>? localResult;
     if (_enableLocalFallback) {
-      final localResult = await ProductDatabaseService.getProductByBarcode(barcode);
-      if (localResult != null) {
+      localResult = await ProductDatabaseService.getProductByBarcode(barcode);
+      if (localResult != null &&
+          !ProductDatabaseService.isUnverifiedSyntheticBarcode(barcode)) {
         if (kDebugMode) {
           print('ProductLookup: Found product in local database');
         }
@@ -44,6 +69,9 @@ class ProductLookupService {
     }
 
     if (!_enableOnlineLookup) {
+      if (_enableLocalFallback && localResult != null) {
+        return _productResult('Local Database', localResult);
+      }
       return _notFound();
     }
 
@@ -109,6 +137,13 @@ class ProductLookupService {
       }
     }
 
+    if (_enableLocalFallback && localResult != null) {
+      if (kDebugMode) {
+        print('ProductLookup: Falling back to local synthetic placeholder');
+      }
+      return _productResult('Local Database', localResult);
+    }
+
     if (kDebugMode) {
       print('ProductLookup: Product not found in any data source');
     }
@@ -138,23 +173,30 @@ class ProductLookupService {
     }
 
     final productData = product['product'] as Map<String, dynamic>? ?? {};
-    final ingredients = productData['ingredients'] as List<dynamic>? ?? [];
-    final ingredientStrings = ingredients.map((e) => e.toString()).toList();
+    final rawIngredientStrings = (productData['ingredients'] as List<dynamic>? ?? [])
+        .map((e) => e.toString())
+        .toList();
+    final ingredientStrings =
+        ProductDatabaseService.ingredientsExcludingMayContain(rawIngredientStrings);
+    productData['ingredients'] = ingredientStrings;
 
     // Recompute warnings from label data — cached products may contain stale entries.
     final crossContaminationWarnings =
-        AustralianFoodDatabaseService.detectCrossContaminationWarnings(ingredientStrings);
+        AustralianFoodDatabaseService.detectCrossContaminationWarnings(
+      rawIngredientStrings,
+    );
     final processingFacilityWarnings =
         AustralianFoodDatabaseService.computeProcessingFacilityWarnings(productData);
 
     // Analyze ingredients for allergens
     final detectedAllergens = ProductDatabaseService.analyzeAllergens(
-      ingredientStrings,
+      rawIngredientStrings,
       userAllergies,
     );
     
     // Get processing facility warnings from ProductDatabaseService (but not cross-contamination)
-    final parsedIngredients = ProductDatabaseService.parseIngredientsWithWarnings(ingredientStrings);
+    final parsedIngredients =
+        ProductDatabaseService.parseIngredientsWithWarnings(rawIngredientStrings);
     final productDbProcessingFacility = parsedIngredients['processingFacilityWarnings'] as List<String>;
 
     // Combine cross-contamination warnings from all sources
@@ -184,7 +226,7 @@ class ProductLookupService {
     }
 
     productData['mayContainItems'] = ProductDatabaseService.collectMayContainItems(
-      ingredients: ingredientStrings,
+      ingredients: rawIngredientStrings,
       product: productData,
     );
 

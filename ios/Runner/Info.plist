@@ -46,6 +46,8 @@
 	<string>This app needs camera access to scan barcodes and capture label images for allergy checking.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs photo library access so you can select label images to scan for allergens.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>The camera capture screen may request microphone access. This app only takes photos of ingredient labels and does not record audio.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app needs location access to share your location with emergency services and contacts during emergency situations.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
