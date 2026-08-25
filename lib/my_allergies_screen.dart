@@ -435,8 +435,8 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
           style: baseStyle.copyWith(
             foreground: Paint()
               ..style = PaintingStyle.stroke
-              ..strokeWidth = 2
-              ..color = Colors.black,
+              ..strokeWidth = 3.2
+              ..color = Color.lerp(fillColor, Colors.black, 0.35)!,
           ),
         ),
         Text(

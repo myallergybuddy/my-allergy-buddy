@@ -152,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     final aspectRatio = cellWidth / cellHeight;
 
                     return Align(
-                      alignment: Alignment.topCenter,
+                      alignment: Alignment.center,
                       child: SizedBox(
                         width: gridWidth,
                         height: gridHeight,

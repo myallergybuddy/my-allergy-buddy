@@ -921,13 +921,11 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                                               color: severityColor.withValues(alpha: 0.1),
                                               borderRadius: BorderRadius.circular(8),
                                             ),
-                                            child: Text(
+                                            child: _outlinedSeverityText(
                                               allergy['severity'],
-                                              style: GoogleFonts.nunito(
-                                                color: severityColor,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                              fillColor: severityColor,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
                                           if (allergy['category'] != null) ...[
@@ -1589,6 +1587,35 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
           return null;
         },
       ),
+    );
+  }
+
+  Widget _outlinedSeverityText(
+    String text, {
+    required Color fillColor,
+    required double fontSize,
+    required FontWeight fontWeight,
+  }) {
+    final baseStyle = GoogleFonts.nunito(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+    );
+    return Stack(
+      children: [
+        Text(
+          text,
+          style: baseStyle.copyWith(
+            foreground: Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 3.2
+              ..color = Color.lerp(fillColor, Colors.black, 0.35)!,
+          ),
+        ),
+        Text(
+          text,
+          style: baseStyle.copyWith(color: fillColor),
+        ),
+      ],
     );
   }
 } 
