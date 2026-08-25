@@ -731,30 +731,27 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
                                                 color: Colors.black,
                                                 fontSize: 16,
                                               ),
-                                              items: ['Low', 'Medium', 'High'].map((severity) {
-                                                Color severityColor;
-                                                switch (severity) {
-                                                  case 'Low':
-                                                        severityColor = Colors.yellow[700]!;
-                                                    break;
-                                                  case 'Medium':
-                                                    severityColor = Colors.orange;
-                                                    break;
-                                                  case 'High':
-                                                    severityColor = Colors.red;
-                                                    break;
-                                                  default:
-                                                    severityColor = Colors.grey;
-                                                }
-                                                return DropdownMenuItem(
-                                                  value: severity,
-                                                  child: Text(
-                                                    severity,
-                                                    style: GoogleFonts.nunito(
-                                                      color: severityColor,
+                                              selectedItemBuilder: (context) {
+                                                return ['Low', 'Medium', 'High'].map((severity) {
+                                                  return Align(
+                                                    alignment: Alignment.centerLeft,
+                                                    child: _outlinedSeverityText(
+                                                      severity,
+                                                      fillColor: _severityColor(severity),
                                                       fontSize: 16,
                                                       fontWeight: FontWeight.w500,
                                                     ),
+                                                  );
+                                                }).toList();
+                                              },
+                                              items: ['Low', 'Medium', 'High'].map((severity) {
+                                                return DropdownMenuItem(
+                                                  value: severity,
+                                                  child: _outlinedSeverityText(
+                                                    severity,
+                                                    fillColor: _severityColor(severity),
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w500,
                                                   ),
                                                 );
                                               }).toList(),
@@ -1003,6 +1000,48 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Color _severityColor(String severity) {
+    switch (severity) {
+      case 'Low':
+        return Colors.yellow[700]!;
+      case 'Medium':
+        return Colors.orange;
+      case 'High':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Widget _outlinedSeverityText(
+    String text, {
+    required Color fillColor,
+    required double fontSize,
+    required FontWeight fontWeight,
+  }) {
+    final baseStyle = GoogleFonts.nunito(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+    );
+    return Stack(
+      children: [
+        Text(
+          text,
+          style: baseStyle.copyWith(
+            foreground: Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 2
+              ..color = Colors.black,
+          ),
+        ),
+        Text(
+          text,
+          style: baseStyle.copyWith(color: fillColor),
+        ),
+      ],
     );
   }
 

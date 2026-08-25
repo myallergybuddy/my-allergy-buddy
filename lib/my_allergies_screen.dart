@@ -180,13 +180,11 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
                                         color: severityColor.withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
-                                      child: Text(
+                                      child: _outlinedSeverityText(
                                         allergy['severity'],
-                                        style: GoogleFonts.nunito(
-                                          color: severityColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
+                                        fillColor: severityColor,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     Container(
@@ -417,6 +415,35 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _outlinedSeverityText(
+    String text, {
+    required Color fillColor,
+    required double fontSize,
+    required FontWeight fontWeight,
+  }) {
+    final baseStyle = GoogleFonts.nunito(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+    );
+    return Stack(
+      children: [
+        Text(
+          text,
+          style: baseStyle.copyWith(
+            foreground: Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 2
+              ..color = Colors.black,
+          ),
+        ),
+        Text(
+          text,
+          style: baseStyle.copyWith(color: fillColor),
+        ),
+      ],
     );
   }
 
