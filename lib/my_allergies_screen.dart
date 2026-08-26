@@ -346,7 +346,6 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
   List<Widget> _buildGroupedAllergyList() {
     const order = ['High', 'Medium', 'Low'];
     final widgets = <Widget>[];
-    var isFirstGroup = true;
 
     for (final severity in order) {
       final items = _allergies
@@ -354,36 +353,10 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
           .toList();
       if (items.isEmpty) continue;
 
-      widgets.add(_buildSeverityGroupHeader(severity, isFirst: isFirstGroup));
       widgets.addAll(items.map(_buildAllergyCard));
-      isFirstGroup = false;
     }
 
     return widgets;
-  }
-
-  Widget _buildSeverityGroupHeader(String severity, {required bool isFirst}) {
-    final color = _severityColor(severity);
-    return Padding(
-      padding: EdgeInsets.only(top: isFirst ? 0 : 12, bottom: 8),
-      child: Row(
-        children: [
-          _outlinedSeverityText(
-            severity,
-            fillColor: color,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Divider(
-              color: color.withValues(alpha: 0.35),
-              thickness: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildAllergyCard(Map<String, dynamic> allergy) {
