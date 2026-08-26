@@ -336,6 +336,15 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
     super.dispose();
   }
 
+  /// Gluten-containing items shown together for a celiac / coeliac search.
+  static const List<String> _celiacGlutenAllergens = [
+    'Gluten',
+    'Wheat',
+    'Barley',
+    'Rye',
+    'Oats',
+  ];
+
   void _onSearchChanged() {
     final query = _searchController.text.toLowerCase().trim();
     setState(() {
@@ -348,8 +357,46 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
     });
   }
 
+  bool _isCeliacSearch(String query) {
+    const terms = ['celiac', 'coeliac'];
+    if (terms.any((term) => query.contains(term))) {
+      return true;
+    }
+    // Match from 4 characters so "cel" still finds Celery, not this group.
+    return terms.any((term) => term.startsWith(query) && query.length >= 4);
+  }
+
+  Map<String, List<Map<String, String>>> _celiacGlutenGroup(
+    Map<String, List<Map<String, String>>> categories,
+  ) {
+    final byName = <String, Map<String, String>>{};
+    for (final allergens in categories.values) {
+      for (final allergen in allergens) {
+        final name = allergen['name'];
+        if (name != null) {
+          byName[name] = allergen;
+        }
+      }
+    }
+
+    final grouped = <Map<String, String>>[
+      for (final name in _celiacGlutenAllergens)
+        if (byName.containsKey(name)) byName[name]!,
+    ];
+
+    if (grouped.isEmpty) {
+      return {};
+    }
+    return {'Celiac / Gluten': grouped};
+  }
+
   Map<String, List<Map<String, String>>> _filterCategories(String query) {
     final categories = widget.isPro ? proAllergenCategories : basicAllergenCategories;
+
+    if (widget.isPro && _isCeliacSearch(query)) {
+      return _celiacGlutenGroup(categories);
+    }
+
     final filtered = <String, List<Map<String, String>>>{};
     
     for (final entry in categories.entries) {
@@ -558,7 +605,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search allergens...',
+                    hintText: 'Search allergens (e.g. celiac)...',
                     hintStyle: GoogleFonts.nunito(
                       color: Colors.grey[600],
                       fontSize: 16,
