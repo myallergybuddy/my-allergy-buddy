@@ -856,7 +856,9 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                           duration: const Duration(milliseconds: 200),
                           curve: Curves.easeInOut,
                           child: Column(
-                            children: _allergies.map((allergy) {
+                            children: _allergiesBySeverity.asMap().entries.map((entry) {
+                              final allergy = entry.value;
+                              final index = entry.key;
                               Color severityColor;
                               switch (allergy['severity']) {
                                 case 'High':
@@ -878,7 +880,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                                   color: const Color(0xFFE0F2F1),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border(
-                                    bottom: _allergies.indexOf(allergy) < _allergies.length - 1
+                                    bottom: index < _allergiesBySeverity.length - 1
                                         ? BorderSide(color: Colors.grey.withValues(alpha: 0.1), width: 0.5)
                                         : BorderSide.none,
                                   ),
@@ -1588,6 +1590,25 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
         },
       ),
     );
+  }
+
+  List<Map<String, dynamic>> get _allergiesBySeverity {
+    const order = ['High', 'Medium', 'Low'];
+    return [
+      for (final severity in order)
+        ..._allergies.where((allergy) => _normalizedSeverity(allergy) == severity),
+    ];
+  }
+
+  String _normalizedSeverity(Map<String, dynamic> allergy) {
+    switch (allergy['severity']) {
+      case 'High':
+      case 'Medium':
+      case 'Low':
+        return allergy['severity'] as String;
+      default:
+        return 'Medium';
+    }
   }
 
   Widget _outlinedSeverityText(
