@@ -1596,7 +1596,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     required double fontSize,
     required FontWeight fontWeight,
   }) {
-    final baseStyle = GoogleFonts.nunito(
+    final baseStyle = GoogleFonts.nunitoSans(
       fontSize: fontSize,
       fontWeight: fontWeight,
     );

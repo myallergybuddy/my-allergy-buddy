@@ -119,109 +119,10 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
               ),
               const SizedBox(height: 16),
               
-              // Allergies List
+              // Allergies List grouped by severity (High first)
               Expanded(
-                child: ListView.builder(
-                  itemCount: _allergies.length,
-                  itemBuilder: (context, index) {
-                    final allergy = _allergies[index];
-                    Color severityColor;
-                    switch (allergy['severity']) {
-                      case 'High':
-                        severityColor = Colors.red;
-                        break;
-                      case 'Medium':
-                        severityColor = Colors.orange;
-                        break;
-                      case 'Low':
-                        severityColor = Colors.yellow[700]!;
-                        break;
-                      default:
-                        severityColor = Colors.grey;
-                    }
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE0F2F1),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 6,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            title: Text(
-                              allergy['name'],
-                              style: GoogleFonts.nunito(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 3),
-                                Wrap(
-                                  spacing: 6,
-                                  runSpacing: 3,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: severityColor.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: _outlinedSeverityText(
-                                        allergy['severity'],
-                                        fillColor: severityColor,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF4A9E9C).withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        allergy['category'],
-                                        style: GoogleFonts.nunito(
-                                          color: const Color(0xFF4A9E9C),
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 3),
-                                if (allergy['notes'] != null && allergy['notes'].isNotEmpty) ...[
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    allergy['notes'],
-                                    style: GoogleFonts.nunito(
-                                      color: Colors.black87,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                child: ListView(
+                  children: _buildGroupedAllergyList(),
                 ),
               ),
               
@@ -418,13 +319,168 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
     );
   }
 
+  String _normalizedSeverity(Map<String, dynamic> allergy) {
+    switch (allergy['severity']) {
+      case 'High':
+      case 'Medium':
+      case 'Low':
+        return allergy['severity'] as String;
+      default:
+        return 'Medium';
+    }
+  }
+
+  Color _severityColor(String severity) {
+    switch (severity) {
+      case 'High':
+        return Colors.red;
+      case 'Medium':
+        return Colors.orange;
+      case 'Low':
+        return Colors.yellow[700]!;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  List<Widget> _buildGroupedAllergyList() {
+    const order = ['High', 'Medium', 'Low'];
+    final widgets = <Widget>[];
+    var isFirstGroup = true;
+
+    for (final severity in order) {
+      final items = _allergies
+          .where((allergy) => _normalizedSeverity(allergy) == severity)
+          .toList();
+      if (items.isEmpty) continue;
+
+      widgets.add(_buildSeverityGroupHeader(severity, isFirst: isFirstGroup));
+      widgets.addAll(items.map(_buildAllergyCard));
+      isFirstGroup = false;
+    }
+
+    return widgets;
+  }
+
+  Widget _buildSeverityGroupHeader(String severity, {required bool isFirst}) {
+    final color = _severityColor(severity);
+    return Padding(
+      padding: EdgeInsets.only(top: isFirst ? 0 : 12, bottom: 8),
+      child: Row(
+        children: [
+          _outlinedSeverityText(
+            severity,
+            fillColor: color,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Divider(
+              color: color.withValues(alpha: 0.35),
+              thickness: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAllergyCard(Map<String, dynamic> allergy) {
+    final severity = _normalizedSeverity(allergy);
+    final severityColor = _severityColor(severity);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE0F2F1),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 6,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            title: Text(
+              allergy['name'],
+              style: GoogleFonts.nunito(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 3),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 3,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: severityColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: _outlinedSeverityText(
+                        allergy['severity'] ?? severity,
+                        fillColor: severityColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (allergy['category'] != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4A9E9C).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          allergy['category'],
+                          style: GoogleFonts.nunito(
+                            color: const Color(0xFF4A9E9C),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                if (allergy['notes'] != null && allergy['notes'].isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    allergy['notes'],
+                    style: GoogleFonts.nunito(
+                      color: Colors.black87,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _outlinedSeverityText(
     String text, {
     required Color fillColor,
     required double fontSize,
     required FontWeight fontWeight,
   }) {
-    final baseStyle = GoogleFonts.nunito(
+    final baseStyle = GoogleFonts.nunitoSans(
       fontSize: fontSize,
       fontWeight: fontWeight,
     );

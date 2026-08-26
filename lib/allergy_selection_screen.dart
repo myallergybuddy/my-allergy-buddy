@@ -1069,7 +1069,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
     required double fontSize,
     required FontWeight fontWeight,
   }) {
-    final baseStyle = GoogleFonts.nunito(
+    final baseStyle = GoogleFonts.nunitoSans(
       fontSize: fontSize,
       fontWeight: fontWeight,
     );
