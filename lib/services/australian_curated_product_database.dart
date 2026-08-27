@@ -1,3 +1,5 @@
+import 'barcode_utils.dart';
+
 /// Curated Australian / common supermarket products used as the offline
 /// source of truth for barcode lookup.
 ///
@@ -6,6 +8,15 @@
 /// aligned set for offline tests — do not invent additional fake barcodes.
 class AustralianCuratedProductDatabase {
   AustralianCuratedProductDatabase._();
+
+  /// Lookup a curated product, including UPC/EAN/GTIN variants.
+  static Map<String, dynamic>? lookup(String barcode) {
+    for (final candidate in BarcodeUtils.lookupCandidates(barcode)) {
+      final entry = products[candidate];
+      if (entry != null) return Map<String, dynamic>.from(entry);
+    }
+    return null;
+  }
 
   /// Mutable map so test helpers can add entries at runtime.
   static final Map<String, Map<String, dynamic>> products = {

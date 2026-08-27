@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'api_credentials_service.dart';
+import 'barcode_utils.dart';
 
 class NutritionixService {
   static const String _baseUrl = 'https://trackapi.nutritionix.com/v2';
@@ -138,35 +139,37 @@ class NutritionixService {
     }
 
     try {
-      final response = await http.get(
-        Uri.parse('$_baseUrl/search/item?upc=$barcode'),
-        headers: {
-          'Content-Type': 'application/json',
-          'x-app-id': _appId,
-          'x-app-key': _appKey,
-          'x-remote-user-id': '0',
-        },
-      ).timeout(const Duration(seconds: 30));
+      for (final candidate in BarcodeUtils.lookupCandidates(barcode)) {
+        final response = await http.get(
+          Uri.parse('$_baseUrl/search/item?upc=$candidate'),
+          headers: {
+            'Content-Type': 'application/json',
+            'x-app-id': _appId,
+            'x-app-key': _appKey,
+            'x-remote-user-id': '0',
+          },
+        ).timeout(const Duration(seconds: 30));
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (kDebugMode) {
-          print('NutritionixService: Found product by barcode: ${data['foods']?[0]?['food_name']}');
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          if (kDebugMode) {
+            print('NutritionixService: Found product by barcode: ${data['foods']?[0]?['food_name']}');
+          }
+          return {
+            'success': true,
+            'data': data,
+          };
         }
-        return {
-          'success': true,
-          'data': data,
-        };
-      } else {
-        if (kDebugMode) {
-          print('NutritionixService: Error response ${response.statusCode}: ${response.body}');
-        }
-        return {
-          'success': false,
-          'error': 'HTTP ${response.statusCode}',
-          'message': response.body,
-        };
       }
+
+      if (kDebugMode) {
+        print('NutritionixService: No UPC match for $barcode');
+      }
+      return {
+        'success': false,
+        'error': 'No food found',
+        'message': 'No food found with barcode: $barcode',
+      };
     } catch (e) {
       if (kDebugMode) {
         print('NutritionixService: Error searching by barcode: $e');
@@ -202,13 +205,19 @@ class NutritionixService {
         }
       }
 
-      // Extract ingredients from food name and tags
       final foodName = food['food_name']?.toString() ?? '';
       final brandName = food['brand_name']?.toString() ?? '';
+      final ingredientStatement = food['nf_ingredient_statement']?.toString() ?? '';
       final tags = food['tags']?.toString() ?? '';
-      final servingUnit = food['serving_unit']?.toString() ?? '';
-      
-      if (foodName.isNotEmpty) {
+
+      if (ingredientStatement.isNotEmpty) {
+        ingredients.addAll(
+          ingredientStatement
+              .split(RegExp(r'[,;•\n\r]'))
+              .map((item) => item.trim())
+              .where((item) => item.length > 1),
+        );
+      } else if (foodName.isNotEmpty) {
         ingredients.add(foodName);
       }
       if (brandName.isNotEmpty) {
@@ -216,9 +225,6 @@ class NutritionixService {
       }
       if (tags.isNotEmpty) {
         ingredients.add(tags);
-      }
-      if (servingUnit.isNotEmpty) {
-        ingredients.add(servingUnit);
       }
     }
 
@@ -228,10 +234,14 @@ class NutritionixService {
       'eggs': ['egg', 'eggs', 'albumin', 'ovalbumin'],
       'fish': ['fish', 'salmon', 'tuna', 'cod', 'anchovy'],
       'shellfish': ['shellfish', 'shrimp', 'crab', 'lobster', 'oyster'],
-      'tree nuts': ['almond', 'walnut', 'pecan', 'cashew', 'pistachio', 'hazelnut'],
+      'tree nuts': ['almond', 'walnut', 'pecan', 'cashew', 'pistachio', 'hazelnut', 'macadamia'],
       'peanuts': ['peanut', 'peanuts'],
-      'wheat': ['wheat', 'gluten', 'flour'],
+      'wheat': ['wheat', 'gluten'],
       'soybeans': ['soy', 'soybean', 'soya'],
+      'sesame': ['sesame', 'tahini'],
+      'sulfites': ['sulfite', 'sulphite', 'sulfur dioxide', 'sulphur dioxide'],
+      'mustard': ['mustard'],
+      'lupin': ['lupin', 'lupine'],
     };
 
     final allIngredients = ingredients.join(' ').toLowerCase();

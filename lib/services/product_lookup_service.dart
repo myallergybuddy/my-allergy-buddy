@@ -7,6 +7,7 @@ import 'product_database_service.dart';
 import 'usda_fooddata_service.dart';
 import 'edamam_service.dart';
 import 'nutritionix_service.dart';
+import 'spoonacular_service.dart';
 import 'user_learned_product_store.dart';
 
 class ProductLookupService {
@@ -44,7 +45,7 @@ class ProductLookupService {
     // 1. Local bundled / curated database (fastest).
     // Unverified synthetic 93006050000xx SKUs are deferred so they cannot
     // shadow a real Open Food Facts product on the same barcode.
-    final curated = AustralianCuratedProductDatabase.products[barcode];
+    final curated = AustralianCuratedProductDatabase.lookup(barcode);
     if (curated != null &&
         !ProductDatabaseService.isUnverifiedSyntheticBarcode(barcode)) {
       if (kDebugMode) {
@@ -75,7 +76,7 @@ class ProductLookupService {
       return _notFound();
     }
 
-    // 2. Open Food Facts (premium, manual, cache, API v2/v0)
+    // 2. Open Food Facts (premium, manual, cache, API v3/v2/v0)
     final openFoodFactsResult = await OpenFoodFactsService.getProduct(barcode);
     if (openFoodFactsResult != null) {
       if (kDebugMode) {
@@ -135,6 +136,15 @@ class ProductLookupService {
         }
         return nutritionixResult;
       }
+    }
+
+    // 7. Spoonacular (requires configured API key)
+    final spoonacularResult = await searchSpoonacularByBarcode(barcode);
+    if (spoonacularResult['success'] == true) {
+      if (kDebugMode) {
+        print('ProductLookup: Found product in Spoonacular');
+      }
+      return spoonacularResult;
     }
 
     if (_enableLocalFallback && localResult != null) {
@@ -412,6 +422,46 @@ class ProductLookupService {
         'success': false,
         'message': 'Error searching Nutritionix: $e',
         'dataSource': 'Nutritionix',
+      };
+    }
+  }
+
+  /// Search Spoonacular by barcode
+  static Future<Map<String, dynamic>> searchSpoonacularByBarcode(String barcode) async {
+    if (kDebugMode) {
+      print('ProductLookup: Searching Spoonacular for barcode: $barcode');
+    }
+
+    try {
+      final product = await SpoonacularService.getProductByUPC(barcode);
+      if (product == null) {
+        return {
+          'success': false,
+          'message': 'Product not found in Spoonacular',
+          'dataSource': 'Spoonacular',
+        };
+      }
+
+      return _productResult('Spoonacular', {
+        'barcode': barcode,
+        'name': product['name'] ?? 'Unknown Product',
+        'brand': product['brand'] ?? 'Unknown Brand',
+        'ingredients': product['ingredients'] ?? [],
+        'allergens': product['allergens'] ?? [],
+        'image': product['image'],
+        'nutritionInfo': product['nutrition'] ?? {},
+        'dataSource': 'Spoonacular',
+        'data_source': 'Spoonacular',
+        'isAustralianProduct': false,
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        print('ProductLookup: Error searching Spoonacular: $e');
+      }
+      return {
+        'success': false,
+        'message': 'Error searching Spoonacular: $e',
+        'dataSource': 'Spoonacular',
       };
     }
   }

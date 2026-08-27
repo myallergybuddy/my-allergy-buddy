@@ -2,23 +2,34 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'api_credentials_service.dart';
+import 'barcode_utils.dart';
 
 class SpoonacularService {
   // Spoonacular API configuration
   static const String baseUrl = 'https://api.spoonacular.com/food';
   static String? _apiKey;
   
-  /// Initialize the API key from SharedPreferences
+  /// Initialize the API key from SharedPreferences / secure storage.
   static Future<void> initializeApiKey() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      _apiKey = prefs.getString('spoonacular_api_key');
+      await ApiCredentialsService.initialize();
+      _apiKey = ApiCredentialsService.spoonacularApiKey;
+      if (_apiKey == null || _apiKey!.isEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        _apiKey = prefs.getString('spoonacular_api_key');
+      }
     } catch (e) {
       if (kDebugMode) {
         print('Spoonacular: Error loading API key: $e');
       }
     }
   }
+
+  static bool get isConfigured =>
+      _apiKey != null &&
+      _apiKey!.isNotEmpty &&
+      !_apiKey!.startsWith('YOUR_');
   
   /// Get the current API key
   static String? get apiKey => _apiKey;
@@ -33,54 +44,54 @@ class SpoonacularService {
       print('Spoonacular: Looking up product with UPC: $upc');
     }
 
-    // Check cache first
-    if (_cache.containsKey(upc)) {
+    if (_apiKey == null) {
+      await initializeApiKey();
+    }
+    if (!isConfigured) {
       if (kDebugMode) {
-        print('Spoonacular: Found product in cache: $upc');
+        print('Spoonacular: API key not configured');
       }
-      return _cache[upc];
+      return null;
+    }
+
+    for (final candidate in BarcodeUtils.lookupCandidates(upc)) {
+      if (_cache.containsKey(candidate)) {
+        if (kDebugMode) {
+          print('Spoonacular: Found product in cache: $candidate');
+        }
+        return _cache[candidate];
+      }
     }
 
     try {
-      if (apiKey == null) {
-        if (kDebugMode) {
-          print('Spoonacular: API key not configured');
-        }
-        return null;
-      }
-      
-      final response = await http.get(
-        Uri.parse('$baseUrl/products/upc/$upc?apiKey=$apiKey'),
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'MyAllergyBuddy/1.0 (Flutter App)',
-        },
-      ).timeout(const Duration(seconds: 10));
+      for (final candidate in BarcodeUtils.lookupCandidates(upc)) {
+        final response = await http.get(
+          Uri.parse('$baseUrl/products/upc/$candidate?apiKey=$apiKey'),
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'MyAllergyBuddy/1.0 (Flutter App)',
+          },
+        ).timeout(const Duration(seconds: 10));
 
-      if (response.statusCode == 200) {
+        if (response.statusCode != 200) continue;
+
         final data = json.decode(response.body);
-        
-        if (data['id'] != null) {
-          final product = _parseProductData(data);
-          _addToCache(upc, product);
-          
-          if (kDebugMode) {
-            print('Spoonacular: Successfully retrieved product: ${product['name']}');
-          }
-          
-          return product;
-        } else {
-          if (kDebugMode) {
-            print('Spoonacular: Product not found in database');
-          }
-          return null;
-        }
-      } else {
+        if (data['id'] == null) continue;
+
+        final product = _parseProductData(Map<String, dynamic>.from(data as Map));
+        _addToCache(upc, product);
+        _addToCache(candidate, product);
+
         if (kDebugMode) {
-          print('Spoonacular: HTTP error ${response.statusCode}');
+          print('Spoonacular: Successfully retrieved product: ${product['name']}');
         }
-        return null;
+        return product;
       }
+
+      if (kDebugMode) {
+        print('Spoonacular: Product not found in database');
+      }
+      return null;
     } catch (e) {
       if (kDebugMode) {
         print('Spoonacular: Error retrieving product: $e');
@@ -298,6 +309,10 @@ class SpoonacularService {
       }
     }
     
+    if (data['ingredientList'] != null && data['ingredientList'] is String) {
+      ingredients.addAll(_parseIngredientText(data['ingredientList'] as String));
+    }
+
     return ingredients.toSet().toList(); // Remove duplicates
   }
 
@@ -347,6 +362,10 @@ class SpoonacularService {
       allergens.addAll(_extractAllergensFromText(ingredientText));
     }
     
+    if (data['ingredientList'] != null && data['ingredientList'] is String) {
+      allergens.addAll(_extractAllergensFromText(data['ingredientList'] as String));
+    }
+
     return allergens.toSet().toList(); // Remove duplicates
   }
 

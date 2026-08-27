@@ -1,5 +1,6 @@
 
 import 'package:flutter/foundation.dart';
+import 'barcode_utils.dart';
 import 'open_food_facts_service.dart';
 
 class ProductDatabaseService {
@@ -981,15 +982,11 @@ class ProductDatabaseService {
   static Future<Map<String, dynamic>?> getProductByBarcode(String barcode) async {
     await initialize();
 
-    // Simulate API delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    // Check if product exists in our database
-    if (_productDatabase.containsKey(barcode)) {
-      return _productDatabase[barcode];
+    for (final candidate in BarcodeUtils.lookupCandidates(barcode)) {
+      final product = _productDatabase[candidate];
+      if (product != null) return product;
     }
-    
-    // If not found, return null
+
     return null;
   }
 

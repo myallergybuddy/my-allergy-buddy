@@ -2,15 +2,24 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'australian_curated_product_database.dart';
+import 'barcode_utils.dart';
 import 'premium_product_service.dart';
 
 class OpenFoodFactsService {
+  static const String baseUrlV3 = 'https://world.openfoodfacts.org/api/v3/product/';
   static const String baseUrlV2 = 'https://world.openfoodfacts.org/api/v2/product/';
   static const String baseUrlV0 = 'https://world.openfoodfacts.org/api/v0/product/';
+  static const String searchUrlV2 = 'https://world.openfoodfacts.org/api/v2/search';
   static const String searchUrl = 'https://world.openfoodfacts.org/cgi/search.pl';
   static const Map<String, String> _headers = {
     'User-Agent': 'MyAllergyBuddy/1.0 (contact: myallergybuddy@gmail.com)',
     'Accept': 'application/json',
+  };
+  static const Map<String, String> _productQuery = {
+    'lc': 'en',
+    'tags_lc': 'en',
+    'cc': 'au',
+    'product_type': 'all',
   };
   
   // Cache for recently fetched products
@@ -117,56 +126,107 @@ class OpenFoodFactsService {
   }
 
   static Future<Map<String, dynamic>?> _fetchSingleBarcodeFromApi(String barcode) async {
-    for (final baseUrl in [baseUrlV2, baseUrlV0]) {
+    final endpoints = <Map<String, String>>[
+      {
+        'label': 'v3',
+        'url': Uri.parse('$baseUrlV3$barcode').replace(queryParameters: _productQuery).toString(),
+      },
+      {
+        'label': 'v2',
+        'url': Uri.parse('$baseUrlV2$barcode').replace(queryParameters: _productQuery).toString(),
+      },
+      {
+        'label': 'v0',
+        'url': '$baseUrlV0$barcode.json',
+      },
+    ];
+
+    for (final endpoint in endpoints) {
       try {
         final response = await http.get(
-          Uri.parse('$baseUrl$barcode'),
+          Uri.parse(endpoint['url']!),
           headers: _headers,
         ).timeout(const Duration(seconds: 10));
 
         if (response.statusCode != 200) continue;
 
         final data = json.decode(response.body);
-        final status = data['status'];
-        final productData = data['product'];
+        if (!_isSuccessfulProductResponse(data)) continue;
 
-        if ((status == 1 || status == 'success') && productData != null) {
-          final product = _parseProductData(
-            Map<String, dynamic>.from(productData as Map),
-          );
-          if (kDebugMode) {
-            print('OpenFoodFacts: Fetched via ${baseUrl.contains('v2') ? 'v2' : 'v0'}: ${product['name']}');
-          }
-          return product;
+        final productData = data['product'];
+        if (productData is! Map) continue;
+
+        final product = _parseProductData(Map<String, dynamic>.from(productData));
+        if (kDebugMode) {
+          print('OpenFoodFacts: Fetched via ${endpoint['label']}: ${product['name']}');
         }
+        return product;
       } catch (e) {
         if (kDebugMode) {
-          print('OpenFoodFacts: API fetch failed for $baseUrl: $e');
+          print('OpenFoodFacts: API fetch failed for ${endpoint['label']}: $e');
         }
       }
     }
     return null;
   }
 
+  static bool _isSuccessfulProductResponse(dynamic data) {
+    if (data is! Map) return false;
+    final status = data['status'];
+    final resultId = data['result'] is Map ? data['result']['id']?.toString() : null;
+    final product = data['product'];
+    if (product is! Map || product.isEmpty) return false;
+    return status == 1 ||
+        status == 'success' ||
+        status == 'success_with_warnings' ||
+        resultId == 'product_found';
+  }
+
   /// Manual database entries for offline / missing OFF data.
   static Map<String, Map<String, dynamic>> get manualProductDatabase =>
       Map.unmodifiable(_manualProductDatabase);
 
-  static List<String> _barcodeLookupCandidates(String barcode) {
-    final candidates = <String>{barcode};
-    if (barcode == '931007201332') {
-      candidates.add('9310072013312');
-    }
-    if (barcode == '9310072013312') {
-      candidates.add('931007201332');
-    }
-    if (barcode == '9310072037496') {
-      candidates.add('9310072037493');
-    }
-    if (barcode == '9310072037493') {
-      candidates.add('9310072037496');
-    }
-    return candidates.toList();
+  static List<String> _barcodeLookupCandidates(String barcode) =>
+      BarcodeUtils.lookupCandidates(barcode);
+
+  /// Map a user allergen name to an Open Food Facts taxonomy tag.
+  static String? allergenToOffTag(String allergen) {
+    const map = {
+      'peanuts': 'en:peanuts',
+      'peanut': 'en:peanuts',
+      'tree nuts': 'en:nuts',
+      'tree nut': 'en:nuts',
+      'nuts': 'en:nuts',
+      'milk': 'en:milk',
+      'eggs': 'en:eggs',
+      'egg': 'en:eggs',
+      'soy': 'en:soybeans',
+      'soya': 'en:soybeans',
+      'soybeans': 'en:soybeans',
+      'wheat': 'en:wheat',
+      'gluten': 'en:gluten',
+      'fish': 'en:fish',
+      'shellfish': 'en:crustaceans',
+      'crustaceans': 'en:crustaceans',
+      'sesame': 'en:sesame-seeds',
+      'sulfites': 'en:sulphur-dioxide-and-sulphites',
+      'sulphites': 'en:sulphur-dioxide-and-sulphites',
+      'mustard': 'en:mustard',
+      'celery': 'en:celery',
+      'lupin': 'en:lupin',
+      'molluscs': 'en:molluscs',
+    };
+    return map[allergen.toLowerCase().trim()];
+  }
+
+  /// Turn a relative or protocol-relative OFF image path into an absolute URL.
+  static String? absoluteImageUrl(dynamic value) {
+    final url = value?.toString().trim();
+    if (url == null || url.isEmpty) return null;
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    if (url.startsWith('//')) return 'https:$url';
+    if (url.startsWith('/')) return 'https://images.openfoodfacts.org$url';
+    return 'https://images.openfoodfacts.org/$url';
   }
 
   static Map<String, dynamic>? _lookupManualProduct(String barcode) {
@@ -270,27 +330,34 @@ class OpenFoodFactsService {
     // Extract ingredients using comprehensive approach
     List<String> ingredients = _extractAllPossibleIngredients(productData);
 
-    // Extract allergens
-    List<String> allergens = [];
-    if (productData['allergens_tags'] != null) {
-      allergens = _parseAllergenTags(productData['allergens_tags']);
+    // Extract allergens from official tags, ingredient-derived tags, and label text.
+    final allergens = <String>[];
+    void addAllergen(String allergen) {
+      if (allergen.isEmpty) return;
+      if (!allergens.contains(allergen)) allergens.add(allergen);
     }
-    
-    // Also extract allergens from ingredients text (for Australian products)
-    if (productData['ingredients_text'] != null) {
-      final textAllergens = _extractAllergensFromText(productData['ingredients_text']);
-      for (String allergen in textAllergens) {
-        if (!allergens.contains(allergen)) {
-          allergens.add(allergen);
-        }
+
+    for (final tag in _parseAllergenTags(productData['allergens_tags'])) {
+      addAllergen(tag);
+    }
+    for (final tag in _parseAllergenTags(productData['allergens_from_ingredients'])) {
+      addAllergen(tag);
+    }
+    for (final source in [
+      productData['allergens'],
+      productData['allergens_from_user'],
+      productData['ingredients_text_en'],
+      productData['ingredients_text'],
+    ]) {
+      if (source == null) continue;
+      for (final allergen in _extractAllergensFromText(source.toString())) {
+        addAllergen(allergen);
       }
     }
 
-    // Extract product image
-    String? imageUrl;
-    if (productData['image_front_url'] != null) {
-      imageUrl = 'https://world.openfoodfacts.org${productData['image_front_url']}';
-    }
+    final imageUrl = absoluteImageUrl(
+      productData['image_front_url'] ?? productData['image_url'],
+    );
 
     final countries = (productData['countries_tags'] as List<dynamic>? ?? [])
         .map((c) => c.toString())
@@ -299,13 +366,17 @@ class OpenFoodFactsService {
     final brands = productData['brands']?.toString().toLowerCase() ?? '';
 
     return {
-      'name': productData['product_name'] ?? productData['generic_name'] ?? 'Unknown Product',
+      'name': productData['product_name_en'] ??
+          productData['product_name'] ??
+          productData['generic_name'] ??
+          'Unknown Product',
       'brand': productData['brands'] ?? 'Unknown Brand',
       'ingredients': ingredients,
       'allergens': allergens,
       'image': imageUrl,
       'barcode': productData['code'],
-      'nutrition_grade': productData['nutrition_grade_fr'],
+      'nutrition_grade': productData['nutrition_grades'] ??
+          productData['nutrition_grade_fr'],
       'nova_group': productData['nova_group'],
       'ecoscore_grade': productData['ecoscore_grade'],
       'quantity': productData['quantity'],
@@ -314,15 +385,24 @@ class OpenFoodFactsService {
       'labels': productData['labels_tags'],
       'origins': origins,
       'countries': countries,
-      'traces_tags': (productData['traces_tags'] as List<dynamic>? ?? [])
-          .map((t) => t.toString())
-          .toList(),
+      'traces_tags': _normalizeTagList(productData['traces_tags']),
       'traces': productData['traces']?.toString() ?? '',
+      'traces_from_ingredients':
+          productData['traces_from_ingredients']?.toString() ?? '',
+      'allergens_from_ingredients':
+          productData['allergens_from_ingredients']?.toString() ?? '',
+      'ingredients_text_en': productData['ingredients_text_en'],
+      'ingredients_text': productData['ingredients_text'],
+      'ingredients_text_with_allergens_en':
+          productData['ingredients_text_with_allergens_en'],
+      'ingredients_text_with_allergens':
+          productData['ingredients_text_with_allergens'],
       'isAustralianProduct': countries.contains('en:australia') ||
           origins.toLowerCase().contains('australia') ||
           brands.contains('australia'),
       'manufacturing_places': productData['manufacturing_places'],
-      'last_updated': productData['last_updated_t'],
+      'last_updated': productData['last_modified_t'] ??
+          productData['last_updated_t'],
       'mayContainItems': _extractMayContainFromProductData(productData),
       'data_source': 'Open Food Facts',
       'lookup_timestamp': DateTime.now().toIso8601String(),
@@ -509,24 +589,36 @@ class OpenFoodFactsService {
 
 
   /// Parse allergen tags into readable allergen names with Australian support
-  static List<String> _parseAllergenTags(List<dynamic> allergenTags) {
+  static List<String> _parseAllergenTags(dynamic allergenTags) {
     final allergenMap = {
       'en:peanuts': 'peanuts',
       'en:tree-nuts': 'tree nuts',
+      'en:nuts': 'tree nuts',
+      'en:nut': 'tree nuts',
       'en:milk': 'milk',
       'en:eggs': 'eggs',
+      'en:egg': 'eggs',
       'en:soybeans': 'soy',
+      'en:soya': 'soy',
+      'en:soy': 'soy',
       'en:wheat': 'wheat',
       'en:fish': 'fish',
       'en:crustaceans': 'shellfish',
+      'en:crustacean': 'shellfish',
       'en:sesame-seeds': 'sesame',
+      'en:sesame': 'sesame',
       'en:sulphur-dioxide-and-sulphites': 'sulfites',
+      'en:sulfites': 'sulfites',
+      'en:sulphites': 'sulfites',
       'en:mustard': 'mustard',
       'en:celery': 'celery',
       'en:lupin': 'lupin',
+      'en:lupine': 'lupin',
       'en:molluscs': 'molluscs',
+      'en:mollusk': 'molluscs',
       // Australian specific allergen tags
       'en:gluten': 'gluten',
+      'en:gluten-containing-cereals': 'gluten',
       'en:lactose': 'lactose',
       'en:casein': 'casein',
       'en:whey': 'whey',
@@ -547,10 +639,20 @@ class OpenFoodFactsService {
       'en:buckwheat': 'buckwheat',
       // Additional nuts
       'en:coconut': 'coconut',
+      'en:almond': 'almond',
+      'en:almonds': 'almond',
+      'en:cashew': 'cashew',
+      'en:cashew-nuts': 'cashew',
+      'en:walnut': 'walnut',
+      'en:hazelnut': 'hazelnut',
+      'en:hazelnuts': 'hazelnut',
       'en:brazil-nut': 'brazil nut',
       'en:pistachio': 'pistachio',
+      'en:pistachios': 'pistachio',
       'en:macadamia': 'macadamia',
+      'en:macadamia-nuts': 'macadamia',
       'en:pine-nut': 'pine nut',
+      'en:pecan-nuts': 'pecan',
       // Fruits and vegetables
       'en:kiwi': 'kiwi',
       'en:banana': 'banana',
@@ -558,10 +660,33 @@ class OpenFoodFactsService {
       'en:strawberry': 'strawberry',
     };
 
-    return allergenTags
-        .map((tag) => allergenMap[tag] ?? tag.toString().replaceAll('en:', ''))
+    return _normalizeTagList(allergenTags)
+        .map((tag) => allergenMap[tag] ?? tag.replaceAll(RegExp(r'^[a-z]{2}:'), '').replaceAll('-', ' '))
         .where((allergen) => allergen.isNotEmpty)
         .toList();
+  }
+
+  static List<String> _normalizeTagList(dynamic tags) {
+    if (tags == null) return [];
+    if (tags is String) {
+      return tags
+          .split(RegExp(r'[,\s]+'))
+          .map((tag) => tag.trim())
+          .where((tag) => tag.isNotEmpty && tag != ',')
+          .toList();
+    }
+    if (tags is! List) return [];
+    final normalized = <String>[];
+    for (final tag in tags) {
+      if (tag is String) {
+        final value = tag.trim();
+        if (value.isNotEmpty) normalized.add(value);
+      } else if (tag is Map) {
+        final value = (tag['id'] ?? tag['tag'] ?? tag['text'])?.toString().trim();
+        if (value != null && value.isNotEmpty) normalized.add(value);
+      }
+    }
+    return normalized;
   }
 
   /// Extract allergens from ingredients text (Australian format)
@@ -707,15 +832,16 @@ class OpenFoodFactsService {
       }
     }
 
-    if (productData['traces_tags'] != null) {
-      for (final tag in _parseAllergenTags(productData['traces_tags'])) {
-        addItem(tag);
-      }
+    for (final tag in _parseAllergenTags(productData['traces_tags'])) {
+      addItem(tag);
+    }
+    for (final tag in _parseAllergenTags(productData['traces_from_ingredients'])) {
+      addItem(tag);
     }
 
     if (productData['traces'] != null) {
       for (final trace in productData['traces'].toString().split(',')) {
-        addItem(trace.replaceAll('_', ' '));
+        addItem(trace.replaceAll('_', ' ').replaceAll(RegExp(r'^[a-z]{2}:'), ''));
       }
     }
 
@@ -765,6 +891,7 @@ class OpenFoodFactsService {
     refreshed['mayContainItems'] = _extractMayContainFromProductData({
       'traces_tags': product['traces_tags'],
       'traces': product['traces'],
+      'traces_from_ingredients': product['traces_from_ingredients'],
       'ingredients_text_with_allergens_en': product['ingredients_text_with_allergens_en'],
       'ingredients_text_with_allergens': product['ingredients_text_with_allergens'],
       'ingredients_text_en': product['ingredients_text_en'],
@@ -810,37 +937,100 @@ class OpenFoodFactsService {
     _cache[barcode] = product;
   }
 
-  /// Search products by name or brand
+  /// Search products by name or brand using API v2 search, with cgi fallback.
   static Future<List<Map<String, dynamic>>> searchProducts(String query) async {
     try {
       if (kDebugMode) {
         print('OpenFoodFacts: Searching for products with query: $query');
       }
 
+      final results = await _searchV2({
+        'search_terms': query,
+        'page_size': '10',
+        'lc': 'en',
+        'cc': 'au',
+        'fields': _searchFields,
+      });
+      if (results.isNotEmpty) return results;
+
       final response = await http.get(
         Uri.parse('$searchUrl?search_terms=${Uri.encodeComponent(query)}&search_simple=1&action=process&json=1'),
-        headers: {
-          'User-Agent': 'MyAllergyBuddy/1.0 (Flutter App)',
-        },
+        headers: _headers,
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final products = data['products'] as List<dynamic>? ?? [];
-        
         return products
-            .take(10) // Limit to 10 results
-            .map((product) => _parseProductData(product))
+            .take(10)
+            .whereType<Map>()
+            .map((product) => _parseProductData(Map<String, dynamic>.from(product)))
             .toList();
-      } else {
-        if (kDebugMode) {
-          print('OpenFoodFacts: Search HTTP error ${response.statusCode}');
-        }
-        return [];
       }
+      if (kDebugMode) {
+        print('OpenFoodFacts: Search HTTP error ${response.statusCode}');
+      }
+      return [];
     } catch (e) {
       if (kDebugMode) {
         print('OpenFoodFacts: Search error: $e');
+      }
+      return [];
+    }
+  }
+
+  static const String _searchFields =
+      'code,product_name,product_name_en,generic_name,brands,ingredients,ingredients_text,ingredients_text_en,ingredients_text_with_allergens,ingredients_text_with_allergens_en,allergens,allergens_tags,allergens_from_ingredients,traces,traces_tags,traces_from_ingredients,image_front_url,image_url,nutrition_grades,nutrition_grade_fr,nova_group,ecoscore_grade,quantity,packaging_tags,categories_tags,labels_tags,origins,countries_tags,manufacturing_places,last_modified_t';
+
+  /// Structured Open Food Facts v2 search used by name lookup and AU downloads.
+  static Future<List<Map<String, dynamic>>> searchAustralianProducts({
+    String? query,
+    String? allergen,
+    int pageSize = 50,
+  }) async {
+    final params = <String, String>{
+      'countries_tags': 'en:australia',
+      'page_size': '$pageSize',
+      'lc': 'en',
+      'cc': 'au',
+      'fields': _searchFields,
+    };
+    final allergenTag = allergen == null ? null : allergenToOffTag(allergen);
+    if (allergenTag != null) {
+      params['allergens_tags'] = allergenTag;
+    } else if (query != null && query.isNotEmpty) {
+      params['search_terms'] = query;
+    } else if (allergen != null && allergen.isNotEmpty) {
+      params['search_terms'] = allergen;
+    }
+    return _searchV2(params);
+  }
+
+  static Future<List<Map<String, dynamic>>> _searchV2(
+    Map<String, String> queryParameters,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse(searchUrlV2).replace(queryParameters: queryParameters),
+        headers: _headers,
+      ).timeout(const Duration(seconds: 20));
+
+      if (response.statusCode != 200) {
+        if (kDebugMode) {
+          print('OpenFoodFacts: v2 search HTTP error ${response.statusCode}');
+        }
+        return [];
+      }
+
+      final data = json.decode(response.body);
+      final products = data['products'] as List<dynamic>? ?? [];
+      return products
+          .whereType<Map>()
+          .map((product) => _parseProductData(Map<String, dynamic>.from(product)))
+          .toList();
+    } catch (e) {
+      if (kDebugMode) {
+        print('OpenFoodFacts: v2 search error: $e');
       }
       return [];
     }

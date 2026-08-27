@@ -12,6 +12,7 @@ class ApiCredentialsService {
   static String? _edamamAppKey;
   static String? _nutritionixAppId;
   static String? _nutritionixAppKey;
+  static String? _spoonacularApiKey;
 
   static Future<void> initialize() async {
     try {
@@ -20,6 +21,7 @@ class ApiCredentialsService {
       _edamamAppKey = await _readCredential('edamam_app_key');
       _nutritionixAppId = await _readCredential('nutritionix_app_id');
       _nutritionixAppKey = await _readCredential('nutritionix_app_key');
+      _spoonacularApiKey = await _readCredential('spoonacular_api_key');
     } catch (e) {
       if (kDebugMode) {
         print('ApiCredentialsService: init error: $e');
@@ -50,6 +52,10 @@ class ApiCredentialsService {
   static String? get edamamAppKey => _edamamAppKey;
   static String? get nutritionixAppId => _nutritionixAppId;
   static String? get nutritionixAppKey => _nutritionixAppKey;
+  static String? get spoonacularApiKey => _spoonacularApiKey;
+
+  static bool get isSpoonacularConfigured =>
+      _hasValidCredential(_spoonacularApiKey);
 
   static bool _hasValidCredential(String? value) {
     if (value == null || value.isEmpty) return false;

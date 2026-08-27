@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'api_credentials_service.dart';
+import 'barcode_utils.dart';
 
 class USDAFoodDataService {
   static const String _baseUrl = 'https://api.nal.usda.gov/fdc/v1';
@@ -109,40 +110,10 @@ class USDAFoodDataService {
       print('USDAFoodDataService: Searching by barcode: $barcode');
     }
 
-    // Search branded foods first for better UPC matches
-    final searchResult = await searchFoods(
-      query: barcode,
-      dataType: 'Branded',
-      pageSize: 10,
-    );
-    
-    if (searchResult['success'] == false) {
-      return searchResult;
-    }
-
-    final foods = searchResult['foods'] as List<dynamic>? ?? [];
-    
-    // Look for exact barcode match
-    for (var food in foods) {
-      final gtinUpc = food['gtinUpc']?.toString() ?? '';
-      
-      if (gtinUpc == barcode) {
-        return await getFoodDetails(fdcId: food['fdcId']);
-      }
-    }
-
-    // Retry without data type filter
-    if (foods.isEmpty) {
-      final broadSearch = await searchFoods(query: barcode, pageSize: 10);
-      if (broadSearch['success'] != false) {
-        final broadFoods = broadSearch['foods'] as List<dynamic>? ?? [];
-        for (var food in broadFoods) {
-          final gtinUpc = food['gtinUpc']?.toString() ?? '';
-          if (gtinUpc == barcode) {
-            return await getFoodDetails(fdcId: food['fdcId']);
-          }
-        }
-      }
+    final candidates = BarcodeUtils.lookupCandidates(barcode);
+    for (final candidate in candidates) {
+      final match = await _searchBrandedByGtin(candidate, barcode);
+      if (match != null) return match;
     }
 
     return {
@@ -150,6 +121,42 @@ class USDAFoodDataService {
       'error': 'No food found',
       'message': 'No food found with barcode: $barcode',
     };
+  }
+
+  static Future<Map<String, dynamic>?> _searchBrandedByGtin(
+    String query,
+    String originalBarcode,
+  ) async {
+    final searchResult = await searchFoods(
+      query: query,
+      dataType: 'Branded',
+      pageSize: 25,
+    );
+    if (searchResult['success'] == false) return null;
+
+    final foods = searchResult['foods'] as List<dynamic>? ?? [];
+    for (final food in foods) {
+      if (food is! Map) continue;
+      final gtinUpc = food['gtinUpc']?.toString() ?? '';
+      if (BarcodeUtils.matches(gtinUpc, originalBarcode) ||
+          BarcodeUtils.matches(gtinUpc, query)) {
+        return await getFoodDetails(fdcId: food['fdcId']);
+      }
+    }
+
+    if (foods.isEmpty) {
+      final broadSearch = await searchFoods(query: query, pageSize: 25);
+      if (broadSearch['success'] == false) return null;
+      final broadFoods = broadSearch['foods'] as List<dynamic>? ?? [];
+      for (final food in broadFoods) {
+        if (food is! Map) continue;
+        final gtinUpc = food['gtinUpc']?.toString() ?? '';
+        if (BarcodeUtils.matches(gtinUpc, originalBarcode)) {
+          return await getFoodDetails(fdcId: food['fdcId']);
+        }
+      }
+    }
+    return null;
   }
 
   /// Extract allergen information from USDA food data
@@ -173,30 +180,42 @@ class USDAFoodDataService {
       }
     }
 
-    // Extract ingredients from description or additional descriptions
     final description = foodData['description']?.toString() ?? '';
+    final ingredientsStatement = foodData['ingredients']?.toString() ?? '';
     final additionalDescriptions = foodData['additionalDescriptions']?.toString() ?? '';
-    
-    if (description.isNotEmpty) {
-      ingredients.add(description);
-    }
-    if (additionalDescriptions.isNotEmpty) {
-      ingredients.add(additionalDescriptions);
+
+    if (ingredientsStatement.isNotEmpty) {
+      ingredients.addAll(
+        ingredientsStatement
+            .split(RegExp(r'[,;•\n\r]'))
+            .map((item) => item.trim())
+            .where((item) => item.length > 1),
+      );
+    } else {
+      if (description.isNotEmpty) ingredients.add(description);
+      if (additionalDescriptions.isNotEmpty) ingredients.add(additionalDescriptions);
     }
 
-    // Check for common allergens in ingredients
     final allergenKeywords = {
-      'milk': ['milk', 'dairy', 'cheese', 'cream', 'butter', 'whey', 'casein'],
+      'milk': ['milk', 'dairy', 'cheese', 'cream', 'butter', 'whey', 'casein', 'lactose'],
       'eggs': ['egg', 'eggs', 'albumin', 'ovalbumin'],
       'fish': ['fish', 'salmon', 'tuna', 'cod', 'anchovy'],
       'shellfish': ['shellfish', 'shrimp', 'crab', 'lobster', 'oyster'],
-      'tree nuts': ['almond', 'walnut', 'pecan', 'cashew', 'pistachio', 'hazelnut'],
+      'tree nuts': ['almond', 'walnut', 'pecan', 'cashew', 'pistachio', 'hazelnut', 'macadamia'],
       'peanuts': ['peanut', 'peanuts'],
-      'wheat': ['wheat', 'gluten', 'flour'],
+      'wheat': ['wheat', 'gluten'],
       'soybeans': ['soy', 'soybean', 'soya'],
+      'sesame': ['sesame', 'tahini'],
+      'sulfites': ['sulfite', 'sulphite', 'sulfur dioxide', 'sulphur dioxide'],
+      'mustard': ['mustard'],
+      'lupin': ['lupin', 'lupine'],
     };
 
-    final allIngredients = ingredients.join(' ').toLowerCase();
+    final allIngredients = [
+      ingredientsStatement,
+      ingredients.join(' '),
+      foodData['foodAllergen']?.toString() ?? '',
+    ].join(' ').toLowerCase();
     
     for (var entry in allergenKeywords.entries) {
       final allergenName = entry.key;

@@ -8,10 +8,11 @@ import 'edamam_service.dart';
 import 'nutritionix_service.dart';
 import 'open_food_facts_service.dart';
 import 'product_database_service.dart';
+import 'barcode_utils.dart';
 
 class AustralianFoodDatabaseService {
-  // Open Food Facts API for Australian products
-  static const String openFoodFactsUrl = 'https://world.openfoodfacts.org/cgi/search.pl';
+  // Open Food Facts structured search for Australian products
+  static const String openFoodFactsUrl = 'https://world.openfoodfacts.org/api/v2/search';
   
   // FoodSwitch API for Australian supermarkets (currently unavailable)
   static const String foodSwitchBaseUrl = 'https://api.foodswitch.com.au';
@@ -468,38 +469,19 @@ class AustralianFoodDatabaseService {
           print('AustralianFoodDatabase: Searching Open Food Facts for allergen: $allergen');
         }
 
-        // Search for Australian products with this allergen
-        final query = {
-          'search_terms': allergen,
-          'countries': 'Australia',
-          'search_simple': '1',
-          'action': 'process',
-          'json': '1',
-          'page_size': '50', // Max per page
-        };
+        final parsedProducts = await OpenFoodFactsService.searchAustralianProducts(
+          allergen: allergen,
+          pageSize: 50,
+        );
 
-        final response = await http.get(
-          Uri.parse('$openFoodFactsUrl?${Uri(queryParameters: query).query}'),
-          headers: {
-            'User-Agent': 'MyAllergyBuddy/1.0 (Flutter App)',
-          },
-        ).timeout(const Duration(seconds: 30));
-
-        if (response.statusCode == 200) {
-          final data = json.decode(response.body);
-          final productList = data?['products'] as List<dynamic>? ?? [];
-
-          for (var productData in productList) {
-            if (products.length >= maxProducts) break;
-
-            final product = _parseOpenFoodFactsProduct(productData, allergen);
-            if (product != null) {
-              products.add(product);
-            }
+        for (final parsed in parsedProducts) {
+          if (products.length >= maxProducts) break;
+          final product = _mapParsedOffProduct(parsed, allergen);
+          if (product != null) {
+            products.add(product);
           }
         }
 
-        // Add delay to avoid rate limiting
         await Future.delayed(const Duration(milliseconds: 500));
       }
     } catch (e) {
@@ -509,6 +491,47 @@ class AustralianFoodDatabaseService {
     }
 
     return products;
+  }
+
+  static Map<String, dynamic>? _mapParsedOffProduct(
+    Map<String, dynamic> parsed,
+    String searchedAllergen,
+  ) {
+    final brand = parsed['brand']?.toString().toLowerCase() ?? '';
+    final name = parsed['name']?.toString().toLowerCase() ?? '';
+    final categories = parsed['categories'] as List<dynamic>? ?? [];
+    if (parsed['isAustralianProduct'] != true &&
+        !_isAustralianBrand(brand) &&
+        !_isAustralianSupermarketProduct(name, brand, categories)) {
+      return null;
+    }
+
+    final allergens = (parsed['allergens'] as List<dynamic>? ?? [])
+        .map((item) => item.toString().toLowerCase())
+        .toList();
+    if (searchedAllergen.isNotEmpty &&
+        !_containsAllergen(allergens, searchedAllergen)) {
+      return null;
+    }
+
+    return {
+      ...parsed,
+      'searchedAllergen': searchedAllergen,
+      'image': OpenFoodFactsService.absoluteImageUrl(parsed['image']) ?? parsed['image'],
+      'dataSource': 'Open Food Facts',
+      'isAustralianProduct': true,
+      'downloadDate': DateTime.now().toIso8601String(),
+    };
+  }
+
+  static bool _containsAllergen(List<String> allergens, String searchedAllergen) {
+    final searched = searchedAllergen.toLowerCase().trim();
+    if (allergens.contains(searched)) return true;
+    final searchedTag = OpenFoodFactsService.allergenToOffTag(searched);
+    if (searchedTag == null) return false;
+    return allergens.any(
+      (allergen) => OpenFoodFactsService.allergenToOffTag(allergen) == searchedTag,
+    );
   }
 
   /// Search FSANZ database for allergens (limited access)
@@ -880,87 +903,6 @@ class AustralianFoodDatabaseService {
     
     return products;
   }
-
-  /// Parse Open Food Facts product data for Australian products
-  static Map<String, dynamic>? _parseOpenFoodFactsProduct(
-    Map<String, dynamic> productData,
-    String searchedAllergen,
-  ) {
-    try {
-      // Enhanced Australian product detection
-      final countries = productData['countries_tags'] as List<dynamic>? ?? [];
-      final origins = productData['origins']?.toString() ?? '';
-      final brands = productData['brands']?.toString().toLowerCase() ?? '';
-      final productName = productData['product_name']?.toString().toLowerCase() ?? '';
-      final categories = productData['categories_tags'] as List<dynamic>? ?? [];
-      
-      // Check multiple criteria for Australian products
-      bool isAustralianProduct = countries.contains('en:australia') ||
-          origins.toLowerCase().contains('australia') ||
-          brands.contains('australia') ||
-          _isAustralianBrand(brands) ||
-          _isAustralianSupermarketProduct(productName, brands, categories);
-
-      if (!isAustralianProduct) {
-        return null;
-      }
-
-      // Extract allergen information
-      final allergens = <String>[];
-      final allergenTags = productData['allergens_tags'] as List<dynamic>? ?? [];
-      
-      for (var tag in allergenTags) {
-        final allergen = tag.toString().replaceAll('en:', '');
-        if (_allergenCategories.contains(allergen)) {
-          allergens.add(allergen);
-        }
-      }
-
-      // Check if the searched allergen is present
-      if (searchedAllergen.isNotEmpty && !allergens.contains(searchedAllergen)) {
-        return null;
-      }
-
-      // Parse ingredients
-      final ingredients = <String>[];
-      if (productData['ingredients_text_en'] != null) {
-        ingredients.addAll(_parseIngredients(productData['ingredients_text_en']));
-      } else if (productData['ingredients_text'] != null) {
-        ingredients.addAll(_parseIngredients(productData['ingredients_text']));
-      }
-
-      return {
-        'barcode': productData['code'],
-        'name': productData['product_name'] ?? productData['generic_name'] ?? 'Unknown Product',
-        'brand': productData['brands'] ?? 'Unknown Brand',
-        'ingredients': ingredients,
-        'allergens': allergens,
-        'searchedAllergen': searchedAllergen,
-        'image': productData['image_front_url'] != null 
-            ? 'https://world.openfoodfacts.org${productData['image_front_url']}'
-            : null,
-        'nutritionGrade': productData['nutrition_grade_fr'],
-        'novaGroup': productData['nova_group'],
-        'quantity': productData['quantity'],
-        'packaging': productData['packaging_tags'],
-        'categories': productData['categories_tags'],
-        'labels': productData['labels_tags'],
-        'origins': productData['origins'],
-        'manufacturingPlaces': productData['manufacturing_places'],
-        'lastUpdated': productData['last_updated_t'],
-        'dataSource': 'Open Food Facts',
-        'isAustralianProduct': true,
-        'downloadDate': DateTime.now().toIso8601String(),
-      };
-    } catch (e) {
-      if (kDebugMode) {
-        print('AustralianFoodDatabase: Error parsing product: $e');
-      }
-      return null;
-    }
-  }
-
-
 
   /// Parse Woolworths product data
   static Map<String, dynamic>? _parseWoolworthsProduct(
@@ -1970,15 +1912,17 @@ class AustralianFoodDatabaseService {
 
   /// Get product by barcode from downloaded database
   static Map<String, dynamic>? getProductByBarcode(String barcode) {
-    final product = _downloadedProducts[barcode];
-    if (product == null) return null;
-    return sanitizeStoredProduct(product);
+    for (final candidate in BarcodeUtils.lookupCandidates(barcode)) {
+      final product = _downloadedProducts[candidate];
+      if (product != null) return sanitizeStoredProduct(product);
+    }
+    return null;
   }
 
   /// Get product by barcode with auto-download if not found locally
   static Future<Map<String, dynamic>?> getProductByBarcodeWithAutoDownload(String barcode) async {
     // First check local database
-    final localProduct = _downloadedProducts[barcode];
+    final localProduct = getProductByBarcode(barcode);
     if (localProduct != null) {
       if (kDebugMode) {
         print('AustralianFoodDatabase: Found product locally: ${localProduct['name']}');
@@ -2096,59 +2040,43 @@ class AustralianFoodDatabaseService {
   /// Check if a product exists in Open Food Facts database
   static Future<Map<String, dynamic>> checkProductExistsInOpenFoodFacts(String barcode) async {
     try {
-      // Use the correct Open Food Facts API endpoint for product lookup
-      final response = await http.get(
-        Uri.parse('https://world.openfoodfacts.org/api/v0/product/$barcode.json'),
-        headers: {
-          'User-Agent': 'MyAllergyBuddy/1.0 (Flutter App)',
-        },
-      ).timeout(const Duration(seconds: 15));
+      final product = await OpenFoodFactsService.getProduct(barcode);
+      if (product != null) {
+        final countries = product['countries'] as List<dynamic>? ?? [];
+        final origins = product['origins']?.toString() ?? '';
+        final isAustralianProduct = product['isAustralianProduct'] == true ||
+            countries.contains('en:australia') ||
+            origins.toLowerCase().contains('australia');
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final productData = data?['product'];
-
-        if (productData != null) {
-          // Check if it's an Australian product
-          final countries = productData['countries_tags'] as List<dynamic>? ?? [];
-          final origins = productData['origins']?.toString() ?? '';
-          final brands = productData['brands']?.toString() ?? '';
-          
-          bool isAustralianProduct = countries.contains('en:australia') ||
-              origins.toLowerCase().contains('australia') ||
-              brands.toLowerCase().contains('australia');
-
-          return {
-            'exists': true,
-            'isAustralian': isAustralianProduct,
-            'productName': productData['product_name'] ?? 'Unknown',
-            'brand': productData['brands'] ?? 'Unknown',
-            'countries': countries,
-            'origins': origins,
-            'status': isAustralianProduct ? 'found_australian' : 'found_not_australian',
-            'message': isAustralianProduct 
-                ? 'Product found and is Australian'
-                : 'Product found but not identified as Australian',
-          };
-        } else {
-          return {
-            'exists': false,
-            'status': 'not_found',
-            'message': 'Product not found in Open Food Facts database',
-          };
-        }
-      } else {
         return {
-          'exists': false,
-          'status': 'api_error',
-          'message': 'Error accessing Open Food Facts database',
+          'exists': true,
+          'isAustralian': isAustralianProduct,
+          'productName': product['name'] ?? 'Unknown',
+          'brand': product['brand'] ?? 'Unknown',
+          'countries': countries,
+          'origins': origins,
+          'status': isAustralianProduct ? 'found_australian' : 'found_not_australian',
+          'message': isAustralianProduct 
+              ? 'Found Australian product in Open Food Facts'
+              : 'Found product in Open Food Facts (not Australian)',
         };
       }
-    } catch (e) {
+
       return {
         'exists': false,
+        'isAustralian': false,
+        'status': 'not_found',
+        'message': 'Product not found in Open Food Facts',
+      };
+    } catch (e) {
+      if (kDebugMode) {
+        print('AustralianFoodDatabase: Error checking product existence: $e');
+      }
+      return {
+        'exists': false,
+        'isAustralian': false,
         'status': 'error',
-        'message': 'Error checking product: $e',
+        'message': e.toString(),
       };
     }
   }
@@ -2206,7 +2134,7 @@ class AustralianFoodDatabaseService {
     'open_food_facts': {
       'name': 'Open Food Facts',
       'status': 'active',
-      'api_url': 'https://world.openfoodfacts.org/api/v0/product/',
+      'api_url': 'https://world.openfoodfacts.org/api/v3/product/',
       'requires_auth': false,
       'rate_limit': 'moderate',
       'coverage': 'global',
