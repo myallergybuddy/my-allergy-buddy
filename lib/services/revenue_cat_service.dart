@@ -41,17 +41,17 @@ class RevenueCatService {
       _revenueCatConfigured = true;
       await _syncEntitlementFromRevenueCat();
 
-      // Debug/test builds always get premium (no payment required).
-      if (kDebugMode) {
+      // Debug/test builds and developer installs always get premium.
+      if (await PremiumService.hasDeveloperPremiumUnlock()) {
         await PremiumService.setPremiumStatus(true);
-        debugPrint('RevenueCat: debug build — premium unlocked for testing');
+        debugPrint('RevenueCat: developer/debug premium unlocked');
       }
 
       _isInitialized = true;
       debugPrint('RevenueCat initialized');
     } catch (e) {
       debugPrint('Error initializing RevenueCat service: $e');
-      if (kDebugMode) {
+      if (await PremiumService.hasDeveloperPremiumUnlock()) {
         await PremiumService.setPremiumStatus(true);
       }
       _isInitialized = true;
@@ -80,8 +80,8 @@ class RevenueCatService {
   }
 
   static Future<void> _syncPremiumCache(CustomerInfo customerInfo) async {
-    // Keep test builds unlocked even if RevenueCat has no active entitlement.
-    if (kDebugMode) {
+    // Keep developer/debug unlocks even if RevenueCat has no active entitlement.
+    if (await PremiumService.hasDeveloperPremiumUnlock()) {
       await PremiumService.setPremiumStatus(true);
       return;
     }
@@ -259,8 +259,7 @@ class RevenueCatService {
 
   /// Check if user has premium access via RevenueCat entitlement.
   static Future<bool> hasPremiumAccess() async {
-    // Debug/test builds: unlock all premium features without payment.
-    if (kDebugMode) {
+    if (await PremiumService.hasDeveloperPremiumUnlock()) {
       await PremiumService.setPremiumStatus(true);
       return true;
     }

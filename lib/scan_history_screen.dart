@@ -476,7 +476,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            LucideIcons.history,
+            LucideIcons.clock,
             size: 64,
             color: Colors.grey[400],
           ),

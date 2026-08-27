@@ -6,6 +6,12 @@ class PremiumService {
   static const String _premiumExpiryKey = 'premium_expiry_date';
   static const String _smsUsageKey = 'sms_usage_count';
   static const String _smsResetDateKey = 'sms_reset_date';
+  static const String _developerOverrideKey = 'developer_premium_override';
+
+  /// Compile-time developer unlock. Pass `--dart-define=DEVELOPER_PREMIUM=true`
+  /// when installing a release build on the developer device.
+  static const bool developerPremiumUnlock =
+      bool.fromEnvironment('DEVELOPER_PREMIUM', defaultValue: false);
   
   /// Premium features available
   static const List<String> premiumFeatures = [
@@ -17,10 +23,40 @@ class PremiumService {
     'Unlimited emergency SMS alerts',
   ];
   
+  /// True for debug builds, dart-define installs, or a persisted developer override.
+  static Future<bool> hasDeveloperPremiumUnlock() async {
+    if (kDebugMode || developerPremiumUnlock) {
+      if (developerPremiumUnlock) {
+        await _persistDeveloperOverride();
+      }
+      return true;
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_developerOverrideKey) ?? false;
+    } catch (e) {
+      debugPrint('Error reading developer premium override: $e');
+      return false;
+    }
+  }
+
+  static Future<void> _persistDeveloperOverride() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_developerOverrideKey, true);
+      await setPremiumStatus(
+        true,
+        expiryDate: DateTime.now().add(const Duration(days: 3650)),
+      );
+    } catch (e) {
+      debugPrint('Error persisting developer premium override: $e');
+    }
+  }
+
   /// Check if user has premium access
   static Future<bool> isPremiumUser() async {
-    // Debug/test builds: unlock all premium features without payment.
-    if (kDebugMode) {
+    if (await hasDeveloperPremiumUnlock()) {
       return true;
     }
 
