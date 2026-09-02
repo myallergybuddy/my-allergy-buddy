@@ -166,4 +166,66 @@ void main() {
     ).map((item) => item['name']).toSet();
     expect(enNuts, contains('Tree Nuts'));
   });
+
+  test('Bhuja Ancient Grain Twists lists each pack may-contain once', () {
+    final twists = AustralianCuratedProductDatabase.lookup('9316401201412')!;
+    expect(twists['name'], 'Ancient Grain Twists');
+    expect(twists['brand'], 'Bhuja');
+
+    final mayContain = List<String>.from(twists['mayContainItems'] as List);
+    expect(mayContain, ['Peanut', 'Almond', 'Cashew', 'Macadamia', 'Soy']);
+    expect(mayContain, isNot(contains('Tree Nuts')));
+
+    final traces = (twists['traces']?.toString() ?? '').toLowerCase();
+    final tracesTags = List<String>.from(twists['traces_tags'] as List);
+    final cross = List<String>.from(twists['crossContamination'] as List)
+        .map((item) => item.toLowerCase())
+        .toList();
+    expect(RegExp(r'\btree nuts\b').hasMatch(traces), isFalse);
+    expect(tracesTags, isNot(contains('en:nuts')));
+    expect(tracesTags, isNot(contains('en:tree-nuts')));
+    expect(cross, isNot(contains('tree nuts')));
+
+    final collected = ProductDatabaseService.collectMayContainItems(
+      ingredients: List<String>.from(twists['ingredients'] as List),
+      product: twists,
+    );
+    expect(collected, ['Peanut', 'Almond', 'Cashew', 'Macadamia', 'Soy']);
+  });
+
+  test('collectMayContainItems collapses Peanut/peanuts without expanding Tree Nuts', () {
+    final items = ProductDatabaseService.collectMayContainItems(
+      ingredients: const [],
+      product: {
+        'mayContainItems': ['Peanut', 'Almond', 'Cashew', 'Macadamia', 'Soy'],
+        'traces_tags': [
+          'en:peanuts',
+          'en:almonds',
+          'en:cashew-nuts',
+          'en:macadamia-nuts',
+          'en:soybeans',
+          'en:nuts',
+        ],
+        'traces': 'peanuts, almonds, cashew nuts, macadamia nuts, soybeans, nuts',
+        'crossContamination': [
+          'peanuts',
+          'almond',
+          'cashew',
+          'macadamia',
+          'soy',
+          'tree nuts',
+        ],
+      },
+    );
+    expect(items, [
+      'Peanut',
+      'Almond',
+      'Cashew',
+      'Macadamia',
+      'Soy',
+      'Tree Nuts',
+    ]);
+    expect(items.where((item) => item.toLowerCase() == 'peanut').length, 1);
+    expect(items.where((item) => item.toLowerCase() == 'almond').length, 1);
+  });
 }

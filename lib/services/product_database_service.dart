@@ -1427,8 +1427,10 @@ class ProductDatabaseService {
 
       for (final part in cleaned.split(RegExp(r',|\band\b', caseSensitive: false))) {
         final item = part.trim();
-        if (item.length > 1 && seen.add(item.toLowerCase())) {
-          items.add(_formatMayContainItem(item));
+        if (item.length <= 1) continue;
+        final formatted = _formatMayContainItem(item);
+        if (formatted.length > 1 && seen.add(formatted.toLowerCase())) {
+          items.add(formatted);
         }
       }
     }
@@ -1481,8 +1483,12 @@ class ProductDatabaseService {
     void addItem(String value) {
       final trimmed = HtmlTextUtils.strip(value);
       if (trimmed.length <= 1) return;
-      if (seen.add(trimmed.toLowerCase())) {
-        items.add(_formatMayContainItem(trimmed));
+      // Canonicalize first so Peanut/peanuts and nuts/Tree Nuts collapse.
+      // Do not expand Tree Nuts into child nuts for the label list.
+      final formatted = _formatMayContainItem(trimmed);
+      if (formatted.length <= 1) return;
+      if (seen.add(formatted.toLowerCase())) {
+        items.add(formatted);
       }
     }
 
@@ -1536,7 +1542,7 @@ class ProductDatabaseService {
   }
 
   static const Map<String, String> _traceTagNames = {
-    'peanuts': 'Peanuts',
+    'peanuts': 'Peanut',
     'tree-nuts': 'Tree Nuts',
     'nuts': 'Tree Nuts',
     'milk': 'Milk',
@@ -1555,6 +1561,9 @@ class ProductDatabaseService {
     'celery': 'Celery',
     'lupin': 'Lupin',
     'molluscs': 'Molluscs',
+    'almonds': 'Almond',
+    'cashew-nuts': 'Cashew',
+    'macadamia-nuts': 'Macadamia',
   };
 
   static void _addTraceTagItems(dynamic tags, void Function(String) addItem) {
@@ -1572,6 +1581,38 @@ class ProductDatabaseService {
     'tree nuts': 'Tree Nuts',
     'tree-nuts': 'Tree Nuts',
     'en:nuts': 'Tree Nuts',
+    'en:tree-nuts': 'Tree Nuts',
+    'peanut': 'Peanut',
+    'peanuts': 'Peanut',
+    'en:peanuts': 'Peanut',
+    'almond': 'Almond',
+    'almonds': 'Almond',
+    'en:almonds': 'Almond',
+    'cashew': 'Cashew',
+    'cashews': 'Cashew',
+    'cashew nut': 'Cashew',
+    'cashew nuts': 'Cashew',
+    'cashew-nuts': 'Cashew',
+    'en:cashew-nuts': 'Cashew',
+    'macadamia': 'Macadamia',
+    'macadamias': 'Macadamia',
+    'macadamia nut': 'Macadamia',
+    'macadamia nuts': 'Macadamia',
+    'macadamia-nuts': 'Macadamia',
+    'en:macadamia-nuts': 'Macadamia',
+    'soy': 'Soy',
+    'soya': 'Soy',
+    'soybean': 'Soy',
+    'soybeans': 'Soy',
+    'en:soybeans': 'Soy',
+    'egg': 'Egg',
+    'eggs': 'Egg',
+    'en:eggs': 'Egg',
+    'sesame': 'Sesame',
+    'sesame seed': 'Sesame',
+    'sesame seeds': 'Sesame',
+    'sesame-seeds': 'Sesame',
+    'en:sesame-seeds': 'Sesame',
   };
 
   static String _formatMayContainItem(String item) {

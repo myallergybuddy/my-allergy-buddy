@@ -180,7 +180,6 @@ class AustralianCuratedProductDatabase {
         'Cashew',
         'Macadamia',
         'Soy',
-        'Tree Nuts',
       ],
       'traces_tags': [
         'en:peanuts',
@@ -188,17 +187,14 @@ class AustralianCuratedProductDatabase {
         'en:cashew-nuts',
         'en:macadamia-nuts',
         'en:soybeans',
-        'en:nuts',
       ],
-      'traces':
-          'peanuts, almonds, cashew nuts, macadamia nuts, soybeans, nuts',
+      'traces': 'peanuts, almonds, cashew nuts, macadamia nuts, soybeans',
       'crossContamination': [
         'peanuts',
         'almond',
         'cashew',
         'macadamia',
         'soy',
-        'tree nuts',
       ],
       'isAustralianProduct': true,
       'image': null,
