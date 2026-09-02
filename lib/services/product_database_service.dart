@@ -1515,6 +1515,20 @@ class ProductDatabaseService {
       '9300605000034': '9310015248788', // Twisties Cheese
       '9300605000039': '9350177000275', // Sirena tuna
       '9300605000040': '9310174157488', // McCain SuperFries
+      '9300605000006': '9310055106789', // Nutri-Grain
+      '9300605000015': '9310072001005', // Monte Carlo
+      '9300605000016': '9310072001777', // Scotch Finger
+      '9300605000018': '9310072001579', // Choc Ripple
+      '9300605000019': '9310072002095', // Kingston
+      '9300605000026': '9300605099531', // Allen's Snakes Alive
+      '9300605000027': '9300605124028', // Allen's Big Red Frogs
+      '9300605000028': '9300605012554', // Allen's Minties
+      '9300605000032': '9310055105867', // Rice Bubbles
+      '9300605000033': '9310055105898', // Special K
+      '9300605000035': '9310015248771', // Twisties Chicken
+      '9300605000038': '9300462137575', // John West tuna
+      '9300605000041': '9300605140172', // KitKat Chunky Aero Mint
+      '9300605000046': '9310015241918', // Doritos Nacho Cheese
     };
     for (final mapping in syntheticToReal.entries) {
       final real = OpenFoodFactsService.manualProductDatabase[mapping.value];
