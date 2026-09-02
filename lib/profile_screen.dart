@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'models/medication.dart';
 import 'package:flutter/services.dart';
 import 'scan_label_screen.dart';
+import 'tree_nuts_grouping.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -1596,7 +1597,11 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     const order = ['High', 'Medium', 'Low'];
     return [
       for (final severity in order)
-        ..._allergies.where((allergy) => _normalizedSeverity(allergy) == severity),
+        ...TreeNutsGrouping.forMyAllergies(
+          _allergies
+              .where((allergy) => _normalizedSeverity(allergy) == severity)
+              .toList(),
+        ),
     ];
   }
 

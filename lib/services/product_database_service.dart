@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'barcode_utils.dart';
 import 'html_text_utils.dart';
 import 'open_food_facts_service.dart';
+import '../tree_nuts_grouping.dart';
 
 class ProductDatabaseService {
   // Enhanced product database with comprehensive Australian products
@@ -1027,6 +1028,7 @@ class ProductDatabaseService {
     'tree nut',
     'nuts',
     'nut',
+    'en:nuts',
   ];
 
   static bool _isIndividualTreeNutAllergy(String allergyName) {
@@ -1044,11 +1046,19 @@ class ProductDatabaseService {
   ///
   /// "Tree Nuts" matches any tree nut. An individual nut matches only that nut,
   /// plus generic pack traces ("tree nuts", "nuts", en:nuts).
-  static List<String> _synonymsForUserAllergy(String allergyName) {
+  /// When Tree Nuts is saved with a child subset, the parent matches generic
+  /// traces only; selected children match their own ingredients.
+  static List<String> _synonymsForUserAllergy(
+    String allergyName, {
+    bool treeNutsGenericOnly = false,
+  }) {
     final lower = allergyName.toLowerCase().trim();
     if (lower.isEmpty) return const [];
 
     if (lower == 'tree nuts' || lower == 'tree nut') {
+      if (treeNutsGenericOnly) {
+        return List<String>.from(_genericTreeNutWarningTerms);
+      }
       return List<String>.from(_allergenSynonyms['tree nuts']!);
     }
 
@@ -1071,11 +1081,19 @@ class ProductDatabaseService {
     return [lower];
   }
 
-  static List<String> _warningSynonymsForUserAllergy(String allergyName) {
-    return _withGenericTreeNutTermsIfNeeded(
+  static List<String> _warningSynonymsForUserAllergy(
+    String allergyName, {
+    bool treeNutsGenericOnly = false,
+    bool skipExtraGenericTreeNutTerms = false,
+  }) {
+    final synonyms = _synonymsForUserAllergy(
       allergyName,
-      _synonymsForUserAllergy(allergyName),
+      treeNutsGenericOnly: treeNutsGenericOnly,
     );
+    if (skipExtraGenericTreeNutTerms) {
+      return synonyms;
+    }
+    return _withGenericTreeNutTermsIfNeeded(allergyName, synonyms);
   }
 
   static List<String> _withGenericTreeNutTermsIfNeeded(
@@ -1126,6 +1144,12 @@ class ProductDatabaseService {
       print('ProductDatabaseService: Processing facility warnings: $processingFacilityWarnings');
     }
     
+    final allergyNames = userAllergies
+        .map((allergy) => allergy['name']?.toString() ?? '')
+        .toList();
+    final treeNutsSubset = TreeNutsGrouping.isSubset(allergyNames);
+    final hasTreeNutsParent = TreeNutsGrouping.hasParent(allergyNames);
+
     for (Map<String, dynamic> allergy in userAllergies) {
       String allergyName = allergy['name'].toString().toLowerCase();
       
@@ -1140,8 +1164,19 @@ class ProductDatabaseService {
       String detectionMethod = '';
       bool isCrossContamination = false;
 
-      final synonyms = _synonymsForUserAllergy(allergyName);
-      final warningSynonyms = _warningSynonymsForUserAllergy(allergyName);
+      final treeNutsGenericOnly =
+          treeNutsSubset && TreeNutsGrouping.isParentName(allergyName);
+      final skipExtraGenericTreeNutTerms = hasTreeNutsParent &&
+          _isIndividualTreeNutAllergy(allergyName);
+      final synonyms = _synonymsForUserAllergy(
+        allergyName,
+        treeNutsGenericOnly: treeNutsGenericOnly,
+      );
+      final warningSynonyms = _warningSynonymsForUserAllergy(
+        allergyName,
+        treeNutsGenericOnly: treeNutsGenericOnly,
+        skipExtraGenericTreeNutTerms: skipExtraGenericTreeNutTerms,
+      );
       if (synonyms.isNotEmpty) {
         if (kDebugMode) {
           print('ProductDatabaseService: Found allergy "$allergyName" synonyms: $synonyms');

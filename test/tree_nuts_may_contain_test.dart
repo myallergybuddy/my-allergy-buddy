@@ -131,4 +131,39 @@ void main() {
     ).map((item) => item['name']).toSet();
     expect(groupHitsTraces, contains('Tree Nuts'));
   });
+
+  test('Tree Nuts subset keeps generic traces and selected nuts only', () {
+    final subsetUser = [
+      {'name': 'Tree Nuts', 'severity': 'high'},
+      {'name': 'Almond', 'severity': 'high'},
+      {'name': 'Hazelnut', 'severity': 'high'},
+      {'name': 'Pecan', 'severity': 'high'},
+    ];
+
+    final cashewIngredient = ProductDatabaseService.analyzeAllergens(
+      const ['wheat flour', 'cashews', 'sugar'],
+      subsetUser,
+    ).map((item) => item['name']).toSet();
+    expect(cashewIngredient, isEmpty);
+
+    final almondIngredient = ProductDatabaseService.analyzeAllergens(
+      const ['wheat flour', 'almond meal', 'sugar'],
+      subsetUser,
+    ).map((item) => item['name']).toSet();
+    expect(almondIngredient, contains('Almond'));
+    expect(almondIngredient, isNot(contains('Tree Nuts')));
+
+    final genericTraces = ProductDatabaseService.analyzeAllergens(
+      const ['may contain tree nuts'],
+      subsetUser,
+    ).map((item) => item['name']).toSet();
+    expect(genericTraces, contains('Tree Nuts'));
+    expect(genericTraces, isNot(contains('Cashew')));
+
+    final enNuts = ProductDatabaseService.analyzeAllergens(
+      const ['en:nuts'],
+      subsetUser,
+    ).map((item) => item['name']).toSet();
+    expect(enNuts, contains('Tree Nuts'));
+  });
 }

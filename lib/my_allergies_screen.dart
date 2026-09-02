@@ -6,6 +6,7 @@ import 'allergy_selection_screen.dart';
 import 'widgets/premium_upgrade_widget.dart';
 import 'scan_label_screen.dart';
 import 'services/revenue_cat_service.dart';
+import 'tree_nuts_grouping.dart';
 
 
 class MyAllergiesScreen extends StatefulWidget {
@@ -348,9 +349,11 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
     final widgets = <Widget>[];
 
     for (final severity in order) {
-      final items = _allergies
-          .where((allergy) => _normalizedSeverity(allergy) == severity)
-          .toList();
+      final items = TreeNutsGrouping.forMyAllergies(
+        _allergies
+            .where((allergy) => _normalizedSeverity(allergy) == severity)
+            .toList(),
+      );
       if (items.isEmpty) continue;
 
       widgets.addAll(items.map(_buildAllergyCard));

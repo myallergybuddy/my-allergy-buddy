@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'widgets/premium_upgrade_widget.dart';
 import 'services/revenue_cat_service.dart';
+import 'tree_nuts_grouping.dart';
 
 class AllergySelectionScreen extends StatefulWidget {
   final bool isPro;
@@ -349,18 +350,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
 
   /// Individual tree nuts under the Tree Nuts parent on the picker.
   /// Coconut is listed separately (not a tree nut on AU packs).
-  static const List<String> _treeNutAllergens = [
-    'Almond',
-    'Cashew',
-    'Hazelnut',
-    'Pecan',
-    'Walnut',
-    'Brazil Nut',
-    'Pistachio',
-    'Macadamia',
-    'Pine Nut',
-    'Chestnut',
-  ];
+  static const List<String> _treeNutAllergens = TreeNutsGrouping.children;
 
   void _onSearchChanged() {
     final query = _searchController.text.toLowerCase().trim();
@@ -533,30 +523,40 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
     }
   }
 
+  List<Map<String, dynamic>> _allergiesPayload() {
+    final normalized = TreeNutsGrouping.normalizeSelection(selectedAllergies);
+    return normalized.entries.map((entry) {
+      return {
+        'name': entry.key,
+        'severity': entry.value,
+        'category': _getCategoryForAllergen(entry.key),
+        'lastReaction': DateTime.now().toString().split(' ')[0],
+        'notes': '',
+      };
+    }).toList();
+  }
+
   Future<void> _saveAllergies() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final allergiesList = selectedAllergies.entries.map((entry) {
-        return {
-          'name': entry.key,
-          'severity': entry.value,
-          'category': _getCategoryForAllergen(entry.key),
-          'lastReaction': DateTime.now().toString().split(' ')[0],
-          'notes': '',
-        };
-      }).toList();
+      final allergiesList = _allergiesPayload();
 
       final allergiesJson = allergiesList
           .map((allergy) => jsonEncode(allergy))
           .toList();
       
       await prefs.setStringList('saved_allergies', allergiesJson);
-      
-      // Mark all selected allergies as saved
+
+      final normalized = TreeNutsGrouping.normalizeSelection(selectedAllergies);
       setState(() {
-        for (var entry in selectedAllergies.entries) {
-          savedAllergies[entry.key] = true;
-        }
+        selectedAllergies
+          ..clear()
+          ..addAll(normalized);
+        savedAllergies
+          ..clear()
+          ..addEntries(allergiesList.map((allergy) {
+            return MapEntry(allergy['name'] as String, true);
+          }));
         newlySelectedAllergies.clear();
       });
     } catch (e) {
@@ -933,16 +933,8 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
             // Save allergies to SharedPreferences
             await _saveAllergies();
             
-            // Convert selected allergies to the format expected by MyAllergiesScreen
-            final List<Map<String, dynamic>> selectedAllergiesList = selectedAllergies.entries.map((entry) {
-              return {
-                'name': entry.key,
-                'severity': entry.value,
-                'category': _getCategoryForAllergen(entry.key),
-                'lastReaction': DateTime.now().toString().split(' ')[0], // Today's date
-                'notes': '', // Empty notes by default
-              };
-            }).toList();
+            final List<Map<String, dynamic>> selectedAllergiesList =
+                _allergiesPayload();
 
             if (!context.mounted) return;
 
@@ -1053,13 +1045,28 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
     return tiles;
   }
 
+  bool _hasStoredTreeNutChildren() {
+    return _treeNutAllergens.any(selectedAllergies.containsKey);
+  }
+
+  bool _isFullTreeNutsGroup() {
+    return selectedAllergies.containsKey(TreeNutsGrouping.parentName) &&
+        !_hasStoredTreeNutChildren();
+  }
+
   bool _isTreeNutChildSelected(String name) {
-    return selectedAllergies.containsKey('Tree Nuts') ||
-        selectedAllergies.containsKey(name);
+    if (selectedAllergies.containsKey(name)) return true;
+    return _isFullTreeNutsGroup();
   }
 
   bool? _treeNutsParentValue(List<String> visibleChildren) {
-    if (selectedAllergies.containsKey('Tree Nuts')) return true;
+    if (selectedAllergies.containsKey(TreeNutsGrouping.parentName)) {
+      if (_isFullTreeNutsGroup()) return true;
+      final allVisibleOn = visibleChildren.isNotEmpty &&
+          visibleChildren.every(_isTreeNutChildSelected);
+      if (allVisibleOn) return true;
+      return null;
+    }
     if (visibleChildren.isEmpty) return false;
     final selectedCount =
         visibleChildren.where((name) => selectedAllergies.containsKey(name)).length;
@@ -1070,9 +1077,10 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
 
   void _selectAllTreeNuts(List<String> visibleChildren) {
     setState(() {
-      selectedAllergies['Tree Nuts'] = selectedAllergies['Tree Nuts'] ?? 'Medium';
-      if (!allergySeverities.containsKey('Tree Nuts')) {
-        newlySelectedAllergies['Tree Nuts'] = true;
+      selectedAllergies[TreeNutsGrouping.parentName] =
+          selectedAllergies[TreeNutsGrouping.parentName] ?? 'Medium';
+      if (!allergySeverities.containsKey(TreeNutsGrouping.parentName)) {
+        newlySelectedAllergies[TreeNutsGrouping.parentName] = true;
       }
       for (final name in visibleChildren) {
         selectedAllergies.remove(name);
@@ -1083,7 +1091,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
   }
 
   void _deselectAllTreeNuts(List<String> visibleChildren) {
-    final names = ['Tree Nuts', ...visibleChildren];
+    final names = [TreeNutsGrouping.parentName, ...visibleChildren];
     setState(() {
       for (final name in names) {
         selectedAllergies.remove(name);
@@ -1105,18 +1113,22 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
   ) {
     setState(() {
       if (selected) {
-        if (selectedAllergies.containsKey('Tree Nuts')) return;
-        selectedAllergies[name] = selectedAllergies[name] ?? 'Medium';
-        if (!allergySeverities.containsKey(name)) {
+        if (_isFullTreeNutsGroup()) return;
+        selectedAllergies[name] = selectedAllergies[name] ??
+            selectedAllergies[TreeNutsGrouping.parentName] ??
+            'Medium';
+        if (!allergySeverities.containsKey(name) &&
+            !selectedAllergies.containsKey(TreeNutsGrouping.parentName)) {
           newlySelectedAllergies[name] = true;
         }
-        final allChildrenSelected = visibleChildren.every(
-          (child) => selectedAllergies.containsKey(child),
-        );
+        final allChildrenSelected = visibleChildren.every(_isTreeNutChildSelected);
         if (allChildrenSelected) {
-          selectedAllergies['Tree Nuts'] = selectedAllergies['Tree Nuts'] ?? 'Medium';
-          if (!allergySeverities.containsKey('Tree Nuts')) {
-            newlySelectedAllergies['Tree Nuts'] = true;
+          selectedAllergies[TreeNutsGrouping.parentName] =
+              selectedAllergies[TreeNutsGrouping.parentName] ??
+              selectedAllergies[name] ??
+              'Medium';
+          if (!allergySeverities.containsKey(TreeNutsGrouping.parentName)) {
+            newlySelectedAllergies[TreeNutsGrouping.parentName] = true;
           }
           for (final child in visibleChildren) {
             selectedAllergies.remove(child);
@@ -1125,16 +1137,12 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
           }
         }
       } else {
-        if (selectedAllergies.containsKey('Tree Nuts')) {
-          selectedAllergies.remove('Tree Nuts');
-          allergySeverities.remove('Tree Nuts');
-          newlySelectedAllergies.remove('Tree Nuts');
-          if (savedAllergies.containsKey('Tree Nuts')) {
-            _removeFromSavedAllergies('Tree Nuts');
-          }
+        if (_isFullTreeNutsGroup()) {
+          final severity =
+              selectedAllergies[TreeNutsGrouping.parentName] ?? 'Medium';
           for (final child in visibleChildren) {
             if (child != name) {
-              selectedAllergies[child] = selectedAllergies[child] ?? 'Medium';
+              selectedAllergies[child] = severity;
             }
           }
         }
@@ -1143,6 +1151,17 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
         newlySelectedAllergies.remove(name);
         if (savedAllergies.containsKey(name)) {
           _removeFromSavedAllergies(name);
+        }
+        final anyChildLeft =
+            visibleChildren.any(selectedAllergies.containsKey);
+        if (!anyChildLeft &&
+            selectedAllergies.containsKey(TreeNutsGrouping.parentName)) {
+          selectedAllergies.remove(TreeNutsGrouping.parentName);
+          allergySeverities.remove(TreeNutsGrouping.parentName);
+          newlySelectedAllergies.remove(TreeNutsGrouping.parentName);
+          if (savedAllergies.containsKey(TreeNutsGrouping.parentName)) {
+            _removeFromSavedAllergies(TreeNutsGrouping.parentName);
+          }
         }
       }
     });
@@ -1177,7 +1196,10 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
   }) {
     final name = allergen['name']!;
     final isSaved = savedAllergies.containsKey(name) ||
-        (indent && savedAllergies.containsKey('Tree Nuts'));
+        (indent &&
+            savedAllergies.containsKey(TreeNutsGrouping.parentName) &&
+            !TreeNutsGrouping.hasStoredChildren(savedAllergies.keys) &&
+            _isTreeNutChildSelected(name));
     final checked = isChecked ?? selectedAllergies.containsKey(name);
     final showSeverity = selectedAllergies.containsKey(name) &&
         newlySelectedAllergies.containsKey(name);
