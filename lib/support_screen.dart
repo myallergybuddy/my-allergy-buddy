@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'faq_screen.dart';
+import 'report_missing_product_screen.dart';
 import 'user_guide_screen.dart';
 
 
@@ -244,6 +245,17 @@ class _SupportScreenState extends State<SupportScreen> {
                   _buildSection(
                     title: 'Contact Support',
                     children: [
+                      _buildListTile(
+                        title: 'Report a missing product',
+                        subtitle: 'Product not found? Email photos so we can add it',
+                        icon: Icons.add_photo_alternate_outlined,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ReportMissingProductScreen(),
+                          ),
+                        ),
+                      ),
                       _buildListTile(
                         title: 'Contact Support',
                         subtitle: 'Submit a support request via form',

@@ -35,7 +35,7 @@ class _FAQScreenState extends State<FAQScreen> {
         },
         {
           'question': 'Why can\'t I find my product in the database?',
-          'answer': 'Our database is constantly growing. If you can\'t find a product, you can add it manually or contact us to include it in our database.',
+          'answer': 'Our database is constantly growing. If a product is missing, go to Settings → Support → Report a missing product, or tap Report this product after a scan. You can email photos of the front, ingredients, and barcode so we can add it to our secure catalog.',
         },
       ],
     },

@@ -1385,9 +1385,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       ),
+                    ],
+                  ),
+
+                  // Support
+                  _buildSection(
+                    title: 'Support',
+                    children: [
                       _buildListTile(
-                        title: 'Support',
-                        subtitle: 'Get help and contact us',
+                        title: 'Get help and contact us',
+                        subtitle: 'FAQ, user guide, missing products, and email',
                         icon: Icons.support_agent,
                         onTap: () => Navigator.push(
                           context,

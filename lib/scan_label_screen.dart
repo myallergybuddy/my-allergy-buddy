@@ -19,6 +19,7 @@ import 'services/australian_curated_product_database.dart';
 import 'models/enhanced_scan_result.dart';
 import 'services/html_text_utils.dart';
 import 'widgets/premium_upgrade_widget.dart';
+import 'report_missing_product_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class ScanLabelScreen extends StatefulWidget {
@@ -2068,6 +2069,21 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
     );
   }
 
+  void _openMissingProductReport() {
+    final raw = (scanResult?.barcode ?? barcodeText).trim();
+    final barcode = UserLearnedProductStore.isRealBarcode(raw) ? raw : null;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReportMissingProductScreen(
+          initialBarcode: barcode,
+          initialProductName: scanResult?.productName,
+          initialBrand: scanResult?.brand,
+        ),
+      ),
+    );
+  }
+
   Widget _buildBody() {
     if (isScanning) {
       return Column(
@@ -2440,6 +2456,38 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                          color: Colors.grey[600],
                        ),
                      ),
+                     if (UserLearnedProductStore.isRealBarcode(barcodeText)) ...[
+                       const SizedBox(height: 4),
+                       Text(
+                         'Barcode: $barcodeText',
+                         style: GoogleFonts.nunito(
+                           fontSize: 14,
+                           color: Colors.grey[700],
+                         ),
+                       ),
+                     ],
+                     const SizedBox(height: 12),
+                     SizedBox(
+                       width: double.infinity,
+                       child: ElevatedButton.icon(
+                         onPressed: _openMissingProductReport,
+                         icon: const Icon(Icons.add_photo_alternate_outlined),
+                         label: Text(
+                           'Report this product',
+                           style: GoogleFonts.nunito(
+                             fontWeight: FontWeight.bold,
+                           ),
+                         ),
+                         style: ElevatedButton.styleFrom(
+                           backgroundColor: const Color(0xFF4A9E9C),
+                           foregroundColor: Colors.white,
+                           padding: const EdgeInsets.symmetric(vertical: 12),
+                           shape: RoundedRectangleBorder(
+                             borderRadius: BorderRadius.circular(12),
+                           ),
+                         ),
+                       ),
+                     ),
                    ],
                  ],
                ),
@@ -2729,6 +2777,31 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                       ),
                     ),
                   ),
+                  if (scanResult != null &&
+                      HtmlTextUtils.forDisplayList(scanResult!.ingredients).isEmpty) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _openMissingProductReport,
+                        icon: const Icon(Icons.add_photo_alternate_outlined),
+                        label: Text(
+                          'Report this product',
+                          style: GoogleFonts.nunito(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF4A9E9C),
+                          side: const BorderSide(color: Color(0xFF4A9E9C)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
