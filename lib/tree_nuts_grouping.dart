@@ -46,12 +46,37 @@ class TreeNutsGrouping {
   static bool isSubset(Iterable<String> names) =>
       hasParent(names) && hasStoredChildren(names);
 
-  /// Profile and My Allergies: Tree Nuts plus remaining selected children.
-  /// Deselected nuts are not in [allergies], so they stay hidden.
+  /// Profile: if Tree Nuts is selected, show only the group name.
+  /// Child nuts appear only when they were chosen without the parent.
   static List<Map<String, dynamic>> forProfile(
     List<Map<String, dynamic>> allergies,
   ) {
-    return forMyAllergies(allergies);
+    final parent = <Map<String, dynamic>>[];
+    final kids = <Map<String, dynamic>>[];
+    final others = <Map<String, dynamic>>[];
+
+    for (final allergy in allergies) {
+      final name = allergy['name']?.toString() ?? '';
+      if (isParentName(name)) {
+        parent.add(allergy);
+      } else if (isChildName(name)) {
+        kids.add(allergy);
+      } else {
+        others.add(allergy);
+      }
+    }
+
+    if (parent.isNotEmpty) {
+      return [...parent, ...others];
+    }
+
+    kids.sort((a, b) {
+      final aIndex = _childIndex(a['name']?.toString() ?? '');
+      final bIndex = _childIndex(b['name']?.toString() ?? '');
+      return aIndex.compareTo(bIndex);
+    });
+
+    return [...kids, ...others];
   }
 
   /// Show Tree Nuts plus remaining selected children (saved subset).

@@ -28,7 +28,7 @@ void main() {
     expect(saved.keys, ['Tree Nuts']);
   });
 
-  test('Profile shows Tree Nuts plus remaining selected children', () {
+  test('Profile shows only Tree Nuts when the group is selected', () {
     final allergies = [
       {'name': 'Tree Nuts', 'severity': 'High'},
       {'name': 'Almond', 'severity': 'High'},
@@ -39,7 +39,7 @@ void main() {
     final profile = TreeNutsGrouping.forProfile(allergies)
         .map((item) => item['name'])
         .toList();
-    expect(profile, ['Tree Nuts', 'Almond', 'Hazelnut', 'Milk']);
+    expect(profile, ['Tree Nuts', 'Milk']);
   });
 
   test('My Allergies shows Tree Nuts plus remaining selected children', () {
@@ -56,7 +56,7 @@ void main() {
     expect(mine, ['Tree Nuts', 'Almond', 'Hazelnut', 'Milk']);
   });
 
-  test('Profile and My Allergies use the same Tree Nuts display list', () {
+  test('Profile hides child nuts while My Allergies keeps them', () {
     final allergies = [
       {'name': 'Milk', 'severity': 'Medium'},
       {'name': 'Hazelnut', 'severity': 'High'},
@@ -66,7 +66,11 @@ void main() {
 
     expect(
       TreeNutsGrouping.forProfile(allergies).map((item) => item['name']),
+      ['Tree Nuts', 'Milk'],
+    );
+    expect(
       TreeNutsGrouping.forMyAllergies(allergies).map((item) => item['name']),
+      ['Tree Nuts', 'Almond', 'Hazelnut', 'Milk'],
     );
   });
 

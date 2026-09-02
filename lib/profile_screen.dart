@@ -1595,13 +1595,10 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
 
   List<Map<String, dynamic>> get _allergiesBySeverity {
     const order = ['High', 'Medium', 'Low'];
+    final display = TreeNutsGrouping.forProfile(_allergies);
     return [
       for (final severity in order)
-        ...TreeNutsGrouping.forMyAllergies(
-          _allergies
-              .where((allergy) => _normalizedSeverity(allergy) == severity)
-              .toList(),
-        ),
+        ...display.where((allergy) => _normalizedSeverity(allergy) == severity),
     ];
   }
 
