@@ -1620,6 +1620,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     final baseStyle = GoogleFonts.nunitoSans(
       fontSize: fontSize,
       fontWeight: fontWeight,
+      letterSpacing: 2.0,
     );
     return Stack(
       children: [

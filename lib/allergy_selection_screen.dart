@@ -1072,6 +1072,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
     final baseStyle = GoogleFonts.nunitoSans(
       fontSize: fontSize,
       fontWeight: fontWeight,
+      letterSpacing: 2.0,
     );
     return Stack(
       children: [

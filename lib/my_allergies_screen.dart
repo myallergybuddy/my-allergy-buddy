@@ -456,6 +456,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
     final baseStyle = GoogleFonts.nunitoSans(
       fontSize: fontSize,
       fontWeight: fontWeight,
+      letterSpacing: 2.0,
     );
     return Stack(
       children: [
