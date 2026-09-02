@@ -1496,6 +1496,35 @@ class ProductDatabaseService {
       _productDatabase[entry.key] = Map<String, dynamic>.from(entry.value);
     }
 
+    // Overlay pack-accurate curated data onto older synthetic SKUs so the
+    // bundled catalog matches the real Australian barcodes above.
+    const syntheticToReal = <String, String>{
+      '9300605000005': '9300605126527', // Milo
+      '9300605000007': '9310060011030', // Uncle Tobys oats
+      '9300605000008': '9310015241888', // Smith's original
+      '9300605000009': '9310015240614', // Red Rock Deli
+      '9300605000010': '9310988009638', // Kettle sea salt
+      '9300605000012': '9310072026404', // Jatz
+      '9300605000014': '9310072023496', // Iced VoVo
+      '9300605000017': '9310072029559', // Tiny Teddy
+      '9300605000023': '9310053105357', // Mainland Extra Tasty
+      '9300605000024': '9311493003388', // Bundaberg Ginger Beer
+      '9300605000025': '9310179006668', // Golden Circle pineapple
+      '9300605000030': '9310012021049', // MasterFoods tomato sauce
+      '9300605000031': '9310055102699', // Kellogg's Corn Flakes
+      '9300605000034': '9310015248788', // Twisties Cheese
+      '9300605000039': '9350177000275', // Sirena tuna
+      '9300605000040': '9310174157488', // McCain SuperFries
+    };
+    for (final mapping in syntheticToReal.entries) {
+      final real = OpenFoodFactsService.manualProductDatabase[mapping.value];
+      if (real == null) continue;
+      _productDatabase[mapping.key] = {
+        ...Map<String, dynamic>.from(real),
+        'demoAliasFor': mapping.value,
+      };
+    }
+
     if (kDebugMode) {
       print('ProductDatabaseService: initialized with ${_productDatabase.length} products');
     }
