@@ -33,7 +33,7 @@ void main() {
   });
 
   group('UserLearnedProductStore', () {
-    test('save/get/list/remove by barcode with private_secure source', () async {
+    test('save/get/list/remove by barcode with myallergybuddy_barcode_database source', () async {
       final saved = await UserLearnedProductStore.saveProduct(
         barcode: testBarcode,
         ingredients: ['wheat flour', 'sugar', 'cocoa'],
@@ -91,14 +91,48 @@ void main() {
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('user_learned_products'), isNull);
-      final encrypted = prefs.getString('user_learned_products_enc');
+      expect(prefs.getString('user_learned_products_enc'), isNull);
+      final encrypted = prefs.getString(
+        UserLearnedProductStore.databaseName,
+      );
       expect(encrypted, isNotNull);
       expect(encrypted, isNotEmpty);
       expect(encrypted!.contains('peanuts'), isFalse);
       expect(encrypted.contains('Legacy OCR Bar'), isFalse);
     });
 
-    test('applyToLookupResult fills a miss from the private catalog', () async {
+    test('migrates user_learned_products_enc into myallergybuddy_barcode_database', () async {
+      final cipher = await EncryptionService.encryptPrivatePayload(
+        jsonEncode({
+          testBarcode: {
+            'barcode': testBarcode,
+            'name': 'Legacy Encrypted Bar',
+            'ingredients': ['sesame seeds'],
+            'source': 'private_secure',
+          },
+        }),
+      );
+      SharedPreferences.setMockInitialValues({
+        'user_learned_products_enc': cipher,
+      });
+      UserLearnedProductStore.resetForTest();
+
+      await UserLearnedProductStore.initialize();
+
+      final product = UserLearnedProductStore.getProduct(testBarcode);
+      expect(product, isNotNull);
+      expect(product!['ingredients'], ['sesame seeds']);
+      expect(product['source'], UserLearnedProductStore.databaseName);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('user_learned_products_enc'), isNull);
+      expect(
+        prefs.getString(UserLearnedProductStore.databaseName),
+        isNotEmpty,
+      );
+    });
+
+    test('applyToLookupResult fills a miss from myallergybuddy_barcode_database', () async {
       await UserLearnedProductStore.saveProduct(
         barcode: testBarcode,
         ingredients: ['almonds'],
@@ -137,10 +171,13 @@ void main() {
       });
 
       expect((result['product'] as Map)['ingredients'], ['cashews', 'salt']);
-      expect((result['product'] as Map)['source'], 'private_secure');
+      expect(
+        (result['product'] as Map)['source'],
+        UserLearnedProductStore.databaseName,
+      );
       expect(
         result['dataSource'].toString(),
-        contains('Private catalog'),
+        contains(UserLearnedProductStore.databaseName),
       );
     });
 

@@ -10,9 +10,12 @@ class EncryptionService {
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static const String _keyName = 'passcode_encryption_key';
   static const String _ivName = 'passcode_encryption_iv';
-  static const String _privateCatalogKeyName = 'private_catalog_aes_key';
+  static const String _barcodeDatabaseAesKeyName =
+      'myallergybuddy_barcode_database_aes_key';
+  static const String _legacyPrivateCatalogAesKeyName =
+      'private_catalog_aes_key';
 
-  /// AES-256 key for the on-device private product catalog.
+  /// AES-256 key for myallergybuddy_barcode_database.
   /// Stored in the platform keystore / Keychain via FlutterSecureStorage —
   /// never written next to the ciphertext in SharedPreferences.
   static encrypt.Key? _cachedPrivateCatalogKey;
@@ -144,7 +147,7 @@ class EncryptionService {
     };
   }
 
-  /// Encrypt a private-catalog JSON blob.
+  /// Encrypt a myallergybuddy_barcode_database JSON blob.
   ///
   /// Format: `v1.<iv_b64>.<cipher_b64>` (AES-256-CBC, random IV per write).
   static Future<String> encryptPrivatePayload(String plaintext) async {
@@ -167,7 +170,7 @@ class EncryptionService {
     return encrypter.decrypt64(parts[2], iv: iv);
   }
 
-  /// Encrypt sensitive data (IV-prefixed; same scheme as the private catalog).
+  /// Encrypt sensitive data (IV-prefixed; same scheme as myallergybuddy_barcode_database).
   static Future<String> encryptData(String data) => encryptPrivatePayload(data);
 
   /// Decrypt sensitive data produced by [encryptData] / [encryptPrivatePayload].
@@ -178,20 +181,35 @@ class EncryptionService {
     if (_cachedPrivateCatalogKey != null) return _cachedPrivateCatalogKey!;
 
     try {
-      final stored = await _secureStorage.read(key: _privateCatalogKeyName);
+      final stored = await _secureStorage.read(key: _barcodeDatabaseAesKeyName);
       if (stored != null && stored.isNotEmpty) {
         _cachedPrivateCatalogKey = encrypt.Key.fromBase64(stored);
         return _cachedPrivateCatalogKey!;
       }
 
+      final legacy = await _secureStorage.read(
+        key: _legacyPrivateCatalogAesKeyName,
+      );
+      if (legacy != null && legacy.isNotEmpty) {
+        await _secureStorage.write(
+          key: _barcodeDatabaseAesKeyName,
+          value: legacy,
+        );
+        _cachedPrivateCatalogKey = encrypt.Key.fromBase64(legacy);
+        return _cachedPrivateCatalogKey!;
+      }
+
       final key = encrypt.Key.fromSecureRandom(32);
-      await _secureStorage.write(key: _privateCatalogKeyName, value: key.base64);
+      await _secureStorage.write(
+        key: _barcodeDatabaseAesKeyName,
+        value: key.base64,
+      );
       _cachedPrivateCatalogKey = key;
       return key;
     } catch (e) {
       // Unit tests and rare plugin failures: session-only key (not persisted).
       debugPrint(
-        'EncryptionService: Secure storage unavailable for private catalog: $e',
+        'EncryptionService: Secure storage unavailable for myallergybuddy_barcode_database: $e',
       );
       _cachedPrivateCatalogKey ??= encrypt.Key.fromSecureRandom(32);
       return _cachedPrivateCatalogKey!;

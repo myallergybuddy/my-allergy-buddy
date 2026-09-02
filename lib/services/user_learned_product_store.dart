@@ -6,23 +6,27 @@ import 'barcode_utils.dart';
 import 'encryption_service.dart';
 import 'product_database_service.dart';
 
-/// Encrypted on-device catalog of pack-accurate products that open barcode
-/// databases do not have (or have with no usable ingredients).
+/// Encrypted on-device catalog (`myallergybuddy_barcode_database`) of
+/// pack-accurate products that open barcode databases do not have (or have
+/// with no usable ingredients).
 ///
-/// Photo OCR and manual adds stay private: they are never uploaded to Open
-/// Food Facts or any other public API. Ingredients are stored encrypted at
-/// rest (AES-256-CBC); the key lives in FlutterSecureStorage.
+/// Photo OCR and manual adds stay on this device: they are never uploaded to
+/// Open Food Facts or any other public API. Ingredients are stored encrypted
+/// at rest (AES-256-CBC); the key lives in FlutterSecureStorage.
 class UserLearnedProductStore {
-  static const _productsKey = 'user_learned_products';
-  static const _encryptedProductsKey = 'user_learned_products_enc';
+  static const databaseName = 'myallergybuddy_barcode_database';
+  static const _encryptedProductsKey = databaseName;
+  static const _legacyEncryptedProductsKey = 'user_learned_products_enc';
+  static const _legacyProductsKey = 'user_learned_products';
   static const _lastScanKey = 'last_scanned_product';
   static const _linkedPhotosKey = 'user_learned_linked_photos';
   static const Duration associateWindow = Duration(hours: 24);
 
-  static const sourcePrivateSecure = 'private_secure';
+  static const sourcePrivateSecure = databaseName;
+  static const sourceLegacyPrivateSecure = 'private_secure';
   static const learnedFromPhotoOcr = 'photo_ocr';
   static const learnedFromManual = 'manual';
-  static const dataSourceLabel = 'Private catalog (encrypted)';
+  static const dataSourceLabel = databaseName;
 
   static final Map<String, Map<String, dynamic>> _products = {};
   static bool _initialized = false;
@@ -47,7 +51,9 @@ class UserLearnedProductStore {
 
   static bool isPrivateCatalogEntry(Map<String, dynamic>? product) {
     if (product == null) return false;
-    return product['source']?.toString() == sourcePrivateSecure;
+    final source = product['source']?.toString();
+    return source == sourcePrivateSecure ||
+        source == sourceLegacyPrivateSecure;
   }
 
   static Map<String, dynamic>? getProduct(String barcode) {
@@ -112,7 +118,7 @@ class UserLearnedProductStore {
         }
       } catch (e) {
         if (kDebugMode) {
-          print('UserLearnedProductStore: Could not parse last scan: $e');
+          print('myallergybuddy_barcode_database: Could not parse last scan: $e');
         }
       }
     }
@@ -158,7 +164,7 @@ class UserLearnedProductStore {
     );
   }
 
-  /// Save a private catalog entry keyed by barcode.
+  /// Save a myallergybuddy_barcode_database entry keyed by barcode.
   ///
   /// [learnedFrom] is `photo_ocr` or `manual`. Never invents a barcode.
   /// Never uploads to Open Food Facts or any public API.
@@ -177,7 +183,7 @@ class UserLearnedProductStore {
     if (curatedAllergenStatementsWin(barcode)) {
       if (kDebugMode) {
         print(
-          'UserLearnedProductStore: Skipping private overlay; curated allergen statements win for $barcode',
+          'myallergybuddy_barcode_database: Skipping overlay; curated allergen statements win for $barcode',
         );
       }
       return false;
@@ -233,13 +239,13 @@ class UserLearnedProductStore {
 
     if (kDebugMode) {
       print(
-        'UserLearnedProductStore: Saved ${cleaned.length} private ingredients for $storageKey ($learnedFrom)',
+        'myallergybuddy_barcode_database: Saved ${cleaned.length} ingredients for $storageKey ($learnedFrom)',
       );
     }
     return true;
   }
 
-  /// Remove a private catalog entry (all stored barcode variants).
+  /// Remove a myallergybuddy_barcode_database entry (all stored barcode variants).
   static Future<bool> removeProduct(String barcode) async {
     await initialize();
     final keys = _matchingKeys(barcode);
@@ -251,7 +257,7 @@ class UserLearnedProductStore {
     return true;
   }
 
-  /// Fill empty (or missing) ingredient lists from the private catalog.
+  /// Fill empty (or missing) ingredient lists from myallergybuddy_barcode_database.
   /// Open sources that already have usable ingredients keep winning.
   /// Photo-saved / manual ingredients also win when lookup missed entirely.
   static Map<String, dynamic> applyToLookupResult(
@@ -269,7 +275,7 @@ class UserLearnedProductStore {
     if (result['success'] != true) {
       return {
         'success': true,
-        'message': 'Product ingredients saved privately on this device',
+        'message': 'Product ingredients saved in myallergybuddy_barcode_database',
         'dataSource': dataSourceLabel,
         'product': Map<String, dynamic>.from(learned),
       };
@@ -305,7 +311,7 @@ class UserLearnedProductStore {
       ...result,
       'product': product,
       'dataSource': product['dataSource'],
-      'message': 'Product found; ingredients filled from private catalog',
+      'message': 'Product found; ingredients filled from myallergybuddy_barcode_database',
     };
   }
 
@@ -376,7 +382,7 @@ class UserLearnedProductStore {
 
     if (kDebugMode) {
       print(
-        'UserLearnedProductStore: Backfilled photo $photoId onto barcode $barcode',
+        'myallergybuddy_barcode_database: Backfilled photo $photoId onto barcode $barcode',
       );
     }
   }
@@ -416,39 +422,55 @@ class UserLearnedProductStore {
   static Future<void> _loadFromPrefs() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      var migratedLegacy = false;
 
-      final encrypted = prefs.getString(_encryptedProductsKey);
-      if (encrypted != null && encrypted.isNotEmpty) {
+      for (final key in [_encryptedProductsKey, _legacyEncryptedProductsKey]) {
+        final encrypted = prefs.getString(key);
+        if (encrypted == null || encrypted.isEmpty) continue;
         try {
-          final decodedJson = await EncryptionService.decryptPrivatePayload(encrypted);
+          final decodedJson =
+              await EncryptionService.decryptPrivatePayload(encrypted);
           _mergeDecodedProducts(jsonDecode(decodedJson));
+          if (key == _legacyEncryptedProductsKey) {
+            migratedLegacy = true;
+          }
         } catch (e) {
           if (kDebugMode) {
-            print('UserLearnedProductStore: Could not decrypt catalog: $e');
+            print(
+              'myallergybuddy_barcode_database: Could not decrypt catalog ($key): $e',
+            );
           }
         }
       }
 
-      final plaintext = prefs.getString(_productsKey);
+      final plaintext = prefs.getString(_legacyProductsKey);
       if (plaintext != null && plaintext.isNotEmpty) {
         _mergeDecodedProducts(jsonDecode(plaintext));
+        migratedLegacy = true;
+      }
+
+      if (migratedLegacy ||
+          (_products.isNotEmpty &&
+              (prefs.getString(_encryptedProductsKey) == null ||
+                  prefs.getString(_encryptedProductsKey)!.isEmpty))) {
         await _persist();
-        await prefs.remove(_productsKey);
+        await prefs.remove(_legacyEncryptedProductsKey);
+        await prefs.remove(_legacyProductsKey);
         if (kDebugMode) {
           print(
-            'UserLearnedProductStore: Migrated plaintext catalog to encrypted storage',
+            'myallergybuddy_barcode_database: Migrated catalog to $databaseName',
           );
         }
       }
 
       if (kDebugMode) {
         print(
-          'UserLearnedProductStore: Loaded ${_products.length} private products',
+          'myallergybuddy_barcode_database: Loaded ${_products.length} products',
         );
       }
     } catch (e) {
       if (kDebugMode) {
-        print('UserLearnedProductStore: Error loading products: $e');
+        print('myallergybuddy_barcode_database: Error loading products: $e');
       }
     }
   }
@@ -475,10 +497,11 @@ class UserLearnedProductStore {
       final payload = jsonEncode(_products);
       final encrypted = await EncryptionService.encryptPrivatePayload(payload);
       await prefs.setString(_encryptedProductsKey, encrypted);
-      await prefs.remove(_productsKey);
+      await prefs.remove(_legacyProductsKey);
+      await prefs.remove(_legacyEncryptedProductsKey);
     } catch (e) {
       if (kDebugMode) {
-        print('UserLearnedProductStore: Error saving encrypted products: $e');
+        print('myallergybuddy_barcode_database: Error saving encrypted products: $e');
       }
     }
   }
@@ -499,7 +522,7 @@ class UserLearnedProductStore {
 
     if (kDebugMode) {
       print(
-        'UserLearnedProductStore: Discarded OCR overlay for curated barcodes: $toRemove',
+        'myallergybuddy_barcode_database: Discarded OCR overlay for curated barcodes: $toRemove',
       );
     }
   }

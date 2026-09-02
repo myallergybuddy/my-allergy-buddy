@@ -29,11 +29,12 @@ class ProductLookupService {
 
   /// Lookup product by barcode with multiple data sources.
   ///
-  /// Order: curated → local bundled (not the private catalog) → Open Food
-  /// Facts → AU cache → USDA → Edamam → Nutritionix → Spoonacular.
-  /// After those, [UserLearnedProductStore] overlays a privately encrypted
-  /// entry when open sources miss or return no usable ingredients.
-  /// Curated allergen statements still win. Private entries are never
+  /// Order: curated → local bundled (not myallergybuddy_barcode_database) →
+  /// Open Food Facts → AU cache → USDA → Edamam → Nutritionix → Spoonacular.
+  /// After those, [UserLearnedProductStore] overlays a
+  /// myallergybuddy_barcode_database entry when open sources miss or return
+  /// no usable ingredients.
+  /// Curated allergen statements still win. Database entries are never
   /// uploaded to Open Food Facts.
   static Future<Map<String, dynamic>> lookupProductByBarcode(String barcode) async {
     if (kDebugMode) {
