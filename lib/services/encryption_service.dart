@@ -10,6 +10,12 @@ class EncryptionService {
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static const String _keyName = 'passcode_encryption_key';
   static const String _ivName = 'passcode_encryption_iv';
+  static const String _privateCatalogKeyName = 'private_catalog_aes_key';
+
+  /// AES-256 key for the on-device private product catalog.
+  /// Stored in the platform keystore / Keychain via FlutterSecureStorage —
+  /// never written next to the ciphertext in SharedPreferences.
+  static encrypt.Key? _cachedPrivateCatalogKey;
   
 
   
@@ -138,57 +144,62 @@ class EncryptionService {
     };
   }
 
-  /// Encrypt sensitive data
-  static Future<String> encryptData(String data) async {
-    try {
-      final key = await _getOrGenerateKey();
-      final iv = encrypt.IV.fromLength(16);
-      final encrypter = encrypt.Encrypter(encrypt.AES(key));
-      final encrypted = encrypter.encrypt(data, iv: iv);
-      debugPrint('Data encrypted successfully');
-      return encrypted.base64;
-    } catch (e) {
-      debugPrint('Error encrypting data: $e');
-      rethrow;
-    }
+  /// Encrypt a private-catalog JSON blob.
+  ///
+  /// Format: `v1.<iv_b64>.<cipher_b64>` (AES-256-CBC, random IV per write).
+  static Future<String> encryptPrivatePayload(String plaintext) async {
+    final key = await _getOrCreatePrivateCatalogKey();
+    final iv = encrypt.IV.fromSecureRandom(16);
+    final encrypter = encrypt.Encrypter(encrypt.AES(key));
+    final encrypted = encrypter.encrypt(plaintext, iv: iv);
+    return 'v1.${iv.base64}.${encrypted.base64}';
   }
 
-  /// Decrypt sensitive data
-  static Future<String> decryptData(String encryptedData) async {
-    try {
-      final key = await _getOrGenerateKey();
-      final iv = encrypt.IV.fromLength(16);
-      final encrypter = encrypt.Encrypter(encrypt.AES(key));
-      final decrypted = encrypter.decrypt64(encryptedData, iv: iv);
-      debugPrint('Data decrypted successfully');
-      return decrypted;
-    } catch (e) {
-      debugPrint('Error decrypting data: $e');
-      rethrow;
+  /// Decrypt a payload produced by [encryptPrivatePayload].
+  static Future<String> decryptPrivatePayload(String payload) async {
+    final parts = payload.split('.');
+    if (parts.length != 3 || parts[0] != 'v1') {
+      throw const FormatException('Unsupported private payload format');
     }
+    final key = await _getOrCreatePrivateCatalogKey();
+    final iv = encrypt.IV.fromBase64(parts[1]);
+    final encrypter = encrypt.Encrypter(encrypt.AES(key));
+    return encrypter.decrypt64(parts[2], iv: iv);
   }
 
-  /// Generate a secure key
-  static Future<encrypt.Key> _getOrGenerateKey() async {
-    // On web, use a simpler approach since FlutterSecureStorage has limitations
-    if (kIsWeb) {
-      // For web, generate a key based on a hash of some browser-specific data
-      final keyString = 'myallergybuddy_web_key_2024';
-      final bytes = sha256.convert(utf8.encode(keyString)).bytes;
-      return encrypt.Key(Uint8List.fromList(bytes.take(32).toList()));
-    }
-    
-    const storage = FlutterSecureStorage();
-    String? storedKey = await storage.read(key: 'encryption_key');
-    
-    if (storedKey != null) {
-      return encrypt.Key.fromBase64(storedKey);
-    } else {
-      // Generate a new key if none exists
+  /// Encrypt sensitive data (IV-prefixed; same scheme as the private catalog).
+  static Future<String> encryptData(String data) => encryptPrivatePayload(data);
+
+  /// Decrypt sensitive data produced by [encryptData] / [encryptPrivatePayload].
+  static Future<String> decryptData(String encryptedData) =>
+      decryptPrivatePayload(encryptedData);
+
+  static Future<encrypt.Key> _getOrCreatePrivateCatalogKey() async {
+    if (_cachedPrivateCatalogKey != null) return _cachedPrivateCatalogKey!;
+
+    try {
+      final stored = await _secureStorage.read(key: _privateCatalogKeyName);
+      if (stored != null && stored.isNotEmpty) {
+        _cachedPrivateCatalogKey = encrypt.Key.fromBase64(stored);
+        return _cachedPrivateCatalogKey!;
+      }
+
       final key = encrypt.Key.fromSecureRandom(32);
-      final keyBase64 = key.base64;
-      await storage.write(key: 'encryption_key', value: keyBase64);
+      await _secureStorage.write(key: _privateCatalogKeyName, value: key.base64);
+      _cachedPrivateCatalogKey = key;
       return key;
+    } catch (e) {
+      // Unit tests and rare plugin failures: session-only key (not persisted).
+      debugPrint(
+        'EncryptionService: Secure storage unavailable for private catalog: $e',
+      );
+      _cachedPrivateCatalogKey ??= encrypt.Key.fromSecureRandom(32);
+      return _cachedPrivateCatalogKey!;
     }
+  }
+
+  @visibleForTesting
+  static void resetPrivateCatalogKeyForTest() {
+    _cachedPrivateCatalogKey = null;
   }
 } 

@@ -2,18 +2,27 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'australian_curated_product_database.dart';
+import 'barcode_utils.dart';
+import 'encryption_service.dart';
 import 'product_database_service.dart';
 
-/// Persistent overlay of pack-photo ingredients, keyed by barcode.
+/// Encrypted on-device catalog of pack-accurate products that open barcode
+/// databases do not have (or have with no usable ingredients).
 ///
-/// Photo OCR is stored in SharedPreferences and mirrored into the runtime
-/// product database so later barcode scans can fill empty (or missing)
-/// ingredient lists. Nothing here invents ingredients.
+/// Photo OCR and manual adds stay private: they are never uploaded to Open
+/// Food Facts or any other public API. Ingredients are stored encrypted at
+/// rest (AES-256-CBC); the key lives in FlutterSecureStorage.
 class UserLearnedProductStore {
   static const _productsKey = 'user_learned_products';
+  static const _encryptedProductsKey = 'user_learned_products_enc';
   static const _lastScanKey = 'last_scanned_product';
   static const _linkedPhotosKey = 'user_learned_linked_photos';
   static const Duration associateWindow = Duration(hours: 24);
+
+  static const sourcePrivateSecure = 'private_secure';
+  static const learnedFromPhotoOcr = 'photo_ocr';
+  static const learnedFromManual = 'manual';
+  static const dataSourceLabel = 'Private catalog (encrypted)';
 
   static final Map<String, Map<String, dynamic>> _products = {};
   static bool _initialized = false;
@@ -25,22 +34,37 @@ class UserLearnedProductStore {
     await _loadFromPrefs();
     await _discardOverlaysShadowingCurated();
     await backfillUnlinkedPhotoScans();
-    _mirrorIntoRuntimeDatabase();
   }
 
   /// Curated contains/may-contain statements beat photo OCR for that barcode.
   static bool curatedAllergenStatementsWin(String barcode) {
-    final curated = AustralianCuratedProductDatabase.products[barcode];
+    final curated = AustralianCuratedProductDatabase.lookup(barcode);
     if (curated == null) return false;
     return _stringList(curated['allergens']).isNotEmpty ||
         _stringList(curated['mayContainItems']).isNotEmpty ||
         _stringList(curated['ingredients']).isNotEmpty;
   }
 
+  static bool isPrivateCatalogEntry(Map<String, dynamic>? product) {
+    if (product == null) return false;
+    return product['source']?.toString() == sourcePrivateSecure;
+  }
+
   static Map<String, dynamic>? getProduct(String barcode) {
-    final product = _products[barcode];
-    if (product == null) return null;
-    return Map<String, dynamic>.from(product);
+    for (final candidate in BarcodeUtils.lookupCandidates(barcode)) {
+      final product = _products[candidate];
+      if (product != null) {
+        return Map<String, dynamic>.from(product);
+      }
+    }
+    return null;
+  }
+
+  /// Copies of every privately stored product.
+  static List<Map<String, dynamic>> listProducts() {
+    return _products.values
+        .map((product) => Map<String, dynamic>.from(product))
+        .toList();
   }
 
   static bool isRealBarcode(String? barcode) {
@@ -122,6 +146,30 @@ class UserLearnedProductStore {
     String? brand,
     String? image,
     String? sourcePhotoId,
+  }) {
+    return saveProduct(
+      barcode: barcode,
+      ingredients: ingredients,
+      name: name,
+      brand: brand,
+      image: image,
+      learnedFrom: learnedFromPhotoOcr,
+      sourcePhotoId: sourcePhotoId,
+    );
+  }
+
+  /// Save a private catalog entry keyed by barcode.
+  ///
+  /// [learnedFrom] is `photo_ocr` or `manual`. Never invents a barcode.
+  /// Never uploads to Open Food Facts or any public API.
+  static Future<bool> saveProduct({
+    required String barcode,
+    required List<String> ingredients,
+    String? name,
+    String? brand,
+    String? image,
+    String learnedFrom = learnedFromManual,
+    String? sourcePhotoId,
   }) async {
     await initialize();
     if (!isRealBarcode(barcode)) return false;
@@ -129,7 +177,7 @@ class UserLearnedProductStore {
     if (curatedAllergenStatementsWin(barcode)) {
       if (kDebugMode) {
         print(
-          'UserLearnedProductStore: Skipping photo OCR overlay; curated allergen statements win for $barcode',
+          'UserLearnedProductStore: Skipping private overlay; curated allergen statements win for $barcode',
         );
       }
       return false;
@@ -138,28 +186,31 @@ class UserLearnedProductStore {
     final cleaned = trimNutritionNoise(ingredients);
     if (cleaned.isEmpty) return false;
 
-    final existingRuntime = ProductDatabaseService.getAllProducts()[barcode];
-    final existingLearned = _products[barcode];
+    final storageKey = _storageKeyFor(barcode);
+    final existingRuntime = _runtimeProduct(barcode);
+    final existingLearned = _products[storageKey] ?? getProduct(barcode);
+    final fromPhoto = learnedFrom == learnedFromPhotoOcr;
     final merged = <String, dynamic>{
       if (existingRuntime != null) ...existingRuntime,
       if (existingLearned != null) ...existingLearned,
-      'barcode': barcode,
+      'barcode': storageKey,
       'name': _firstNonEmpty([
-        name,
-        existingLearned?['name']?.toString(),
-        existingRuntime?['name']?.toString(),
-      ]) ??
+            name,
+            existingLearned?['name']?.toString(),
+            existingRuntime?['name']?.toString(),
+          ]) ??
           'Unknown Product',
       'brand': _firstNonEmpty([
-        brand,
-        existingLearned?['brand']?.toString(),
-        existingRuntime?['brand']?.toString(),
-      ]) ??
+            brand,
+            existingLearned?['brand']?.toString(),
+            existingRuntime?['brand']?.toString(),
+          ]) ??
           '',
       'ingredients': cleaned,
-      'ingredientsSource': 'photo_ocr',
-      'dataSource': 'Photo OCR (saved locally)',
-      'learnedFrom': 'photo_ocr',
+      'ingredientsSource': fromPhoto ? learnedFromPhotoOcr : learnedFromManual,
+      'source': sourcePrivateSecure,
+      'dataSource': dataSourceLabel,
+      'learnedFrom': fromPhoto ? learnedFromPhotoOcr : learnedFromManual,
       'updatedAt': DateTime.now().toIso8601String(),
     };
     if (image != null && image.isNotEmpty) {
@@ -173,8 +224,7 @@ class UserLearnedProductStore {
       merged['sourcePhotoId'] = sourcePhotoId;
     }
 
-    _products[barcode] = merged;
-    ProductDatabaseService.addProduct(barcode, merged);
+    _products[storageKey] = merged;
     await _persist();
 
     if (sourcePhotoId != null && sourcePhotoId.isNotEmpty) {
@@ -183,21 +233,34 @@ class UserLearnedProductStore {
 
     if (kDebugMode) {
       print(
-        'UserLearnedProductStore: Saved ${cleaned.length} photo ingredients for $barcode',
+        'UserLearnedProductStore: Saved ${cleaned.length} private ingredients for $storageKey ($learnedFrom)',
       );
     }
     return true;
   }
 
-  /// Fill empty (or missing) ingredient lists from photo-saved data.
-  /// Photo-saved ingredients also win when the remote list is empty.
+  /// Remove a private catalog entry (all stored barcode variants).
+  static Future<bool> removeProduct(String barcode) async {
+    await initialize();
+    final keys = _matchingKeys(barcode);
+    if (keys.isEmpty) return false;
+    for (final key in keys) {
+      _products.remove(key);
+    }
+    await _persist();
+    return true;
+  }
+
+  /// Fill empty (or missing) ingredient lists from the private catalog.
+  /// Open sources that already have usable ingredients keep winning.
+  /// Photo-saved / manual ingredients also win when lookup missed entirely.
   static Map<String, dynamic> applyToLookupResult(
     String barcode,
     Map<String, dynamic> result,
   ) {
     if (curatedAllergenStatementsWin(barcode)) return result;
 
-    final learned = _products[barcode];
+    final learned = getProduct(barcode);
     if (learned == null) return result;
 
     final learnedIngredients = _stringList(learned['ingredients']);
@@ -206,8 +269,8 @@ class UserLearnedProductStore {
     if (result['success'] != true) {
       return {
         'success': true,
-        'message': 'Product ingredients saved from a previous photo scan',
-        'dataSource': 'Photo OCR (saved locally)',
+        'message': 'Product ingredients saved privately on this device',
+        'dataSource': dataSourceLabel,
         'product': Map<String, dynamic>.from(learned),
       };
     }
@@ -215,30 +278,34 @@ class UserLearnedProductStore {
     final product = Map<String, dynamic>.from(result['product'] as Map? ?? {});
     final existing = _stringList(product['ingredients']);
     if (existing.isNotEmpty) {
-      if (product['ingredientsSource'] == 'photo_ocr') {
+      if (isPrivateCatalogEntry(product) ||
+          product['ingredientsSource'] == learnedFromPhotoOcr) {
         return {
           ...result,
           'product': product,
-          'dataSource': 'Photo OCR (saved locally)',
+          'dataSource': dataSourceLabel,
         };
       }
       return result;
     }
 
     product['ingredients'] = learnedIngredients;
-    product['ingredientsSource'] = 'photo_ocr';
+    product['ingredientsSource'] =
+        learned['ingredientsSource'] ?? learnedFromPhotoOcr;
+    product['source'] = sourcePrivateSecure;
+    product['learnedFrom'] = learned['learnedFrom'] ?? learnedFromPhotoOcr;
     final source = result['dataSource']?.toString() ??
         product['dataSource']?.toString() ??
         '';
     product['dataSource'] = source.isEmpty
-        ? 'Photo OCR (saved locally)'
-        : '$source + Photo OCR';
+        ? dataSourceLabel
+        : '$source + $dataSourceLabel';
 
     return {
       ...result,
       'product': product,
       'dataSource': product['dataSource'],
-      'message': 'Product found; ingredients filled from photo scan',
+      'message': 'Product found; ingredients filled from private catalog',
     };
   }
 
@@ -279,7 +346,7 @@ class UserLearnedProductStore {
     final barcode = lastScan['barcode']?.toString() ?? '';
     if (!isRealBarcode(barcode)) return;
     if (curatedAllergenStatementsWin(barcode)) return;
-    if (_stringList(_products[barcode]?['ingredients']).isNotEmpty) return;
+    if (_stringList(getProduct(barcode)?['ingredients']).isNotEmpty) return;
 
     final photo = unlinkedPhotos.first;
     final photoId = photo['barcode']?.toString() ?? '';
@@ -326,6 +393,12 @@ class UserLearnedProductStore {
     return kept;
   }
 
+  @visibleForTesting
+  static void resetForTest() {
+    _initialized = false;
+    _products.clear();
+  }
+
   static bool _looksLikeNutritionSection(String item) {
     final text = item.toLowerCase();
     return text.contains('nutritional information') ||
@@ -343,20 +416,34 @@ class UserLearnedProductStore {
   static Future<void> _loadFromPrefs() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_productsKey);
-      if (raw == null || raw.isEmpty) return;
 
-      final decoded = jsonDecode(raw);
-      if (decoded is! Map) return;
-      decoded.forEach((key, value) {
-        if (value is Map) {
-          _products[key.toString()] = Map<String, dynamic>.from(value);
+      final encrypted = prefs.getString(_encryptedProductsKey);
+      if (encrypted != null && encrypted.isNotEmpty) {
+        try {
+          final decodedJson = await EncryptionService.decryptPrivatePayload(encrypted);
+          _mergeDecodedProducts(jsonDecode(decodedJson));
+        } catch (e) {
+          if (kDebugMode) {
+            print('UserLearnedProductStore: Could not decrypt catalog: $e');
+          }
         }
-      });
+      }
+
+      final plaintext = prefs.getString(_productsKey);
+      if (plaintext != null && plaintext.isNotEmpty) {
+        _mergeDecodedProducts(jsonDecode(plaintext));
+        await _persist();
+        await prefs.remove(_productsKey);
+        if (kDebugMode) {
+          print(
+            'UserLearnedProductStore: Migrated plaintext catalog to encrypted storage',
+          );
+        }
+      }
 
       if (kDebugMode) {
         print(
-          'UserLearnedProductStore: Loaded ${_products.length} photo-saved products',
+          'UserLearnedProductStore: Loaded ${_products.length} private products',
         );
       }
     } catch (e) {
@@ -366,21 +453,33 @@ class UserLearnedProductStore {
     }
   }
 
+  static void _mergeDecodedProducts(dynamic decoded) {
+    if (decoded is! Map) return;
+    decoded.forEach((key, value) {
+      if (value is Map) {
+        final product = Map<String, dynamic>.from(value);
+        product['source'] = sourcePrivateSecure;
+        product['learnedFrom'] ??=
+            product['ingredientsSource']?.toString() == learnedFromPhotoOcr
+                ? learnedFromPhotoOcr
+                : learnedFromManual;
+        product['dataSource'] = dataSourceLabel;
+        _products[key.toString()] = product;
+      }
+    });
+  }
+
   static Future<void> _persist() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_productsKey, jsonEncode(_products));
+      final payload = jsonEncode(_products);
+      final encrypted = await EncryptionService.encryptPrivatePayload(payload);
+      await prefs.setString(_encryptedProductsKey, encrypted);
+      await prefs.remove(_productsKey);
     } catch (e) {
       if (kDebugMode) {
-        print('UserLearnedProductStore: Error saving products: $e');
+        print('UserLearnedProductStore: Error saving encrypted products: $e');
       }
-    }
-  }
-
-  static void _mirrorIntoRuntimeDatabase() {
-    for (final entry in _products.entries) {
-      if (curatedAllergenStatementsWin(entry.key)) continue;
-      ProductDatabaseService.addProduct(entry.key, entry.value);
     }
   }
 
@@ -391,7 +490,7 @@ class UserLearnedProductStore {
 
     for (final barcode in toRemove) {
       _products.remove(barcode);
-      final curated = AustralianCuratedProductDatabase.products[barcode];
+      final curated = AustralianCuratedProductDatabase.lookup(barcode);
       if (curated != null) {
         ProductDatabaseService.replaceProduct(barcode, curated);
       }
@@ -459,7 +558,7 @@ class UserLearnedProductStore {
     for (final json in history.reversed) {
       try {
         final map = Map<String, dynamic>.from(jsonDecode(json) as Map);
-        if (map['barcode']?.toString() == barcode) {
+        if (BarcodeUtils.matches(map['barcode']?.toString(), barcode)) {
           return map;
         }
       } catch (_) {}
@@ -474,6 +573,10 @@ class UserLearnedProductStore {
   }
 
   static List<String> _stringList(dynamic value) {
+    if (value is String) {
+      final trimmed = value.trim();
+      return trimmed.isEmpty ? const [] : [trimmed];
+    }
     if (value is! List) return const [];
     return value
         .map((item) => item.toString().trim())
@@ -489,6 +592,31 @@ class UserLearnedProductStore {
         if (trimmed.toLowerCase() == 'unknown brand') continue;
         if (trimmed.toLowerCase() == 'product from photo') continue;
         return trimmed;
+      }
+    }
+    return null;
+  }
+
+  static String _storageKeyFor(String barcode) {
+    for (final candidate in BarcodeUtils.lookupCandidates(barcode)) {
+      if (_products.containsKey(candidate)) return candidate;
+    }
+    final digits = BarcodeUtils.digitsOnly(barcode);
+    return digits.isNotEmpty ? digits : barcode.trim();
+  }
+
+  static List<String> _matchingKeys(String barcode) {
+    return _products.keys
+        .where((key) => BarcodeUtils.matches(key, barcode))
+        .toList();
+  }
+
+  static Map<String, dynamic>? _runtimeProduct(String barcode) {
+    final all = ProductDatabaseService.getAllProducts();
+    for (final candidate in BarcodeUtils.lookupCandidates(barcode)) {
+      final product = all[candidate];
+      if (product != null && !isPrivateCatalogEntry(product)) {
+        return product;
       }
     }
     return null;

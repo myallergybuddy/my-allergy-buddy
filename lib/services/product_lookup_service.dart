@@ -27,7 +27,14 @@ class ProductLookupService {
     };
   }
 
-  /// Lookup product by barcode with multiple data sources
+  /// Lookup product by barcode with multiple data sources.
+  ///
+  /// Order: curated → local bundled (not the private catalog) → Open Food
+  /// Facts → AU cache → USDA → Edamam → Nutritionix → Spoonacular.
+  /// After those, [UserLearnedProductStore] overlays a privately encrypted
+  /// entry when open sources miss or return no usable ingredients.
+  /// Curated allergen statements still win. Private entries are never
+  /// uploaded to Open Food Facts.
   static Future<Map<String, dynamic>> lookupProductByBarcode(String barcode) async {
     if (kDebugMode) {
       print('ProductLookup: Starting barcode lookup for: $barcode');
@@ -60,7 +67,10 @@ class ProductLookupService {
     Map<String, dynamic>? localResult;
     if (_enableLocalFallback) {
       localResult = await ProductDatabaseService.getProductByBarcode(barcode);
+      // Private-catalog rows must not shadow Open Food Facts / USDA / etc.
+      // They are applied after open sources via applyToLookupResult.
       if (localResult != null &&
+          !UserLearnedProductStore.isPrivateCatalogEntry(localResult) &&
           !ProductDatabaseService.isUnverifiedSyntheticBarcode(barcode)) {
         if (kDebugMode) {
           print('ProductLookup: Found product in local database');
@@ -70,7 +80,9 @@ class ProductLookupService {
     }
 
     if (!_enableOnlineLookup) {
-      if (_enableLocalFallback && localResult != null) {
+      if (_enableLocalFallback &&
+          localResult != null &&
+          !UserLearnedProductStore.isPrivateCatalogEntry(localResult)) {
         return _productResult('Local Database', localResult);
       }
       return _notFound();
@@ -147,7 +159,9 @@ class ProductLookupService {
       return spoonacularResult;
     }
 
-    if (_enableLocalFallback && localResult != null) {
+    if (_enableLocalFallback &&
+        localResult != null &&
+        !UserLearnedProductStore.isPrivateCatalogEntry(localResult)) {
       if (kDebugMode) {
         print('ProductLookup: Falling back to local synthetic placeholder');
       }
