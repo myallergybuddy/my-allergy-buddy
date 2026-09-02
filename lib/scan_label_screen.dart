@@ -1123,7 +1123,6 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                     Text('Overall Safety: ${result.isSafe ? "Safe" : "Unsafe"}'),
                     Text('Risk Level: ${result.riskLevel.toUpperCase()}'),
                     Text('Confidence: ${result.confidenceDescription}'),
-                    Text('Analysis Method: ${result.analysisMethod}'),
                   ],
                 ),
               ),
@@ -2392,84 +2391,15 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                      Row(
                        children: [
                          Expanded(
-                           child: Column(
-                             crossAxisAlignment: CrossAxisAlignment.start,
-                             children: [
-                               Row(
-                                 children: [
-                                   Expanded(
-                                     child: Text(
-                                       scanResult!.productName,
-                                       style: GoogleFonts.nunito(
-                                         fontSize: 21,
-                                         fontWeight: FontWeight.bold,
-                                         color: const Color(0xFF2A4C4A),
-                                       ),
-                                       overflow: TextOverflow.ellipsis,
-                                       maxLines: 2,
-                                     ),
-                                   ),
-                                   if (scanResult!.dataSource == 'Premium Database')
-                                     Container(
-                                       margin: const EdgeInsets.only(left: 8),
-                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                       decoration: BoxDecoration(
-                                         color: Colors.amber[100],
-                                         borderRadius: BorderRadius.circular(8),
-                                         border: Border.all(color: Colors.amber[300]!),
-                                       ),
-                                       child: Row(
-                                         mainAxisSize: MainAxisSize.min,
-                                         children: [
-                                           Icon(
-                                             Icons.star,
-                                             size: 12,
-                                             color: Colors.amber[700],
-                                           ),
-                                           const SizedBox(width: 2),
-                                           Text(
-                                             'PREMIUM',
-                                             style: GoogleFonts.nunito(
-                                               fontSize: 11,
-                                               fontWeight: FontWeight.bold,
-                                               color: Colors.amber[700],
-                                             ),
-                                           ),
-                                         ],
-                                       ),
-                                     ),
-                                   if (scanResult!.dataSource == 'Photo OCR Analysis')
-                                     Container(
-                                       margin: const EdgeInsets.only(left: 8),
-                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                       decoration: BoxDecoration(
-                                         color: Colors.blue[100],
-                                         borderRadius: BorderRadius.circular(8),
-                                         border: Border.all(color: Colors.blue[300]!),
-                                       ),
-                                       child: Row(
-                                         mainAxisSize: MainAxisSize.min,
-                                         children: [
-                                           Icon(
-                                             Icons.camera_alt,
-                                             size: 12,
-                                             color: Colors.blue[700],
-                                           ),
-                                           const SizedBox(width: 2),
-                                           Text(
-                                             'PHOTO',
-                                             style: GoogleFonts.nunito(
-                                               fontSize: 11,
-                                               fontWeight: FontWeight.bold,
-                                               color: Colors.blue[700],
-                                             ),
-                                           ),
-                                         ],
-                                       ),
-                                     ),
-                                 ],
-                               ),
-                             ],
+                           child: Text(
+                             scanResult!.productName,
+                             style: GoogleFonts.nunito(
+                               fontSize: 21,
+                               fontWeight: FontWeight.bold,
+                               color: const Color(0xFF2A4C4A),
+                             ),
+                             overflow: TextOverflow.ellipsis,
+                             maxLines: 2,
                            ),
                          ),
                          Container(
@@ -2497,35 +2427,16 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                          color: Colors.grey[600],
                        ),
                      ),
-                     if (scanResult!.dataSource == 'Photo OCR Analysis') ...[
+                     if (scanResult!.dataSource == 'Photo OCR Analysis' &&
+                         _photoSavedBarcode != null) ...[
                        const SizedBox(height: 8),
                        Text(
-                         'Analysis Method: OCR Text Recognition',
+                         'Saved to local database for barcode $_photoSavedBarcode'
+                         '${_photoSavedProductName != null ? ' (${_photoSavedProductName!})' : ''}. '
+                         'The next barcode scan will show these ingredients.',
                          style: GoogleFonts.nunito(
                            fontSize: 13,
-                           color: Colors.blue[600],
-                           fontStyle: FontStyle.italic,
-                         ),
-                       ),
-                       if (_photoSavedBarcode != null) ...[
-                         const SizedBox(height: 4),
-                         Text(
-                           'Saved to local database for barcode $_photoSavedBarcode'
-                           '${_photoSavedProductName != null ? ' (${_photoSavedProductName!})' : ''}. '
-                           'The next barcode scan will show these ingredients.',
-                           style: GoogleFonts.nunito(
-                             fontSize: 13,
-                             color: const Color(0xFF2A4C4A),
-                           ),
-                         ),
-                       ],
-                     ] else ...[
-                       const SizedBox(height: 8),
-                       Text(
-                         'Data Source: ${scanResult!.dataSource}',
-                         style: GoogleFonts.nunito(
-                           fontSize: 13,
-                           color: Colors.grey[600],
+                           color: const Color(0xFF2A4C4A),
                          ),
                        ),
                      ],
