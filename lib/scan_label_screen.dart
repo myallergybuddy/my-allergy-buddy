@@ -957,39 +957,6 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
               ],
             ),
           ),
-        
-        // Show "may contain" warnings below
-        if (mayContainAllergens.isNotEmpty)
-          Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.orange[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.orange[200]!),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(LucideIcons.triangle_alert, color: Colors.orange[700]),
-                    const SizedBox(width: 8),
-                    Text(
-                      'May Contain Warnings',
-                      style: GoogleFonts.nunito(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange[700],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ...mayContainAllergens.map((allergen) => _buildAllergenCard(allergen, isDefinite: false)),
-              ],
-            ),
-          ),
       ],
     );
   }
