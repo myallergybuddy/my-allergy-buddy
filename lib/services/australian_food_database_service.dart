@@ -9,6 +9,7 @@ import 'nutritionix_service.dart';
 import 'open_food_facts_service.dart';
 import 'product_database_service.dart';
 import 'barcode_utils.dart';
+import 'html_text_utils.dart';
 
 class AustralianFoodDatabaseService {
   // Open Food Facts structured search for Australian products
@@ -962,7 +963,7 @@ class AustralianFoodDatabaseService {
 
     return ingredientsText
         .split(RegExp(r'[,;•\n\r]'))
-        .map((ingredient) => ingredient.trim())
+        .map((ingredient) => HtmlTextUtils.strip(ingredient))
         .where((ingredient) => ingredient.isNotEmpty)
         .where((ingredient) => ingredient.length > 2)
         .toList();
@@ -1151,6 +1152,7 @@ class AustralianFoodDatabaseService {
          'may contain',
          'may contain traces',
          'may contain traces of',
+         'may be present',
          'processed in a facility',
          'manufactured in a facility',
        ];
@@ -1314,6 +1316,7 @@ class AustralianFoodDatabaseService {
         'may contain',
         'may contain traces',
         'may contain traces of',
+        'may be present',
         'processed in a facility',
         'manufactured in a facility',
         'packaged in a facility',
@@ -1609,17 +1612,13 @@ class AustralianFoodDatabaseService {
        'mollusks': 'Molluscs',
      };
      
-     // Check for each allergen keyword and map to proper name
-     for (String keyword in allergenKeywordMap.keys) {
-       if (warningLower.contains(keyword.toLowerCase())) {
+     final keywords = allergenKeywordMap.keys.toList()
+       ..sort((a, b) => b.length.compareTo(a.length));
+     for (final keyword in keywords) {
+       if (ProductDatabaseService.textContainsAllergenTerm(warningLower, keyword)) {
          final properName = allergenKeywordMap[keyword]!;
          if (!extractedAllergens.contains(properName)) {
            extractedAllergens.add(properName);
-         }
-         
-         // Special handling for generic "nut" - add both Tree Nuts and Peanuts
-         if (keyword.toLowerCase() == 'nut' && !extractedAllergens.contains('Peanuts')) {
-           extractedAllergens.add('Peanuts');
          }
        }
      }
@@ -1657,6 +1656,7 @@ class AustralianFoodDatabaseService {
        'may contain',
        'may contain traces',
        'may contain traces of',
+       'may be present',
        'processed in a facility',
        'manufactured in a facility',
        'packaged in a facility',

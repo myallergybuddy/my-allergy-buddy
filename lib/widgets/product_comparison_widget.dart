@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import '../models/enhanced_scan_result.dart';
+import '../services/html_text_utils.dart';
 
 class ProductComparisonWidget extends StatefulWidget {
   final List<EnhancedScanResult> products;
@@ -892,9 +893,9 @@ class _ProductComparisonWidgetState extends State<ProductComparisonWidget> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: selectedProduct.ingredients.map((ingredient) {
+                  children: HtmlTextUtils.forDisplayList(selectedProduct.ingredients).map((ingredient) {
                     final isAllergen = selectedProduct.detectedAllergens.any((allergen) =>
-                        allergen['matchedIngredient'] == ingredient);
+                        HtmlTextUtils.strip(allergen['matchedIngredient']?.toString()) == ingredient);
                     
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

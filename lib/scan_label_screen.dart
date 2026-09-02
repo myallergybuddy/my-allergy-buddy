@@ -17,6 +17,7 @@ import 'services/ocr_service.dart';
 import 'services/user_learned_product_store.dart';
 import 'services/australian_curated_product_database.dart';
 import 'models/enhanced_scan_result.dart';
+import 'services/html_text_utils.dart';
 import 'widgets/premium_upgrade_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -439,7 +440,9 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
           
           // Add Spoonacular ingredients if not already present
           final spoonacularIngredients = spoonacularData['ingredients'] as List<dynamic>? ?? [];
-          additionalIngredients.addAll(spoonacularIngredients.map((i) => i.toString()));
+          additionalIngredients.addAll(
+            HtmlTextUtils.forDisplayList(spoonacularIngredients),
+          );
           
           // Update data source to include Spoonacular
           if (dataSource.contains('Spoonacular')) {
@@ -450,8 +453,10 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
         }
         
         // Check if ingredients are available
-        final baseIngredients = List<String>.from(result['product']['ingredients'] ?? []);
-        final curatedProduct = AustralianCuratedProductDatabase.products[barcode];
+        final baseIngredients = HtmlTextUtils.forDisplayList(
+          result['product']['ingredients'] ?? [],
+        );
+        final curatedProduct = AustralianCuratedProductDatabase.lookup(barcode);
         final curatedIngredients = curatedProduct == null
             ? <String>[]
             : List<String>.from(curatedProduct['ingredients'] ?? []);
@@ -558,11 +563,11 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
 
         final scanResultData = EnhancedScanResult(
           barcode: barcode,
-          productName: result['product']['name'],
-          brand: result['product']['brand'],
-          ingredients: ingredients,
-          mayContainItems: mayContainItems,
-          detectedAllergens: enhancedAllergens,
+          productName: HtmlTextUtils.strip(result['product']['name']?.toString()),
+          brand: HtmlTextUtils.strip(result['product']['brand']?.toString()),
+          ingredients: HtmlTextUtils.forDisplayList(ingredients),
+          mayContainItems: HtmlTextUtils.forDisplayList(mayContainItems),
+          detectedAllergens: _sanitizeAllergenMaps(enhancedAllergens),
           crossContaminationWarnings: crossContaminationWarnings,
           processingFacilityWarnings: processingFacilityWarnings,
           safetyAssessment: {
@@ -765,7 +770,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
             ...result.detectedAllergens.map((allergen) => Padding(
               padding: const EdgeInsets.only(left: 16, top: 4),
               child: Text(
-                '• ${allergen['name']} (${allergen['severity']} severity)',
+                '• ${_plainText(allergen['name'])} (${allergen['severity']} severity)',
                 style: GoogleFonts.nunito(color: Colors.red),
               ),
             )),
@@ -991,11 +996,34 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
 
 
 
+  String _plainText(dynamic value) => HtmlTextUtils.forDisplay(value);
+
+  List<Map<String, dynamic>> _sanitizeAllergenMaps(
+    List<Map<String, dynamic>> allergens,
+  ) {
+    return allergens.map((allergen) {
+      final copy = Map<String, dynamic>.from(allergen);
+      for (final key in [
+        'name',
+        'matchedIngredient',
+        'crossContaminationWarning',
+        'detectionMethod',
+      ]) {
+        if (copy[key] != null) {
+          copy[key] = HtmlTextUtils.strip(copy[key].toString());
+        }
+      }
+      return copy;
+    }).toList();
+  }
+
   /// Builds a consistent allergen card for both definite and may contain allergens
   Widget _buildAllergenCard(Map<String, dynamic> allergen, {required bool isDefinite}) {
-    final allergenName = allergen['name']?.toString() ?? 'Unknown allergen';
+    final allergenName = _plainText(allergen['name']);
+    final displayName = allergenName.isEmpty ? 'Unknown allergen' : allergenName;
     final severity = allergen['severity']?.toString() ?? 'Medium';
-    final detectionMethod = allergen['detectionMethod']?.toString() ?? 'Unknown';
+    final detectionMethod = _plainText(allergen['detectionMethod']);
+    final warningText = _plainText(allergen['crossContaminationWarning']);
     final confidence = (allergen['confidence'] as num?)?.toDouble() ?? 0.0;
 
     Color severityColor;
@@ -1027,7 +1055,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
           Row(
             children: [
               Text(
-                allergenName,
+                displayName,
                 style: GoogleFonts.nunito(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
@@ -1054,7 +1082,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
           ),
           const SizedBox(height: 4),
           Text(
-            'Detection Method: $detectionMethod',
+            'Detection Method: ${detectionMethod.isEmpty ? 'Unknown' : detectionMethod}',
             style: GoogleFonts.nunito(
               fontSize: 13,
               color: Colors.grey[600],
@@ -1067,17 +1095,9 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
               color: Colors.grey[600],
             ),
           ),
-          if (isDefinite && allergen['matchedIngredient']?.isNotEmpty == true)
+          if (!isDefinite && warningText.isNotEmpty)
             Text(
-              'Found in: ${allergen['matchedIngredient']}',
-              style: GoogleFonts.nunito(
-                fontSize: 13,
-                color: Colors.grey[600],
-              ),
-            ),
-          if (!isDefinite && allergen['crossContaminationWarning']?.isNotEmpty == true)
-            Text(
-              'Warning: ${allergen['crossContaminationWarning']}',
+              'Warning: $warningText',
               style: GoogleFonts.nunito(
                 fontSize: 13,
                 color: Colors.orange[700],
@@ -1157,14 +1177,12 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            allergen['name'],
+                            _plainText(allergen['name']),
                             style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
                           ),
                           Text('Severity: ${allergen['severity']}'),
                           Text('Confidence: ${(allergen['confidence'] * 100).toStringAsFixed(1)}%'),
-                          Text('Detection Method: ${allergen['detectionMethod']}'),
-                          if (allergen['matchedIngredient']?.isNotEmpty == true)
-                            Text('Matched Ingredient: ${allergen['matchedIngredient']}'),
+                          Text('Detection Method: ${_plainText(allergen['detectionMethod'])}'),
                         ],
                       ),
                     )),
@@ -1194,7 +1212,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                           Row(
                             children: [
                               Text(
-                                allergen['name'],
+                                _plainText(allergen['name']),
                                 style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(width: 8),
@@ -1217,9 +1235,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                           ),
                           Text('Severity: ${allergen['severity']}'),
                           Text('Confidence: ${(allergen['confidence'] * 100).toStringAsFixed(1)}%'),
-                          Text('Detection Method: ${allergen['detectionMethod']}'),
-                          if (allergen['matchedIngredient']?.isNotEmpty == true)
-                            Text('Matched Ingredient: ${allergen['matchedIngredient']}'),
+                          Text('Detection Method: ${_plainText(allergen['detectionMethod'])}'),
                         ],
                       ),
                     )),
@@ -1249,11 +1265,11 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        warning['allergen'],
+                        _plainText(warning['allergen']),
                         style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
                       ),
                       Text('Risk Level: ${warning['riskLevel']}'),
-                      Text('Message: ${warning['message']}'),
+                      Text('Message: ${_plainText(warning['message'])}'),
                     ],
                   ),
                 )),
@@ -1279,13 +1295,13 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        warning['allergen'],
+                        _plainText(warning['allergen']),
                         style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
                       ),
                       Text('Risk Level: ${warning['riskLevel']}'),
-                      Text('Message: ${warning['message']}'),
+                      Text('Message: ${_plainText(warning['message'])}'),
                       if (warning['facilityInfo']?.isNotEmpty == true)
-                        Text('Facility Info: ${warning['facilityInfo']}'),
+                        Text('Facility Info: ${_plainText(warning['facilityInfo'])}'),
                     ],
                   ),
                 )),
@@ -1790,43 +1806,43 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
         );
       }
 
-      final linkedBarcode = saved ? linked!['barcode'].toString() : null;
-      final linkedName = saved
-          ? (linked!['name']?.toString().trim().isNotEmpty == true
-              ? linked['name'].toString()
-              : null)
+      final linkedBarcode = linked != null ? linked['barcode'].toString() : null;
+      final linkedName = linked != null &&
+              linked['name']?.toString().trim().isNotEmpty == true
+          ? linked['name'].toString()
           : null;
-      final linkedBrand = saved
-          ? (linked!['brand']?.toString().trim().isNotEmpty == true
-              ? linked['brand'].toString()
-              : null)
+      final linkedBrand = linked != null &&
+              linked['brand']?.toString().trim().isNotEmpty == true
+          ? linked['brand'].toString()
           : null;
 
       final photoIngredients = ProductDatabaseService.ingredientsExcludingMayContain(
         UserLearnedProductStore.trimNutritionNoise(_extractedIngredients),
       );
       final linkedCurated = linkedBarcode != null
-          ? AustralianCuratedProductDatabase.products[linkedBarcode]
+          ? AustralianCuratedProductDatabase.lookup(linkedBarcode)
           : null;
 
       final photoScanResult = EnhancedScanResult(
         barcode: linkedBarcode ?? 'PHOTO_${DateTime.now().millisecondsSinceEpoch}',
-        productName: linkedName ?? 'Product from Photo',
-        brand: linkedBrand ?? 'Unknown Brand',
-        ingredients: photoIngredients,
-        mayContainItems: ProductDatabaseService.collectMayContainItems(
-          ingredients: _extractedIngredients,
-          product: {
-            'crossContaminationWarnings': [],
-            if (linkedCurated != null) ...{
-              'mayContainItems': linkedCurated['mayContainItems'],
-              'traces': linkedCurated['traces'],
-              'traces_tags': linkedCurated['traces_tags'],
-              'crossContamination': linkedCurated['crossContamination'],
+        productName: HtmlTextUtils.strip(linkedName ?? 'Product from Photo'),
+        brand: HtmlTextUtils.strip(linkedBrand ?? 'Unknown Brand'),
+        ingredients: HtmlTextUtils.forDisplayList(photoIngredients),
+        mayContainItems: HtmlTextUtils.forDisplayList(
+          ProductDatabaseService.collectMayContainItems(
+            ingredients: _extractedIngredients,
+            product: {
+              'crossContaminationWarnings': [],
+              if (linkedCurated != null) ...{
+                'mayContainItems': linkedCurated['mayContainItems'],
+                'traces': linkedCurated['traces'],
+                'traces_tags': linkedCurated['traces_tags'],
+                'crossContamination': linkedCurated['crossContamination'],
+              },
             },
-          },
+          ),
         ),
-        detectedAllergens: _photoDetectedAllergens,
+        detectedAllergens: _sanitizeAllergenMaps(_photoDetectedAllergens),
         crossContaminationWarnings: [],
         processingFacilityWarnings: [],
         safetyAssessment: {
@@ -1902,7 +1918,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
             duration: const Duration(seconds: 4),
           ),
         );
-      } else if (_extractedIngredients.isNotEmpty) {
+      } else if (linkedCurated == null && _extractedIngredients.isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -2392,7 +2408,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                        children: [
                          Expanded(
                            child: Text(
-                             scanResult!.productName,
+                             _plainText(scanResult!.productName),
                              style: GoogleFonts.nunito(
                                fontSize: 21,
                                fontWeight: FontWeight.bold,
@@ -2421,7 +2437,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                      ),
                      const SizedBox(height: 8),
                      Text(
-                       'Brand: ${scanResult!.brand}',
+                       'Brand: ${_plainText(scanResult!.brand)}',
                        style: GoogleFonts.nunito(
                          fontSize: 15,
                          color: Colors.grey[600],
@@ -2499,7 +2515,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                          Icon(LucideIcons.list, color: const Color(0xFF4A9E9C)),
                          const SizedBox(width: 8),
                          Text(
-                           AustralianCuratedProductDatabase.products[scanResult!.barcode]?['allergenStatementsOnly'] == true
+                           AustralianCuratedProductDatabase.lookup(scanResult!.barcode)?['allergenStatementsOnly'] == true
                                ? 'Contains'
                                : 'Ingredients',
                            style: GoogleFonts.nunito(
@@ -2511,13 +2527,13 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                        ],
                      ),
                      const SizedBox(height: 12),
-                     if (scanResult?.ingredients.isNotEmpty == true)
+                     if (HtmlTextUtils.forDisplayList(scanResult?.ingredients ?? const []).isNotEmpty)
                        Wrap(
                          spacing: 8,
                          runSpacing: 8,
-                         children: scanResult!.ingredients.map((ingredient) {
+                         children: HtmlTextUtils.forDisplayList(scanResult!.ingredients).map((ingredient) {
                            final isAllergen = scanResult!.detectedAllergens.any((allergen) =>
-                               allergen['matchedIngredient'] == ingredient);
+                               HtmlTextUtils.strip(allergen['matchedIngredient']?.toString()) == ingredient);
                            
                            return Container(
                              constraints: BoxConstraints(
@@ -2621,7 +2637,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                              ],
                            ),
                            const SizedBox(height: 8),
-                           if (scanResult!.mayContainItems.isEmpty)
+                           if (HtmlTextUtils.forDisplayList(scanResult!.mayContainItems).isEmpty)
                              Text(
                                'No "may contain" statement found on this product\'s ingredient listing.',
                                style: GoogleFonts.nunito(
@@ -2631,7 +2647,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                                ),
                              )
                            else
-                             ...scanResult!.mayContainItems.map(
+                             ...HtmlTextUtils.forDisplayList(scanResult!.mayContainItems).map(
                                (item) => Padding(
                                  padding: const EdgeInsets.only(top: 4),
                                  child: Text(
@@ -2693,7 +2709,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                            border: Border.all(color: Colors.grey[300]!),
                          ),
                          child: Text(
-                           _extractedText,
+                           _plainText(_extractedText),
                            style: GoogleFonts.nunito(
                              fontSize: 13,
                              color: Colors.grey[700],

@@ -1,6 +1,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'barcode_utils.dart';
+import 'html_text_utils.dart';
 import 'open_food_facts_service.dart';
 
 class ProductDatabaseService {
@@ -937,7 +938,13 @@ class ProductDatabaseService {
   // Enhanced allergen synonyms and variations with comprehensive international support
   static final Map<String, List<String>> _allergenSynonyms = {
     'peanuts': ['peanut', 'peanuts', 'arachis hypogaea', 'groundnut', 'ground nuts', 'monkey nuts', 'peanut oil', 'peanut flour', 'peanut protein', 'cacahuète', 'cacahuètes', 'arachide', 'arachides'],
-    'tree nuts': ['almond', 'almonds', 'walnut', 'walnuts', 'cashew', 'cashews', 'pecan', 'pecans', 'pistachio', 'pistachios', 'hazelnut', 'hazelnuts', 'macadamia', 'macadamias', 'brazil nut', 'brazil nuts', 'pine nut', 'pine nuts', 'chestnut', 'chestnuts', 'almond oil', 'walnut oil', 'cashew oil', 'macadamia oil', 'amande', 'amandes', 'noix', 'noisette', 'noisettes', 'noix de cajou', 'noix de pécan', 'pistache', 'pistaches'],
+    'tree nuts': ['tree nuts', 'tree nut', 'nuts', 'nut', 'almond', 'almonds', 'walnut', 'walnuts', 'cashew', 'cashews', 'pecan', 'pecans', 'pistachio', 'pistachios', 'hazelnut', 'hazelnuts', 'macadamia', 'macadamias', 'brazil nut', 'brazil nuts', 'pine nut', 'pine nuts', 'chestnut', 'chestnuts', 'almond oil', 'walnut oil', 'cashew oil', 'macadamia oil', 'amande', 'amandes', 'noix', 'noisette', 'noisettes', 'noix de cajou', 'noix de pécan', 'pistache', 'pistaches'],
+    'almond': ['almond', 'almonds', 'almond oil', 'almond flour', 'almond meal', 'almond protein', 'amande', 'amandes'],
+    'cashew': ['cashew', 'cashews', 'cashew oil', 'cashew butter', 'noix de cajou'],
+    'hazelnut': ['hazelnut', 'hazelnuts', 'hazelnut oil', 'hazelnut flour', 'noisette', 'noisettes'],
+    'pecan': ['pecan', 'pecans', 'pecan oil', 'noix de pécan'],
+    'walnut': ['walnut', 'walnuts', 'walnut oil', 'walnut flour'],
+    'chestnut': ['chestnut', 'chestnuts', 'chestnut flour'],
     'milk': ['milk', 'dairy', 'cream', 'butter', 'cheese', 'yogurt', 'yoghurt', 'whey', 'casein', 'lactose', 'milk powder', 'milk protein', 'skim milk', 'full cream milk', 'whole milk', 'low fat milk', 'milk solids', 'milk fat', 'milk sugar', 'lactose', 'lactoglobulin', 'lactalbumin', 'cheese powder', 'dairy powder', 'cream powder', 'butter powder', 'lait', 'crème', 'beurre', 'fromage', 'yaourt', 'lactosérum', 'caséine', 'lactose', 'poudre de lait', 'protéine de lait', 'solides de lait'],
     'eggs': ['egg', 'eggs', 'egg white', 'egg yolk', 'albumin', 'ovalbumin', 'lysozyme', 'vitellin', 'livetin', 'apovitellenin', 'phosvitin', 'egg powder', 'dried egg', 'egg protein', 'egg solids', 'œuf', 'œufs', 'blanc d\'œuf', 'jaune d\'œuf', 'albumine', 'ovalbumine'],
     'soy': ['soy', 'soya', 'soybean', 'soybeans', 'soy lecithin', 'soy protein', 'tofu', 'miso', 'tempeh', 'edamame', 'soy flour', 'soy oil', 'soy sauce', 'soy milk', 'soy isolate', 'soy concentrate', 'lécithine de soja', 'soja', 'lécithine', 'soja', 'soybean', 'haricot de soja', 'haricots de soja', 'sauce soja'],
@@ -990,6 +997,100 @@ class ProductDatabaseService {
     return null;
   }
 
+  /// Word-boundary match so "nuts" does not hit "peanuts" and "tree nut" hits
+  /// both "tree nut" and the pack phrasing "tree nuts".
+  static bool textContainsAllergenTerm(String text, String term) {
+    final trimmed = term.trim();
+    if (trimmed.isEmpty) return false;
+    return RegExp(
+      '\\b${RegExp.escape(trimmed)}\\b',
+      caseSensitive: false,
+    ).hasMatch(text);
+  }
+
+  static const List<String> _individualTreeNutKeys = [
+    'almond',
+    'cashew',
+    'hazelnut',
+    'pecan',
+    'walnut',
+    'brazil nut',
+    'pistachio',
+    'macadamia',
+    'pine nut',
+    'chestnut',
+  ];
+
+  /// Pack-level "tree nuts" / "nuts" / en:nuts traces — not a specific nut.
+  static const List<String> _genericTreeNutWarningTerms = [
+    'tree nuts',
+    'tree nut',
+    'nuts',
+    'nut',
+  ];
+
+  static bool _isIndividualTreeNutAllergy(String allergyName) {
+    final lower = allergyName.toLowerCase().trim();
+    if (lower == 'tree nuts' || lower == 'tree nut') return false;
+    if (_genericTreeNutWarningTerms.contains(lower)) return false;
+    if (_individualTreeNutKeys.contains(lower)) return true;
+    for (final key in _individualTreeNutKeys) {
+      if (_allergenSynonyms[key]?.contains(lower) == true) return true;
+    }
+    return _allergenSynonyms['tree nuts']!.contains(lower);
+  }
+
+  /// Synonyms used to match a saved user allergy against ingredients / traces.
+  ///
+  /// "Tree Nuts" matches any tree nut. An individual nut matches only that nut,
+  /// plus generic pack traces ("tree nuts", "nuts", en:nuts).
+  static List<String> _synonymsForUserAllergy(String allergyName) {
+    final lower = allergyName.toLowerCase().trim();
+    if (lower.isEmpty) return const [];
+
+    if (lower == 'tree nuts' || lower == 'tree nut') {
+      return List<String>.from(_allergenSynonyms['tree nuts']!);
+    }
+
+    if (_allergenSynonyms.containsKey(lower)) {
+      return List<String>.from(_allergenSynonyms[lower]!);
+    }
+
+    for (final entry in _allergenSynonyms.entries) {
+      if (entry.key == 'tree nuts') continue;
+      if (entry.value.contains(lower)) {
+        return List<String>.from(entry.value);
+      }
+    }
+
+    if (_allergenSynonyms['tree nuts']!.contains(lower) &&
+        !_genericTreeNutWarningTerms.contains(lower)) {
+      return [lower];
+    }
+
+    return [lower];
+  }
+
+  static List<String> _warningSynonymsForUserAllergy(String allergyName) {
+    return _withGenericTreeNutTermsIfNeeded(
+      allergyName,
+      _synonymsForUserAllergy(allergyName),
+    );
+  }
+
+  static List<String> _withGenericTreeNutTermsIfNeeded(
+    String keyOrName,
+    List<String> synonyms,
+  ) {
+    final result = List<String>.from(synonyms);
+    if (_isIndividualTreeNutAllergy(keyOrName)) {
+      for (final term in _genericTreeNutWarningTerms) {
+        if (!result.contains(term)) result.add(term);
+      }
+    }
+    return result;
+  }
+
   static List<Map<String, dynamic>> analyzeAllergens(
     List<String> ingredients,
     List<Map<String, dynamic>> userAllergies,
@@ -1038,74 +1139,68 @@ class ProductDatabaseService {
       String allergenCategory = '';
       String detectionMethod = '';
       bool isCrossContamination = false;
-      
-            for (String key in _allergenSynonyms.keys) {
-        if (_allergenSynonyms[key]!.contains(allergyName) || key == allergyName) {
-          if (kDebugMode) {
-            print('ProductDatabaseService: Found allergy "$allergyName" in category "$key"');
+
+      final synonyms = _synonymsForUserAllergy(allergyName);
+      final warningSynonyms = _warningSynonymsForUserAllergy(allergyName);
+      if (synonyms.isNotEmpty) {
+        if (kDebugMode) {
+          print('ProductDatabaseService: Found allergy "$allergyName" synonyms: $synonyms');
+        }
+        allergenCategory = (allergyName == 'tree nuts' || allergyName == 'tree nut')
+            ? 'tree nuts'
+            : allergyName;
+
+        for (String synonym in warningSynonyms) {
+          for (String warning in crossContaminationWarnings) {
+            if (textContainsAllergenTerm(warning, synonym)) {
+              if (kDebugMode) {
+                print('ProductDatabaseService: CROSS-CONTAMINATION MATCH FOUND! Synonym "$synonym" found in warning "$warning"');
+              }
+              found = true;
+              matchedIngredient = warning;
+              detectionMethod = 'Cross-contamination warning';
+              isCrossContamination = true;
+              break;
+            }
           }
-                     // Check cross-contamination warnings FIRST (prioritize over actual ingredients)
-           for (String synonym in _allergenSynonyms[key]!) {
-             for (String warning in crossContaminationWarnings) {
-               if (warning.toLowerCase().contains(synonym.toLowerCase())) {
-                 if (kDebugMode) {
-                   print('ProductDatabaseService: CROSS-CONTAMINATION MATCH FOUND! Synonym "$synonym" found in warning "$warning"');
-                 }
-                 found = true;
-                 matchedIngredient = warning;
-                 allergenCategory = key;
-                 detectionMethod = 'Cross-contamination warning';
-                 isCrossContamination = true;
-                 break;
-               }
-             }
-             if (found) break;
-           }
-           
-           // Only check actual ingredients if not found in cross-contamination warnings
-           if (!found) {
-             for (String synonym in _allergenSynonyms[key]!) {
-               if (kDebugMode) {
-                 print('ProductDatabaseService: Checking synonym "$synonym" in actual ingredients');
-               }
-               // Check individual actual ingredients
-               for (String ingredient in actualIngredients) {
-                 if (ingredient.toLowerCase().contains(synonym.toLowerCase())) {
-                   if (kDebugMode) {
-                     print('ProductDatabaseService: ACTUAL INGREDIENT MATCH FOUND! Synonym "$synonym" found in ingredient "$ingredient"');
-                   }
-                   found = true;
-                   matchedIngredient = ingredient;
-                   allergenCategory = key;
-                   detectionMethod = 'Actual ingredient match';
-                   isCrossContamination = false;
-                   break;
-                 }
-               }
-               
-               if (found) break;
-             }
-             
-             // Also check the combined ingredients string for better matching
-             if (!found) {
-               String combinedIngredients = actualIngredients.join(' ').toLowerCase();
-               for (String synonym in _allergenSynonyms[key]!) {
-                 if (combinedIngredients.contains(synonym.toLowerCase())) {
-                   if (kDebugMode) {
-                     print('ProductDatabaseService: COMBINED INGREDIENT MATCH FOUND! Synonym "$synonym" found in combined ingredients');
-                   }
-                   found = true;
-                   matchedIngredient = 'Found in ingredient list';
-                   allergenCategory = key;
-                   detectionMethod = 'Combined ingredient match';
-                   isCrossContamination = false;
-                   break;
-                 }
-               }
-             }
-           }
-          
           if (found) break;
+        }
+
+        if (!found) {
+          for (String synonym in synonyms) {
+            if (kDebugMode) {
+              print('ProductDatabaseService: Checking synonym "$synonym" in actual ingredients');
+            }
+            for (String ingredient in actualIngredients) {
+              if (textContainsAllergenTerm(ingredient, synonym)) {
+                if (kDebugMode) {
+                  print('ProductDatabaseService: ACTUAL INGREDIENT MATCH FOUND! Synonym "$synonym" found in ingredient "$ingredient"');
+                }
+                found = true;
+                matchedIngredient = ingredient;
+                detectionMethod = 'Actual ingredient match';
+                isCrossContamination = false;
+                break;
+              }
+            }
+            if (found) break;
+          }
+
+          if (!found) {
+            String combinedActual = actualIngredients.join(' ').toLowerCase();
+            for (String synonym in synonyms) {
+              if (textContainsAllergenTerm(combinedActual, synonym)) {
+                if (kDebugMode) {
+                  print('ProductDatabaseService: COMBINED INGREDIENT MATCH FOUND! Synonym "$synonym" found in combined ingredients');
+                }
+                found = true;
+                matchedIngredient = 'Found in ingredient list';
+                detectionMethod = 'Combined ingredient match';
+                isCrossContamination = false;
+                break;
+              }
+            }
+          }
         }
       }
       
@@ -1113,7 +1208,7 @@ class ProductDatabaseService {
        if (!found) {
          // Check cross-contamination warnings for direct match first
          for (String warning in crossContaminationWarnings) {
-           if (warning.toLowerCase().contains(allergyName.toLowerCase())) {
+           if (textContainsAllergenTerm(warning, allergyName)) {
              if (kDebugMode) {
                print('ProductDatabaseService: DIRECT CROSS-CONTAMINATION MATCH FOUND! Allergy "$allergyName" found in warning "$warning"');
              }
@@ -1129,7 +1224,7 @@ class ProductDatabaseService {
          // If not found in cross-contamination, check actual ingredients
          if (!found) {
            for (String ingredient in actualIngredients) {
-             if (ingredient.toLowerCase().contains(allergyName.toLowerCase())) {
+             if (textContainsAllergenTerm(ingredient, allergyName)) {
                if (kDebugMode) {
                  print('ProductDatabaseService: DIRECT ACTUAL INGREDIENT MATCH FOUND! Allergy "$allergyName" found in ingredient "$ingredient"');
                }
@@ -1349,7 +1444,7 @@ class ProductDatabaseService {
     final items = <String>[];
 
     void addItem(String value) {
-      final trimmed = value.trim();
+      final trimmed = HtmlTextUtils.strip(value);
       if (trimmed.length <= 1) return;
       if (seen.add(trimmed.toLowerCase())) {
         items.add(_formatMayContainItem(trimmed));
@@ -1435,10 +1530,24 @@ class ProductDatabaseService {
     }
   }
 
+  static const Map<String, String> _mayContainCanonicalNames = {
+    'nuts': 'Tree Nuts',
+    'nut': 'Tree Nuts',
+    'tree nut': 'Tree Nuts',
+    'tree nuts': 'Tree Nuts',
+    'tree-nuts': 'Tree Nuts',
+    'en:nuts': 'Tree Nuts',
+  };
+
   static String _formatMayContainItem(String item) {
-    return item
+    final collapsed = item
         .split(' ')
         .where((word) => word.isNotEmpty)
+        .join(' ');
+    final canonical = _mayContainCanonicalNames[collapsed.toLowerCase()];
+    if (canonical != null) return canonical;
+    return collapsed
+        .split(' ')
         .map((word) => word[0].toUpperCase() + word.substring(1).toLowerCase())
         .join(' ');
   }
@@ -1580,7 +1689,7 @@ class ProductDatabaseService {
   /// Ingredient chips should not also list the may-contain sentence.
   static List<String> ingredientsExcludingMayContain(List<String> ingredients) {
     return ingredients
-        .map((item) => item.trim())
+        .map(HtmlTextUtils.strip)
         .where((item) => item.isNotEmpty && !isMayContainStatement(item))
         .toList();
   }

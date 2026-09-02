@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'australian_curated_product_database.dart';
 import 'barcode_utils.dart';
+import 'html_text_utils.dart';
 import 'premium_product_service.dart';
 
 class OpenFoodFactsService {
@@ -437,6 +438,7 @@ class OpenFoodFactsService {
 
   /// Parse ingredients text to separate actual ingredients from warnings
   static Map<String, dynamic> _parseIngredientsWithWarnings(String ingredientsText) {
+    ingredientsText = HtmlTextUtils.strip(ingredientsText);
     if (kDebugMode) {
       print('OpenFoodFacts: Parsing ingredients with warnings: "$ingredientsText"');
     }
@@ -697,7 +699,7 @@ class OpenFoodFactsService {
     // Australian allergen keywords
     final allergenKeywords = {
       'peanuts': ['peanut', 'peanuts', 'arachis hypogaea', 'groundnut', 'ground nuts'],
-      'tree nuts': ['almond', 'almonds', 'walnut', 'walnuts', 'cashew', 'cashews', 'pecan', 'pecans', 'pistachio', 'pistachios', 'hazelnut', 'hazelnuts', 'macadamia', 'macadamias', 'brazil nut', 'brazil nuts', 'pine nut', 'pine nuts'],
+      'tree nuts': ['tree nuts', 'tree nut', 'almond', 'almonds', 'walnut', 'walnuts', 'cashew', 'cashews', 'pecan', 'pecans', 'pistachio', 'pistachios', 'hazelnut', 'hazelnuts', 'macadamia', 'macadamias', 'brazil nut', 'brazil nuts', 'pine nut', 'pine nuts'],
       'milk': ['milk', 'dairy', 'cream', 'butter', 'cheese', 'yogurt', 'yoghurt', 'whey', 'casein', 'lactose', 'milk powder', 'milk protein', 'skim milk', 'full cream milk', 'cheese powder', 'dairy powder', 'cream powder', 'butter powder'],
       'eggs': ['egg', 'eggs', 'egg white', 'egg yolk', 'albumin', 'ovalbumin', 'lysozyme', 'vitellin', 'livetin', 'apovitellenin', 'phosvitin'],
       'soy': ['soy', 'soya', 'soybean', 'soybeans', 'soy lecithin', 'soy protein', 'tofu', 'miso', 'tempeh', 'edamame', 'soy flour', 'soy oil', 'soy sauce', 'soy milk', 'soy isolate', 'soy concentrate'],
@@ -822,7 +824,7 @@ class OpenFoodFactsService {
     final items = <String>[];
 
     void addItem(String value) {
-      final trimmed = value.trim();
+      final trimmed = HtmlTextUtils.strip(value);
       if (trimmed.length <= 1) return;
       if (seen.add(trimmed.toLowerCase())) {
         items.add(trimmed.split(' ').map((word) {
@@ -858,8 +860,8 @@ class OpenFoodFactsService {
     );
 
     for (final field in textFields) {
-      final text = productData[field]?.toString();
-      if (text == null || text.isEmpty) continue;
+      final text = HtmlTextUtils.strip(productData[field]?.toString());
+      if (text.isEmpty) continue;
       for (final match in mayContainPattern.allMatches(text)) {
         for (final part in (match.group(1) ?? '').split(RegExp(r',|\band\b', caseSensitive: false))) {
           addItem(part.trim());
@@ -910,10 +912,10 @@ class OpenFoodFactsService {
     final extracted = <String>[];
     for (final item in structured) {
       if (item is Map) {
-        final textEn = item['text_en']?.toString().trim();
-        final textDefault = item['text']?.toString().trim();
-        final text = (textEn != null && textEn.isNotEmpty) ? textEn : textDefault;
-        if (text != null && text.isNotEmpty) {
+        final textEn = HtmlTextUtils.strip(item['text_en']?.toString());
+        final textDefault = HtmlTextUtils.strip(item['text']?.toString());
+        final text = textEn.isNotEmpty ? textEn : textDefault;
+        if (text.isNotEmpty) {
           extracted.add(text);
         }
         final nested = item['ingredients'];
@@ -921,7 +923,8 @@ class OpenFoodFactsService {
           extracted.addAll(_extractStructuredIngredients(nested));
         }
       } else if (item is String && item.isNotEmpty) {
-        extracted.add(item);
+        final cleaned = HtmlTextUtils.strip(item);
+        if (cleaned.isNotEmpty) extracted.add(cleaned);
       }
     }
     return extracted;

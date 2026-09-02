@@ -254,6 +254,25 @@ class ProductLookupService {
       product: productData,
     );
 
+    for (final item in productData['mayContainItems'] as List<dynamic>? ?? []) {
+      final allergen = item.toString().trim();
+      if (allergen.isEmpty) continue;
+      final alreadyListed = finalCrossContaminationWarnings.any((warning) {
+        final existing = warning['allergen']?.toString().toLowerCase() ?? '';
+        return existing == allergen.toLowerCase();
+      });
+      if (alreadyListed) continue;
+      finalCrossContaminationWarnings.add({
+        'type': 'cross_contamination',
+        'message': 'Product may contain traces of $allergen',
+        'allergen': allergen,
+        'riskLevel': 'Medium',
+        'confidence': 0.9,
+        'detectionMethod': 'Product may-contain statement',
+        'originalWarning': allergen,
+      });
+    }
+
     return {
       'success': true,
       'message': 'Product analyzed successfully',

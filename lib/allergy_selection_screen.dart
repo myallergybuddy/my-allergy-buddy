@@ -24,6 +24,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
     'Food': [
       {'name': 'Peanuts', 'scientific': 'Arachis hypogaea'},
       {'name': 'Milk', 'scientific': 'Lactose'},
+      {'name': 'Tree Nuts', 'scientific': 'Various'},
       {'name': 'Pecan', 'scientific': 'Carya illinoinensis'},
       {'name': 'Wheat', 'scientific': 'Triticum aestivum'},
       {'name': 'Soy', 'scientific': 'Glycine max'},
@@ -37,6 +38,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
   final Map<String, List<Map<String, String>>> proAllergenCategories = {
     'Nuts & Seeds': [
       {'name': 'Peanuts', 'scientific': 'Arachis hypogaea'},
+      {'name': 'Tree Nuts', 'scientific': 'Various'},
       {'name': 'Almond', 'scientific': 'Prunus dulcis'},
       {'name': 'Cashew', 'scientific': 'Anacardium occidentale'},
       {'name': 'Hazelnut', 'scientific': 'Corylus avellana'},
@@ -46,9 +48,9 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
       {'name': 'Pistachio', 'scientific': 'Pistacia vera'},
       {'name': 'Macadamia', 'scientific': 'Macadamia integrifolia'},
       {'name': 'Pine Nut', 'scientific': 'Pinus pinea'},
+      {'name': 'Chestnut', 'scientific': 'Castanea'},
       {'name': 'Coconut', 'scientific': 'Cocos nucifera'},
       {'name': 'Sesame', 'scientific': 'Sesamum indicum'},
-      {'name': 'Chestnut', 'scientific': 'Castanea'},
     ],
     'Dairy Products': [
       {'name': 'Milk', 'scientific': 'Lactose'},
@@ -345,6 +347,21 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
     'Oats',
   ];
 
+  /// Individual tree nuts under the Tree Nuts parent on the picker.
+  /// Coconut is listed separately (not a tree nut on AU packs).
+  static const List<String> _treeNutAllergens = [
+    'Almond',
+    'Cashew',
+    'Hazelnut',
+    'Pecan',
+    'Walnut',
+    'Brazil Nut',
+    'Pistachio',
+    'Macadamia',
+    'Pine Nut',
+    'Chestnut',
+  ];
+
   void _onSearchChanged() {
     final query = _searchController.text.toLowerCase().trim();
     setState(() {
@@ -390,11 +407,53 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
     return {'Celiac / Gluten': grouped};
   }
 
+  bool _isTreeNutSearch(String query) {
+    if (query.contains('peanut')) return false;
+    if (query.contains('tree nut') || query.contains('treenut')) return true;
+    if (query == 'nuts' || query == 'nut') return true;
+    const terms = ['tree nuts', 'tree nut', 'treenuts'];
+    return terms.any((term) => term.startsWith(query) && query.length >= 4);
+  }
+
+  Map<String, List<Map<String, String>>> _treeNutGroup(
+    Map<String, List<Map<String, String>>> categories,
+  ) {
+    final byName = <String, Map<String, String>>{};
+    for (final allergens in categories.values) {
+      for (final allergen in allergens) {
+        final name = allergen['name'];
+        if (name != null) {
+          byName[name] = allergen;
+        }
+      }
+    }
+
+    byName.putIfAbsent(
+      'Tree Nuts',
+      () => {'name': 'Tree Nuts', 'scientific': 'Various'},
+    );
+
+    final grouped = <Map<String, String>>[
+      byName['Tree Nuts']!,
+      for (final name in _treeNutAllergens)
+        if (byName.containsKey(name)) byName[name]!,
+    ];
+
+    if (grouped.length <= 1) {
+      return {};
+    }
+    return {'Tree Nuts': grouped};
+  }
+
   Map<String, List<Map<String, String>>> _filterCategories(String query) {
     final categories = widget.isPro ? proAllergenCategories : basicAllergenCategories;
 
     if (widget.isPro && _isCeliacSearch(query)) {
       return _celiacGlutenGroup(categories);
+    }
+
+    if (widget.isPro && _isTreeNutSearch(query)) {
+      return _treeNutGroup(categories);
     }
 
     final filtered = <String, List<Map<String, String>>>{};
@@ -605,7 +664,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search allergens (e.g. celiac)...',
+                    hintText: 'Search allergens (e.g. celiac, tree nuts)...',
                     hintStyle: GoogleFonts.nunito(
                       color: Colors.grey[600],
                       fontSize: 16,
@@ -676,148 +735,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
                               ),
                             ),
                           ),
-                          ...category.value.map((allergen) {
-                            final isSaved = savedAllergies.containsKey(allergen['name']);
-                            return Container(
-                              decoration: BoxDecoration(
-                                border: Border(
-                                  top: BorderSide(
-                                    color: Colors.grey.withValues(alpha: 0.2),
-                                  ),
-                                ),
-                                color: isSaved ? const Color(0xFF4A9E9C).withValues(alpha: 0.05) : null,
-                              ),
-                              child: Column(
-                                children: [
-                                  CheckboxListTile(
-                                    title: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          allergen['name']!,
-                                          style: GoogleFonts.nunito(
-                                                  color: Colors.black,
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        if (widget.isPro && scientificNames.containsKey(allergen['name']))
-                                          Text(
-                                            scientificNames[allergen['name']!]!,
-                                            style: GoogleFonts.nunito(
-                                                    color: Colors.grey,
-                                              fontSize: 14,
-                                              fontStyle: FontStyle.italic,
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                        if (isSaved)
-                                          Text(
-                                            'SAVED',
-                                            style: GoogleFonts.nunito(
-                                              color: Colors.green,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    value: selectedAllergies.containsKey(allergen['name']),
-                                    activeColor: const Color(0xFF4A9E9C),
-                                    checkColor: Colors.white,
-                                    onChanged: (bool? value) {
-                                      setState(() {
-                                        if (value == true) {
-                                          selectedAllergies[allergen['name']!] = 'Medium';
-                                          // Mark as newly selected if not already saved
-                                          if (!allergySeverities.containsKey(allergen['name'])) {
-                                            newlySelectedAllergies[allergen['name']!] = true;
-                                          }
-                                        } else {
-                                          selectedAllergies.remove(allergen['name']);
-                                          allergySeverities.remove(allergen['name']);
-                                          newlySelectedAllergies.remove(allergen['name']);
-                                          
-                                          // If this was a saved allergy, remove it from saved storage
-                                          if (isSaved) {
-                                            _removeFromSavedAllergies(allergen['name']!);
-                                          }
-                                        }
-                                      });
-                                    },
-                                  ),
-                                  if (selectedAllergies.containsKey(allergen['name']) && newlySelectedAllergies.containsKey(allergen['name']))
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                                      child: Column(
-                                        children: [
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withValues(alpha: 0.7),
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                            child: DropdownButtonFormField<String>(
-                                              value: selectedAllergies[allergen['name']],
-                                              decoration: InputDecoration(
-                                                labelText: 'Severity',
-                                                labelStyle: GoogleFonts.nunito(
-                                                  color: Colors.black,
-                                                  fontSize: 16,
-                                                ),
-                                                border: InputBorder.none,
-                                              ),
-                                              dropdownColor: Colors.white,
-                                              style: GoogleFonts.nunito(
-                                                color: Colors.black,
-                                                fontSize: 16,
-                                              ),
-                                              selectedItemBuilder: (context) {
-                                                return ['Low', 'Medium', 'High'].map((severity) {
-                                                  return Align(
-                                                    alignment: Alignment.centerLeft,
-                                                    child: _outlinedSeverityText(
-                                                      severity,
-                                                      fillColor: _severityColor(severity),
-                                                      fontSize: 16,
-                                                      fontWeight: FontWeight.w500,
-                                                    ),
-                                                  );
-                                                }).toList();
-                                              },
-                                              items: ['Low', 'Medium', 'High'].map((severity) {
-                                                return DropdownMenuItem(
-                                                  value: severity,
-                                                  child: _outlinedSeverityText(
-                                                    severity,
-                                                    fillColor: _severityColor(severity),
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                );
-                                              }).toList(),
-                                              onChanged: (String? value) {
-                                                if (value != null) {
-                                                  setState(() {
-                                                    selectedAllergies[allergen['name']!] = value;
-                                                  });
-                                                }
-                                              },
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            );
-                          }),
+                          ..._buildAllergenTiles(category.value),
                         ],
                       ),
                     ),
@@ -1090,6 +1008,333 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
           style: baseStyle.copyWith(color: fillColor),
         ),
       ],
+    );
+  }
+
+  List<Widget> _buildAllergenTiles(List<Map<String, String>> allergens) {
+    final names = allergens.map((allergen) => allergen['name']).whereType<String>().toSet();
+    final visibleChildren = _treeNutAllergens
+        .where((name) => names.contains(name))
+        .toList();
+    final hasGroup = names.contains('Tree Nuts') && visibleChildren.isNotEmpty;
+    final rendered = <String>{};
+    final tiles = <Widget>[];
+
+    for (final allergen in allergens) {
+      final name = allergen['name'];
+      if (name == null || rendered.contains(name)) continue;
+
+      if (hasGroup && name == 'Tree Nuts') {
+        tiles.add(_buildTreeNutsParentTile(visibleChildren));
+        rendered.add('Tree Nuts');
+        for (final childName in visibleChildren) {
+          final child = allergens.firstWhere((item) => item['name'] == childName);
+          tiles.add(
+            _buildAllergenTile(
+              child,
+              indent: true,
+              isChecked: _isTreeNutChildSelected(childName),
+              onChanged: (selected) => _toggleTreeNutChild(childName, selected, visibleChildren),
+            ),
+          );
+          rendered.add(childName);
+        }
+        continue;
+      }
+
+      if (hasGroup && visibleChildren.contains(name)) {
+        continue;
+      }
+
+      tiles.add(_buildAllergenTile(allergen));
+      rendered.add(name);
+    }
+
+    return tiles;
+  }
+
+  bool _isTreeNutChildSelected(String name) {
+    return selectedAllergies.containsKey('Tree Nuts') ||
+        selectedAllergies.containsKey(name);
+  }
+
+  bool? _treeNutsParentValue(List<String> visibleChildren) {
+    if (selectedAllergies.containsKey('Tree Nuts')) return true;
+    if (visibleChildren.isEmpty) return false;
+    final selectedCount =
+        visibleChildren.where((name) => selectedAllergies.containsKey(name)).length;
+    if (selectedCount == visibleChildren.length) return true;
+    if (selectedCount > 0) return null;
+    return false;
+  }
+
+  void _selectAllTreeNuts(List<String> visibleChildren) {
+    setState(() {
+      selectedAllergies['Tree Nuts'] = selectedAllergies['Tree Nuts'] ?? 'Medium';
+      if (!allergySeverities.containsKey('Tree Nuts')) {
+        newlySelectedAllergies['Tree Nuts'] = true;
+      }
+      for (final name in visibleChildren) {
+        selectedAllergies.remove(name);
+        allergySeverities.remove(name);
+        newlySelectedAllergies.remove(name);
+      }
+    });
+  }
+
+  void _deselectAllTreeNuts(List<String> visibleChildren) {
+    final names = ['Tree Nuts', ...visibleChildren];
+    setState(() {
+      for (final name in names) {
+        selectedAllergies.remove(name);
+        allergySeverities.remove(name);
+        newlySelectedAllergies.remove(name);
+      }
+    });
+    for (final name in names) {
+      if (savedAllergies.containsKey(name)) {
+        _removeFromSavedAllergies(name);
+      }
+    }
+  }
+
+  void _toggleTreeNutChild(
+    String name,
+    bool selected,
+    List<String> visibleChildren,
+  ) {
+    setState(() {
+      if (selected) {
+        if (selectedAllergies.containsKey('Tree Nuts')) return;
+        selectedAllergies[name] = selectedAllergies[name] ?? 'Medium';
+        if (!allergySeverities.containsKey(name)) {
+          newlySelectedAllergies[name] = true;
+        }
+        final allChildrenSelected = visibleChildren.every(
+          (child) => selectedAllergies.containsKey(child),
+        );
+        if (allChildrenSelected) {
+          selectedAllergies['Tree Nuts'] = selectedAllergies['Tree Nuts'] ?? 'Medium';
+          if (!allergySeverities.containsKey('Tree Nuts')) {
+            newlySelectedAllergies['Tree Nuts'] = true;
+          }
+          for (final child in visibleChildren) {
+            selectedAllergies.remove(child);
+            allergySeverities.remove(child);
+            newlySelectedAllergies.remove(child);
+          }
+        }
+      } else {
+        if (selectedAllergies.containsKey('Tree Nuts')) {
+          selectedAllergies.remove('Tree Nuts');
+          allergySeverities.remove('Tree Nuts');
+          newlySelectedAllergies.remove('Tree Nuts');
+          if (savedAllergies.containsKey('Tree Nuts')) {
+            _removeFromSavedAllergies('Tree Nuts');
+          }
+          for (final child in visibleChildren) {
+            if (child != name) {
+              selectedAllergies[child] = selectedAllergies[child] ?? 'Medium';
+            }
+          }
+        }
+        selectedAllergies.remove(name);
+        allergySeverities.remove(name);
+        newlySelectedAllergies.remove(name);
+        if (savedAllergies.containsKey(name)) {
+          _removeFromSavedAllergies(name);
+        }
+      }
+    });
+  }
+
+  Widget _buildTreeNutsParentTile(List<String> visibleChildren) {
+    final parentAllergen = {'name': 'Tree Nuts', 'scientific': 'Various'};
+    return _buildAllergenTile(
+      parentAllergen,
+      isParent: true,
+      tristateValue: _treeNutsParentValue(visibleChildren),
+      isChecked: _treeNutsParentValue(visibleChildren) == true,
+      subtitle: 'All tree nuts, or choose individually below',
+      onChanged: (_) {
+        if (_treeNutsParentValue(visibleChildren) == true) {
+          _deselectAllTreeNuts(visibleChildren);
+        } else {
+          _selectAllTreeNuts(visibleChildren);
+        }
+      },
+    );
+  }
+
+  Widget _buildAllergenTile(
+    Map<String, String> allergen, {
+    bool indent = false,
+    bool isParent = false,
+    bool? tristateValue,
+    bool? isChecked,
+    String? subtitle,
+    void Function(bool selected)? onChanged,
+  }) {
+    final name = allergen['name']!;
+    final isSaved = savedAllergies.containsKey(name) ||
+        (indent && savedAllergies.containsKey('Tree Nuts'));
+    final checked = isChecked ?? selectedAllergies.containsKey(name);
+    final showSeverity = selectedAllergies.containsKey(name) &&
+        newlySelectedAllergies.containsKey(name);
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: Colors.grey.withValues(alpha: 0.2),
+          ),
+        ),
+        color: isSaved ? const Color(0xFF4A9E9C).withValues(alpha: 0.05) : null,
+      ),
+      child: Column(
+        children: [
+          CheckboxListTile(
+            tristate: isParent,
+            contentPadding: EdgeInsets.only(
+              left: indent ? 32 : 16,
+              right: 16,
+            ),
+            title: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: GoogleFonts.nunito(
+                          color: Colors.black,
+                          fontSize: isParent ? 18 : 18,
+                          fontWeight: isParent ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                      ),
+                      if (subtitle != null)
+                        Text(
+                          subtitle,
+                          style: GoogleFonts.nunito(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                          ),
+                        )
+                      else if (widget.isPro && scientificNames.containsKey(name))
+                        Text(
+                          scientificNames[name]!,
+                          style: GoogleFonts.nunito(
+                            color: Colors.grey,
+                            fontSize: 14,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (isSaved)
+                  Text(
+                    'SAVED',
+                    style: GoogleFonts.nunito(
+                      color: Colors.green,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+              ],
+            ),
+            value: isParent ? tristateValue : checked,
+            activeColor: const Color(0xFF4A9E9C),
+            checkColor: Colors.white,
+            onChanged: (bool? value) {
+              final selected = value == true;
+              if (onChanged != null) {
+                onChanged(selected);
+                return;
+              }
+              setState(() {
+                if (selected) {
+                  selectedAllergies[name] = 'Medium';
+                  if (!allergySeverities.containsKey(name)) {
+                    newlySelectedAllergies[name] = true;
+                  }
+                } else {
+                  selectedAllergies.remove(name);
+                  allergySeverities.remove(name);
+                  newlySelectedAllergies.remove(name);
+                  if (isSaved) {
+                    _removeFromSavedAllergies(name);
+                  }
+                }
+              });
+            },
+          ),
+          if (showSeverity)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Column(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: DropdownButtonFormField<String>(
+                      value: selectedAllergies[name],
+                      decoration: InputDecoration(
+                        labelText: 'Severity',
+                        labelStyle: GoogleFonts.nunito(
+                          color: Colors.black,
+                          fontSize: 16,
+                        ),
+                        border: InputBorder.none,
+                      ),
+                      dropdownColor: Colors.white,
+                      style: GoogleFonts.nunito(
+                        color: Colors.black,
+                        fontSize: 16,
+                      ),
+                      selectedItemBuilder: (context) {
+                        return ['Low', 'Medium', 'High'].map((severity) {
+                          return Align(
+                            alignment: Alignment.centerLeft,
+                            child: _outlinedSeverityText(
+                              severity,
+                              fillColor: _severityColor(severity),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          );
+                        }).toList();
+                      },
+                      items: ['Low', 'Medium', 'High'].map((severity) {
+                        return DropdownMenuItem(
+                          value: severity,
+                          child: _outlinedSeverityText(
+                            severity,
+                            fillColor: _severityColor(severity),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (String? value) {
+                        if (value != null) {
+                          setState(() {
+                            selectedAllergies[name] = value;
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 
