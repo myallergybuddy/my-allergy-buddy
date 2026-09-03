@@ -10,7 +10,7 @@ import 'services/missing_product_report_service.dart';
 import 'services/ocr_service.dart';
 import 'services/user_learned_product_store.dart';
 
-enum _PhotoSlot { front, back, barcode }
+enum _PhotoSlot { front, back }
 
 /// Collects a missing-product report and emails it to the app owner with photos.
 class ReportMissingProductScreen extends StatefulWidget {
@@ -40,7 +40,6 @@ class _ReportMissingProductScreenState extends State<ReportMissingProductScreen>
 
   File? _frontPhoto;
   File? _backPhoto;
-  File? _barcodePhoto;
   bool _isPickingImage = false;
   bool _isSubmitting = false;
 
@@ -84,8 +83,6 @@ class _ReportMissingProductScreenState extends State<ReportMissingProductScreen>
         return _frontPhoto;
       case _PhotoSlot.back:
         return _backPhoto;
-      case _PhotoSlot.barcode:
-        return _barcodePhoto;
     }
   }
 
@@ -96,8 +93,6 @@ class _ReportMissingProductScreenState extends State<ReportMissingProductScreen>
           _frontPhoto = file;
         case _PhotoSlot.back:
           _backPhoto = file;
-        case _PhotoSlot.barcode:
-          _barcodePhoto = file;
       }
     });
   }
@@ -108,8 +103,6 @@ class _ReportMissingProductScreenState extends State<ReportMissingProductScreen>
         return 'Front of pack';
       case _PhotoSlot.back:
         return 'Back (ingredients)';
-      case _PhotoSlot.barcode:
-        return 'Barcode';
     }
   }
 
@@ -119,8 +112,6 @@ class _ReportMissingProductScreenState extends State<ReportMissingProductScreen>
         return Icons.image_outlined;
       case _PhotoSlot.back:
         return Icons.list_alt;
-      case _PhotoSlot.barcode:
-        return Icons.qr_code_2;
     }
   }
 
@@ -230,8 +221,7 @@ class _ReportMissingProductScreenState extends State<ReportMissingProductScreen>
         brand.isNotEmpty ||
         note.isNotEmpty ||
         _frontPhoto != null ||
-        _backPhoto != null ||
-        _barcodePhoto != null;
+        _backPhoto != null;
 
     if (!hasAnyField) {
       _showSnackBar(
@@ -258,7 +248,6 @@ class _ReportMissingProductScreenState extends State<ReportMissingProductScreen>
         note: note,
         frontPhoto: _frontPhoto,
         backPhoto: _backPhoto,
-        barcodePhoto: _barcodePhoto,
       );
       if (!mounted) return;
       _showSnackBar(
@@ -467,19 +456,19 @@ class _ReportMissingProductScreenState extends State<ReportMissingProductScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'Send photos of the front, ingredients, and barcode to myallergybuddy@gmail.com. We review them and add the product to the secure catalog. Nothing is uploaded to Open Food Facts or saved automatically on this device.',
+                'Send photos of the front and back and fill in the form below to email to us. We\'ll review and add to our secure catalog.',
                 style: GoogleFonts.nunito(fontSize: 14, color: Colors.black87, height: 1.35),
               ),
               const SizedBox(height: 16),
               _labeledField(
-                label: 'Barcode (optional)',
+                label: 'Barcode',
                 controller: _barcodeController,
                 hint: 'e.g. 9300652801234',
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 12),
               _labeledField(
-                label: 'Product name (optional)',
+                label: 'Product name',
                 controller: _nameController,
                 hint: 'Name on the pack',
               ),
@@ -498,7 +487,7 @@ class _ReportMissingProductScreenState extends State<ReportMissingProductScreen>
               ),
               const SizedBox(height: 16),
               Text(
-                'Photos (optional)',
+                'Photos',
                 style: GoogleFonts.nunito(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -507,7 +496,7 @@ class _ReportMissingProductScreenState extends State<ReportMissingProductScreen>
               ),
               const SizedBox(height: 4),
               Text(
-                'Camera or gallery. Front, back (ingredients), and barcode.',
+                'Camera or gallery. Front and back (ingredients).',
                 style: GoogleFonts.nunito(fontSize: 13, color: Colors.black54),
               ),
               const SizedBox(height: 12),
@@ -517,8 +506,6 @@ class _ReportMissingProductScreenState extends State<ReportMissingProductScreen>
                   _photoSlot(_PhotoSlot.front),
                   const SizedBox(width: 8),
                   _photoSlot(_PhotoSlot.back),
-                  const SizedBox(width: 8),
-                  _photoSlot(_PhotoSlot.barcode),
                 ],
               ),
               const SizedBox(height: 20),
