@@ -979,7 +979,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
     required double fontSize,
     required FontWeight fontWeight,
   }) {
-    final baseStyle = GoogleFonts.nunitoSans(
+    final baseStyle = GoogleFonts.ptSans(
       fontSize: fontSize,
       fontWeight: fontWeight,
       letterSpacing: 2.0,

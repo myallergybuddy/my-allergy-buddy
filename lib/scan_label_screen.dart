@@ -772,7 +772,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
               padding: const EdgeInsets.only(left: 16, top: 4),
               child: Text(
                 '• ${_plainText(allergen['name'])} (${allergen['severity']} severity)',
-                style: GoogleFonts.nunito(color: Colors.red),
+                style: GoogleFonts.ptSans(color: Colors.red),
               ),
             )),
             const SizedBox(height: 16),
@@ -1039,7 +1039,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                 ),
                 child: Text(
                   isDefinite ? severity : 'MAY CONTAIN',
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.ptSans(
                     color: Colors.white,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
@@ -1109,7 +1109,10 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                     ),
                     const SizedBox(height: 8),
                     Text('Overall Safety: ${result.isSafe ? "Safe" : "Unsafe"}'),
-                    Text('Risk Level: ${result.riskLevel.toUpperCase()}'),
+                    Text(
+                      'Risk Level: ${result.riskLevel.toUpperCase()}',
+                      style: GoogleFonts.ptSans(),
+                    ),
                     Text('Confidence: ${result.confidenceDescription}'),
                   ],
                 ),
@@ -1148,7 +1151,10 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                             _plainText(allergen['name']),
                             style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
                           ),
-                          Text('Severity: ${allergen['severity']}'),
+                          Text(
+                            'Severity: ${allergen['severity']}',
+                            style: GoogleFonts.ptSans(),
+                          ),
                           Text('Confidence: ${(allergen['confidence'] * 100).toStringAsFixed(1)}%'),
                           Text('Detection Method: ${_plainText(allergen['detectionMethod'])}'),
                         ],
@@ -1201,7 +1207,10 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                               ),
                             ],
                           ),
-                          Text('Severity: ${allergen['severity']}'),
+                          Text(
+                            'Severity: ${allergen['severity']}',
+                            style: GoogleFonts.ptSans(),
+                          ),
                           Text('Confidence: ${(allergen['confidence'] * 100).toStringAsFixed(1)}%'),
                           Text('Detection Method: ${_plainText(allergen['detectionMethod'])}'),
                         ],
@@ -1236,7 +1245,10 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                         _plainText(warning['allergen']),
                         style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
                       ),
-                      Text('Risk Level: ${warning['riskLevel']}'),
+                      Text(
+                        'Risk Level: ${warning['riskLevel']}',
+                        style: GoogleFonts.ptSans(),
+                      ),
                       Text('Message: ${_plainText(warning['message'])}'),
                     ],
                   ),
@@ -1266,7 +1278,10 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                         _plainText(warning['allergen']),
                         style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
                       ),
-                      Text('Risk Level: ${warning['riskLevel']}'),
+                      Text(
+                        'Risk Level: ${warning['riskLevel']}',
+                        style: GoogleFonts.ptSans(),
+                      ),
                       Text('Message: ${_plainText(warning['message'])}'),
                       if (warning['facilityInfo']?.isNotEmpty == true)
                         Text('Facility Info: ${_plainText(warning['facilityInfo'])}'),

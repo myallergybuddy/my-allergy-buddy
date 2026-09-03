@@ -256,7 +256,9 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
           Expanded(
             child: Text(
               value,
-              style: GoogleFonts.nunito(),
+              style: label == 'Risk Level'
+                  ? GoogleFonts.ptSans()
+                  : GoogleFonts.nunito(),
             ),
           ),
         ],
@@ -611,7 +613,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
                 ),
                 child: Text(
                     scan.riskLevel.toUpperCase(),
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.ptSans(
                       color: Colors.white,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,

@@ -456,7 +456,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
     required double fontSize,
     required FontWeight fontWeight,
   }) {
-    final baseStyle = GoogleFonts.nunitoSans(
+    final baseStyle = GoogleFonts.ptSans(
       fontSize: fontSize,
       fontWeight: fontWeight,
       letterSpacing: 2.0,

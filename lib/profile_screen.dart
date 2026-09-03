@@ -909,7 +909,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                                     style: GoogleFonts.nunito(
                                       fontWeight: FontWeight.bold,
                                       color: Colors.black,
-                                      fontSize: 16,
+                                      fontSize: 17,
                                     ),
                                   ),
                                   subtitle: Column(
@@ -927,7 +927,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                                             child: _outlinedSeverityText(
                                               allergy['severity'],
                                               fillColor: severityColor,
-                                              fontSize: 12,
+                                              fontSize: 13,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -943,7 +943,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                                                 allergy['category'],
                                                 style: GoogleFonts.nunito(
                                                   color: const Color(0xFF4A9E9C),
-                                                  fontSize: 12,
+                                                  fontSize: 13,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
@@ -957,7 +957,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                                           allergy['notes'],
                                           style: GoogleFonts.nunito(
                                             color: Colors.black,
-                                            fontSize: 12,
+                                            fontSize: 13,
                                           ),
                                         ),
                                       ],
@@ -1619,7 +1619,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     required double fontSize,
     required FontWeight fontWeight,
   }) {
-    final baseStyle = GoogleFonts.nunitoSans(
+    final baseStyle = GoogleFonts.ptSans(
       fontSize: fontSize,
       fontWeight: fontWeight,
       letterSpacing: 2.0,

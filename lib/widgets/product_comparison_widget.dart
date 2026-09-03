@@ -126,7 +126,7 @@ class _ProductComparisonWidgetState extends State<ProductComparisonWidget> {
                                 ),
                                 child: Text(
                                   product.riskLevel.toUpperCase(),
-                                  style: GoogleFonts.nunito(
+                                  style: GoogleFonts.ptSans(
                                     color: selectedProductIndex == index
                                         ? const Color(0xFF4A9E9C)
                                         : Colors.white,
@@ -288,7 +288,7 @@ class _ProductComparisonWidgetState extends State<ProductComparisonWidget> {
                             ),
                             child: Text(
                               product.riskLevel.toUpperCase(),
-                              style: GoogleFonts.nunito(
+                              style: GoogleFonts.ptSans(
                                 color: Colors.white,
                                 fontSize: 8,
                                 fontWeight: FontWeight.bold,
@@ -317,7 +317,12 @@ class _ProductComparisonWidgetState extends State<ProductComparisonWidget> {
                         constraints: const BoxConstraints(maxWidth: 120),
                         child: Text(
                           productValues[fieldIndex],
-                          style: GoogleFonts.nunito(fontSize: 12),
+                          style: _isHighMediumLowLabel(productValues[fieldIndex])
+                              ? GoogleFonts.ptSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                )
+                              : GoogleFonts.nunito(fontSize: 12),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -462,7 +467,7 @@ class _ProductComparisonWidgetState extends State<ProductComparisonWidget> {
                                   ),
                                   child: Text(
                                     detectedAllergen['severity'],
-                                    style: GoogleFonts.nunito(
+                                    style: GoogleFonts.ptSans(
                                       color: Colors.white,
                                       fontSize: 8,
                                       fontWeight: FontWeight.bold,
@@ -625,7 +630,7 @@ class _ProductComparisonWidgetState extends State<ProductComparisonWidget> {
                                   ),
                                   child: Text(
                                     warning['riskLevel'],
-                                    style: GoogleFonts.nunito(
+                                    style: GoogleFonts.ptSans(
                                       color: Colors.white,
                                       fontSize: 8,
                                       fontWeight: FontWeight.bold,
@@ -789,7 +794,7 @@ class _ProductComparisonWidgetState extends State<ProductComparisonWidget> {
                                   ),
                                   child: Text(
                                     warning['riskLevel'],
-                                    style: GoogleFonts.nunito(
+                                    style: GoogleFonts.ptSans(
                                       color: Colors.white,
                                       fontSize: 8,
                                       fontWeight: FontWeight.bold,
@@ -950,6 +955,17 @@ class _ProductComparisonWidgetState extends State<ProductComparisonWidget> {
         ],
       ),
     );
+  }
+
+  bool _isHighMediumLowLabel(String value) {
+    switch (value.trim().toLowerCase()) {
+      case 'high':
+      case 'medium':
+      case 'low':
+        return true;
+      default:
+        return false;
+    }
   }
 
   Color _getRiskLevelColor(String riskLevel) {

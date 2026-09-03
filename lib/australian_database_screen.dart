@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/australian_food_database_service.dart';
 
 class AustralianDatabaseScreen extends StatefulWidget {
@@ -484,7 +485,7 @@ class _AustralianDatabaseScreenState extends State<AustralianDatabaseScreen> {
                   ),
                   child: Text(
                     riskLevel.toUpperCase(),
-                    style: TextStyle(
+                    style: GoogleFonts.ptSans(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: riskColor,
