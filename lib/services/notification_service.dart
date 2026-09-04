@@ -566,10 +566,10 @@ class NotificationService {
   // Check permissions and services
   Future<void> _checkPermissionsAndServices() async {
     try {
-      // Check location permissions
-      final locationPermission = await Permission.location.status;
+      // Request When In Use only — never Always / background location
+      final locationPermission = await Permission.locationWhenInUse.status;
       if (locationPermission.isDenied) {
-        await Permission.location.request();
+        await Permission.locationWhenInUse.request();
       }
 
       // Check notification permissions

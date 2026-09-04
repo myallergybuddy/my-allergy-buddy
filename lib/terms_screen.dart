@@ -217,11 +217,12 @@ class TermsScreenState extends State<TermsScreen> {
               ]),
               _subSection('5.2 Location Services'),
               _bulletList([
+                'Location is requested as “While using the app” only',
                 'Location is only used when you explicitly activate emergency features',
                 'Location may be shared only with your chosen contacts via SMS or messaging tools',
                 'Location services can be disabled at any time',
               ]),
-              _sectionBody('We do not continuously track or store your location.'),
+              _sectionBody('We do not request Always / background location, and we do not continuously track or store your location.'),
               _subSection('5.3 SMS and Messaging'),
               _bulletList([
                 'SMS messages are sent only when you choose to initiate them',

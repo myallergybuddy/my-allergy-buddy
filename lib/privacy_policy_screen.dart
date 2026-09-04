@@ -249,12 +249,12 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                 'Delivery metadata required for notifications',
               ]),
               _subSection('e. Location Information'),
-              _sectionBody('Location is only accessed when you explicitly enable features that require it, such as:'),
+              _sectionBody('Location is only accessed while you are using the app, and only when you explicitly enable features that require it, such as:'),
               _bulletList([
                 'Sending your location to emergency contacts',
                 'Generating a map link',
               ]),
-              _sectionBody('We do not continuously track your location.'),
+              _sectionBody('We request “While using the app” location only. We do not request Always / background location, and we do not continuously track your location.'),
               _sectionTitle('6. How We Use Your Information'),
               _sectionBody('We use collected information only where it is reasonably necessary to operate, maintain, and improve My Allergy Buddy.\n\nWe may use your information to:'),
               _bulletList([
@@ -291,7 +291,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                 'Share your location with emergency contacts',
                 'Generate a map link for emergency situations',
               ]),
-              _sectionBody('We do not track your location in the background.'),
+              _sectionBody('Location permission is limited to “While using the app”. We do not track your location in the background.'),
               _subSection('c. Notifications'),
               _sectionBody('Used for:'),
               _bulletList([

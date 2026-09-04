@@ -283,7 +283,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Location services are used for emergency features only. Your location is shared with emergency contacts and services when you activate emergency features.',
+              'Location is requested as “While using the app” only. It is never accessed in the background. Your location is shared with emergency contacts only when you activate emergency features.',
               style: GoogleFonts.nunito(
                 fontSize: 12,
                 color: Colors.grey[600],
@@ -1172,7 +1172,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       _buildSwitchTile(
                         title: 'Location',
-                        subtitle: 'Enable location tracking for emergency calls and allergen alerts',
+                        subtitle: 'Share location only while using the app, for emergency calls',
                         value: _locationEnabled,
                         icon: Icons.location_on,
                         onChanged: (value) {

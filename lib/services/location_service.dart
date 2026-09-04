@@ -11,28 +11,35 @@ class LocationService {
     return await Geolocator.isLocationServiceEnabled();
   }
   
-  /// Request location permissions
+  /// True when the OS has granted foreground location (While Using the App).
+  /// `always` still counts because it includes while-in-use access; this app
+  /// never requests Always / background location.
+  static bool _hasWhileInUseAccess(LocationPermission permission) {
+    return permission == LocationPermission.whileInUse ||
+        permission == LocationPermission.always;
+  }
+
+  /// Request When In Use location only. Never requests Always / background.
   static Future<bool> requestLocationPermission() async {
-    // Check if location services are enabled
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       return false;
     }
-    
-    // Check permission status
+
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
+      // With only NSLocationWhenInUseUsageDescription (iOS) and no
+      // ACCESS_BACKGROUND_LOCATION (Android), this prompts "While using the app".
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return false;
-      }
     }
-    
-    if (permission == LocationPermission.deniedForever) {
+
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever ||
+        permission == LocationPermission.unableToDetermine) {
       return false;
     }
-    
-    return true;
+
+    return _hasWhileInUseAccess(permission);
   }
   
   /// Get current location
@@ -231,8 +238,8 @@ class LocationService {
       return {
         'locationEnabled': locationEnabled,
         'serviceEnabled': serviceEnabled,
-        'permissionGranted': permission == LocationPermission.whileInUse || 
-                           permission == LocationPermission.always,
+        'permissionGranted': _hasWhileInUseAccess(permission),
+        'whileInUseOnly': permission == LocationPermission.whileInUse,
         'hasLastLocation': hasLastLocation,
         'permissionStatus': permission.toString(),
       };
@@ -244,6 +251,7 @@ class LocationService {
         'permissionGranted': false,
         'hasLastLocation': false,
         'permissionStatus': 'unknown',
+        'whileInUseOnly': false,
       };
     }
   }
