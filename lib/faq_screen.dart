@@ -93,7 +93,7 @@ class _FAQScreenState extends State<FAQScreen> {
         },
         {
           'question': 'How many emergency contacts can I have?',
-          'answer': 'Free users can have 2 emergency contacts. Premium users can have up to 10 emergency contacts.',
+          'answer': 'Free users can have 2 emergency contacts. Premium users can have up to 10 emergency contacts. Emergency service calls and emergency text messages are unlimited on every plan.',
         },
         {
           'question': 'Do emergency contacts need the app installed?',

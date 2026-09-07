@@ -39,7 +39,15 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
 
   // Premium status and contact limits
   bool _isPremium = false;
-  int get maxContacts => _isPremium ? 10 : 1; // Free: 1, Premium: 10
+  int get maxContacts => _isPremium ? 10 : 2; // Free: 2, Premium: 10
+
+  /// Empty add-contact boxes to show. Free always has 2 slots.
+  int get _emptySlotCount {
+    final remaining = maxContacts - _contacts.length;
+    if (remaining <= 0) return 0;
+    if (_isPremium) return 1;
+    return remaining;
+  }
 
   @override
   void initState() {
@@ -633,18 +641,6 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
   Future<void> _notifyEmergencyContacts() async {
     if (_contacts.isNotEmpty) {
       try {
-        // Check SMS usage info
-        final smsInfo = await PremiumService.getSmsUsageInfo();
-        
-        if (!smsInfo['canSend']) {
-          if (smsInfo['isPremium']) {
-            _showErrorSnackBar('Unable to send SMS at this time. Please try again.');
-          } else {
-            _showSmsLimitDialog();
-          }
-          return;
-        }
-        
         bool success = await LocationService.notifyEmergencyContacts();
         if (success) {
           _showSuccessSnackBar('Emergency contacts notified with your location');
@@ -655,114 +651,6 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
         _showErrorSnackBar('Error notifying emergency contacts');
       }
     }
-  }
-
-  void _showSmsLimitDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.sms, color: Colors.orange, size: 24),
-            const SizedBox(width: 8),
-            Text(
-              'SMS Limit Reached',
-              style: GoogleFonts.nunito(
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'You\'ve used your monthly SMS allowance (1 SMS per month on basic plan).',
-              style: GoogleFonts.nunito(
-                fontSize: 16,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Upgrade to Premium for unlimited emergency SMS alerts.',
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.nunito(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text(
-                    'Upgrade to Premium',
-                    style: GoogleFonts.nunito(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Upgrade to Premium for unlimited emergency SMS alerts and more features.',
-                        style: GoogleFonts.nunito(
-                          fontSize: 16,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const PremiumUpgradeWidget(),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                        'Maybe Later',
-                        style: GoogleFonts.nunito(
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF4A9E9C),
-              foregroundColor: Colors.white,
-            ),
-            child: Text(
-              'Upgrade to Premium',
-              style: GoogleFonts.nunito(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showSuccessSnackBar(String message) {
@@ -833,7 +721,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'You\'ve reached the free plan limit of 1 emergency contact. Upgrade to Premium to add up to 10 emergency contacts.',
+              'You\'ve reached the free plan limit of 2 emergency contacts. Upgrade to Premium to add up to 10 emergency contacts.',
               style: GoogleFonts.nunito(
                 fontSize: 16,
                 color: Colors.black87,
@@ -855,6 +743,198 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyContactSlot(int slotNumber) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.group_outlined,
+            size: 40,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Contact $slotNumber',
+            style: GoogleFonts.nunito(
+              color: Colors.black87,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _contacts.isEmpty
+                ? 'Add your emergency contact for quick access'
+                : 'Add another emergency contact',
+            style: GoogleFonts.nunito(
+              color: Colors.grey,
+              fontSize: 12,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: _showAddContactDialog,
+            icon: const Icon(Icons.add, size: 16),
+            label: Text(
+              'Add Contact',
+              style: GoogleFonts.nunito(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4A9E9C),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContactCard(int index) {
+    final contact = _contacts[index];
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              backgroundColor: _getContactColor(index),
+              child: Text(
+                contact['name']![0].toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    contact['name']!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.nunito(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    contact['phone']!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.nunito(
+                      fontSize: 16,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  _buildRelationshipChip(
+                    contact['relationship']!,
+                    index,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
+                  ),
+                  icon: const Icon(
+                    Icons.phone,
+                    color: Colors.green,
+                  ),
+                  onPressed: () => _callContact(
+                    contact['phone']!,
+                    contact['name']!,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => _editContact(index),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4A9E9C),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.edit, color: Colors.white, size: 14),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Edit',
+                          style: GoogleFonts.nunito(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -931,218 +1011,30 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            // Add box for adding contacts if none exist
-            if (_contacts.isEmpty) ...[
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.group_outlined,
-                      size: 40,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'No emergency contacts added yet',
-                      style: GoogleFonts.nunito(
-                        color: Colors.grey,
-                        fontSize: 14,
-                      ),
-                    ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                children: [
+                  for (int i = 0; i < _contacts.length; i++)
+                    _buildContactCard(i),
+                  for (int i = 0; i < _emptySlotCount; i++)
+                    _buildEmptyContactSlot(_contacts.length + i + 1),
+                  if (_contacts.length >= maxContacts) ...[
                     const SizedBox(height: 4),
                     Text(
-                      'Add your emergency contacts for quick access',
+                      _isPremium
+                          ? 'You can add up to 10 emergency contacts.'
+                          : 'Upgrade to Premium to add more than 2 emergency contacts.',
                       style: GoogleFonts.nunito(
-                        color: Colors.grey,
-                        fontSize: 12,
+                        color: Colors.red,
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: _contacts.length >= maxContacts
-                        ? null
-                        : _showAddContactDialog,
-                      icon: const Icon(Icons.add, size: 16),
-                      label: Text(
-                        'Add Contact',
-                        style: GoogleFonts.nunito(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4A9E9C),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                    if (_contacts.length >= maxContacts) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        _isPremium
-                          ? 'You can add up to 10 emergency contacts.'
-                          : 'Upgrade to Premium to add more than 1 emergency contact.',
-                        style: GoogleFonts.nunito(
-                          color: Colors.red,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
                   ],
-                ),
+                ],
               ),
-              const SizedBox(height: 24),
-            ],
-            Expanded(
-              child: _contacts.isEmpty
-                  ? const SizedBox.shrink()
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: _contacts.length,
-                      itemBuilder: (context, index) {
-                        final contact = _contacts[index];
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: _getContactColor(index),
-                                  child: Text(
-                                    contact['name']![0].toUpperCase(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        contact['name']!,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.nunito(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        contact['phone']!,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: GoogleFonts.nunito(
-                                          fontSize: 16,
-                                          color: Colors.black54,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      _buildRelationshipChip(
-                                        contact['relationship']!,
-                                        index,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(
-                                        minWidth: 40,
-                                        minHeight: 40,
-                                      ),
-                                      icon: const Icon(
-                                        Icons.phone,
-                                        color: Colors.green,
-                                      ),
-                                      onPressed: () => _callContact(
-                                        contact['phone']!,
-                                        contact['name']!,
-                                      ),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () => _editContact(index),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF4A9E9C),
-                                          borderRadius: BorderRadius.circular(8),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withValues(alpha: 0.1),
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(Icons.edit, color: Colors.white, size: 14),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              'Edit',
-                                              style: GoogleFonts.nunito(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
             ),
           ],
         ),

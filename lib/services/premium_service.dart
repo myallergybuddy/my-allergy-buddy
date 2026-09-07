@@ -20,7 +20,6 @@ class PremiumService {
     'Increased emergency contacts (up to 10 contacts)',
     'Premium customer support',
     'Custom emergency contact groups',
-    'Unlimited emergency SMS alerts',
   ];
   
   /// True for debug builds, dart-define installs, or a persisted developer override.
@@ -238,7 +237,7 @@ class PremiumService {
   static Map<String, dynamic> getFreePlanLimits() {
     return {
       'allergenDatabase': 'Basic database (1,000+ allergens)',
-      'emergencyContacts': 'Up to 1 emergency contact',
+      'emergencyContacts': 'Up to 2 emergency contacts',
       'customerSupport': 'Standard support',
       'customAlerts': 'Basic alerts only',
     };
@@ -295,20 +294,9 @@ class PremiumService {
     }
   }
 
-  /// Check if user can send SMS (basic users limited to 1 per month)
+  /// Emergency SMS is unlimited for all users.
   static Future<bool> canSendSms() async {
-    try {
-      final isPremium = await isPremiumUser();
-      if (isPremium) {
-        return true; // Premium users have unlimited SMS
-      }
-      
-      final usageCount = await getSmsUsageCount();
-      return usageCount < 1; // Basic users limited to 1 SMS per month
-    } catch (e) {
-      debugPrint('Error checking SMS permission: $e');
-      return false;
-    }
+    return true;
   }
 
   /// Get SMS usage info for display
@@ -316,22 +304,22 @@ class PremiumService {
     try {
       final isPremium = await isPremiumUser();
       final usageCount = await getSmsUsageCount();
-      
+
       return {
         'isPremium': isPremium,
         'usageCount': usageCount,
-        'limit': isPremium ? -1 : 1, // -1 means unlimited
-        'canSend': await canSendSms(),
-        'remaining': isPremium ? -1 : (1 - usageCount),
+        'limit': -1, // unlimited for all users
+        'canSend': true,
+        'remaining': -1,
       };
     } catch (e) {
       debugPrint('Error getting SMS usage info: $e');
       return {
         'isPremium': false,
         'usageCount': 0,
-        'limit': 1,
-        'canSend': false,
-        'remaining': 0,
+        'limit': -1,
+        'canSend': true,
+        'remaining': -1,
       };
     }
   }

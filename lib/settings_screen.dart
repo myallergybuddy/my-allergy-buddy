@@ -1248,46 +1248,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           },
                         ),
                       
-                      // SMS Usage Info
-                      FutureBuilder<Map<String, dynamic>>(
-                        future: PremiumService.getSmsUsageInfo(),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasData) {
-                            final smsInfo = snapshot.data!;
-                            final isPremium = smsInfo['isPremium'];
-                            final usageCount = smsInfo['usageCount'];
-                            final limit = smsInfo['limit'];
-                            final remaining = smsInfo['remaining'];
-                            
-                            String subtitle;
-                            IconData trailingIcon;
-                            Color trailingColor;
-                            
-                            if (isPremium) {
-                              subtitle = 'Unlimited SMS available';
-                              trailingIcon = Icons.check_circle;
-                              trailingColor = Colors.green;
-                            } else {
-                              subtitle = '$usageCount/$limit SMS used this month';
-                              if (remaining > 0) {
-                                trailingIcon = Icons.info_outline;
-                                trailingColor = Colors.blue;
-                              } else {
-                                trailingIcon = Icons.warning;
-                                trailingColor = Colors.orange;
-                              }
-                            }
-                            
-                            return _buildListTile(
-                              title: 'SMS Usage',
-                              subtitle: subtitle,
-                              icon: Icons.sms,
-                              onTap: null,
-                              trailing: Icon(trailingIcon, color: trailingColor, size: 20),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
+                      // Emergency SMS is unlimited for all users
+                      _buildListTile(
+                        title: 'SMS Usage',
+                        subtitle: 'Unlimited SMS available',
+                        icon: Icons.sms,
+                        onTap: null,
+                        trailing: Icon(Icons.check_circle, color: Colors.green, size: 20),
                       ),
                     ],
                   ),
