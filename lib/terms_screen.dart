@@ -157,7 +157,7 @@ class TermsScreenState extends State<TermsScreen> {
                   ],
                 ),
               ),
-              Text('Last updated: July 2026', style: GoogleFonts.nunito(fontSize: 15, color: Colors.grey[700], fontWeight: FontWeight.w600)),
+              Text('Last updated: September 2026', style: GoogleFonts.nunito(fontSize: 15, color: Colors.grey[700], fontWeight: FontWeight.w600)),
               const SizedBox(height: 20),
               _sectionTitle('1. Acceptance of Terms'),
               _sectionBody('By downloading, installing, or using My Allergy Buddy ("the App"), you agree that:'),
@@ -194,6 +194,7 @@ class TermsScreenState extends State<TermsScreen> {
               _bulletList([
                 'Consult qualified healthcare professionals for allergy management',
                 'Seek emergency medical help when required',
+                'Call emergency services (for example 000 in Australia) only if you are experiencing an allergic reaction or another genuine medical emergency',
                 'Rely on official product labelling over App results',
               ]),
               _sectionBody('We do not guarantee allergen safety or medical outcomes.'),
@@ -207,13 +208,14 @@ class TermsScreenState extends State<TermsScreen> {
               ]),
               _sectionBody('We are not responsible for allergic reactions or harm resulting from missing or incomplete information.'),
               _sectionTitle('5. Emergency Features and Location Services'),
-              _sectionBody('The App includes optional emergency features that are fully user-initiated.'),
+              _sectionBody('The App includes optional emergency features that are fully user-initiated. Free users may save up to 2 emergency contacts. Premium users may save up to 10 emergency contacts. Emergency service calls and emergency SMS messages initiated through the App are unlimited on every plan.'),
               _subSection('5.1 Emergency Responsibility'),
               _sectionBody('You acknowledge that:'),
               _bulletList([
                 'The App does not automatically contact emergency services',
                 'Emergency actions are only triggered by you',
                 'All emergency features depend on device and network availability',
+                'You must only use the emergency services call button if you are experiencing an allergic reaction or another genuine medical emergency',
               ]),
               _subSection('5.2 Location Services'),
               _bulletList([
@@ -227,6 +229,7 @@ class TermsScreenState extends State<TermsScreen> {
               _bulletList([
                 'SMS messages are sent only when you choose to initiate them',
                 'Messages may include your location link if enabled',
+                'There is no in-app limit on emergency SMS messages',
                 'Delivery depends on carrier, device, and network availability',
                 'Standard SMS charges may apply',
               ]),
@@ -235,13 +238,16 @@ class TermsScreenState extends State<TermsScreen> {
               _bulletList([
                 'The App may provide shortcuts to emergency numbers (e.g. 000 in Australia)',
                 'Calls require your confirmation before being placed',
+                'There is no in-app limit on the emergency services call button',
                 'We do not contact emergency services on your behalf',
               ]),
+              _sectionBody('You must only call emergency services through the App if you are experiencing an allergic reaction or another genuine medical emergency. Do not use the emergency services button to test the App or for non-emergency contact. Misuse of emergency numbers can delay help for others and may be unlawful.'),
               _sectionTitle('6. Emergency Feature Responsibilities'),
               _sectionBody('You agree that you will:'),
               _bulletList([
                 'Keep emergency contact information accurate',
                 'Only use emergency features for genuine emergencies',
+                'Only call emergency services if you are experiencing an allergic reaction or another genuine medical emergency',
                 'Ensure your device is functional and charged when needed',
                 'Understand that delays or failures may occur due to external factors',
               ]),
