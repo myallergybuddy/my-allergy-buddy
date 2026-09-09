@@ -4,8 +4,7 @@ import 'barcode_utils.dart';
 /// source of truth for barcode lookup.
 ///
 /// Prefer real EAN-13 barcodes verified via Open Food Facts or prior app
-/// scans. Synthetic `930060500000x` demo aliases are limited to a small
-/// aligned set for offline tests — do not invent additional fake barcodes.
+/// scans. Do not invent fake barcodes.
 class AustralianCuratedProductDatabase {
   AustralianCuratedProductDatabase._();
 
@@ -341,21 +340,27 @@ class AustralianCuratedProductDatabase {
       'isAustralianProduct': true,
       'image': null,
     },
-    '5411600755': {
-      'name': 'Cauliflower Puffs - Sea Salt',
+    // Retail inner barcode is UPC 854116007558. Short form 5411600755 is a
+    // lookup alias only. Pack has no contains allergens. MAY CONTAIN almond,
+    // cashew, pistachio (named nuts, not a generic Tree Nuts line).
+    '854116007558': {
+      'name': 'Temole Cauliflower Puffs - Sea Salt',
       'brand': 'Temole',
       'ingredients': [
         'cauliflower',
         'brown rice',
         'rice bran oil',
         'sea salt',
-        'may contain almond',
-        'may contain cashew',
-        'may contain pistachio',
       ],
-      'allergens': [],
+      'allergens': <String>[],
       'mayContainItems': ['Almond', 'Cashew', 'Pistachio'],
-      'crossContamination': ['tree nuts'],
+      'traces_tags': [
+        'en:almonds',
+        'en:cashew-nuts',
+        'en:pistachios',
+      ],
+      'traces': 'almonds, cashew nuts, pistachios',
+      'crossContamination': ['almond', 'cashew', 'pistachio'],
       'isAustralianProduct': true,
       'image': null,
     },
@@ -3485,110 +3490,6 @@ class AustralianCuratedProductDatabase {
       'crossContamination': ['milk'],
       'isAustralianProduct': true,
       'image': 'https://images.openfoodfacts.org/images/products/930/060/509/9531/front_en.13.400.jpg',
-    },
-
-    // -------------------------------------------------------------------------
-    // Offline demo aliases (synthetic barcodes kept for existing tests).
-    // Same product identity as the real-barcode curated entries above.
-    // -------------------------------------------------------------------------
-    '9300605000000': {
-      'name': 'Arnott\'s Tim Tam Original',
-      'brand': 'Arnott\'s',
-      'ingredients': [
-        'milk chocolate (38%) (sugar, milk solids, cocoa butter, cocoa mass, vegetable oil, emulsifiers (soy lecithin, e476), flavour)',
-        'wheat flour',
-        'sugar',
-        'vegetable oil (contains soy)',
-        'golden syrup',
-        'food colours (caramel iii, beet red, cochineal, annatto)',
-        'cocoa powder',
-        'salt',
-        'baking powder',
-        'emulsifier (soy lecithin)',
-        'flavour',
-      ],
-      'allergens': ['gluten', 'milk', 'soy', 'wheat'],
-      'mayContainItems': ['Egg', 'Tree Nuts', 'Peanuts', 'Sesame'],
-      'crossContamination': ['egg', 'tree nuts', 'peanuts', 'sesame'],
-      'isAustralianProduct': true,
-      'image': null,
-      'demoAliasFor': '9310072010816',
-    },
-    '9300605000001': {
-      'name': 'Vegemite',
-      'brand': 'Bega',
-      'ingredients': [
-        'yeast extract (from barley and wheat)',
-        'salt',
-        'mineral salt (508)',
-        'malt extract (from barley)',
-        'colour (150c)',
-        'flavours',
-        'niacin',
-        'thiamine',
-        'riboflavin',
-        'folate',
-      ],
-      'allergens': ['gluten', 'wheat', 'barley'],
-      'mayContainItems': [],
-      'crossContamination': [],
-      'isAustralianProduct': true,
-      'image': null,
-      'demoAliasFor': '9352042000328',
-    },
-    '9300605000002': {
-      'name': 'Weet-Bix',
-      'brand': 'Sanitarium',
-      'ingredients': [
-        'wholegrain wheat (97%)',
-        'raw sugar',
-        'salt',
-        'barley malt extract',
-        'vitamins (niacin, thiamin, riboflavin, folate)',
-        'mineral (iron)',
-      ],
-      'allergens': ['wheat', 'gluten', 'barley'],
-      'mayContainItems': ['Lupin'],
-      'crossContamination': ['lupin'],
-      'isAustralianProduct': true,
-      'image': null,
-      'demoAliasFor': '9300652010794',
-    },
-    '9300605000003': {
-      'name': 'Cadbury Dairy Milk Chocolate',
-      'brand': 'Cadbury',
-      'ingredients': [
-        'full cream milk',
-        'sugar',
-        'cocoa mass',
-        'milk solids',
-        'cocoa butter',
-        'emulsifiers (soy lecithin, 476)',
-        'flavours',
-        'may contain wheat, gluten, peanuts, tree nuts',
-      ],
-      'allergens': ['milk', 'soy'],
-      'mayContainItems': ['Wheat', 'Gluten', 'Peanuts', 'Tree Nuts'],
-      'crossContamination': ['wheat', 'gluten', 'peanuts', 'tree nuts'],
-      'isAustralianProduct': true,
-      'image': null,
-      'demoAliasFor': '9300617304715',
-    },
-    '9300605000004': {
-      'name': 'Bega Peanut Butter Crunchy',
-      'brand': 'Bega',
-      'ingredients': [
-        'roasted peanuts (86%)',
-        'vegetable oil (antioxidant (320))',
-        'sugar',
-        'salt',
-      ],
-      'allergens': ['peanuts'],
-      'mayContainItems': ['Tree Nuts', 'Sesame'],
-      'crossContamination': ['tree nuts', 'sesame'],
-      'isAustralianProduct': true,
-      'image': null,
-      'demoAliasFor': '9352042002827',
     },
   };
 
