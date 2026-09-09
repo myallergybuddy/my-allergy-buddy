@@ -2550,6 +2550,31 @@ class AustralianCuratedProductDatabase {
       'isAustralianProduct': true,
       'image': null,
     },
+    // NZ pack CONTAINS peanut, sesame, almond. MAY CONTAIN tree nuts
+    // (generic Tree Nuts line, not named nuts). Labelled gluten free.
+    // Coconut is in the ingredient list, not the contains statement.
+    '9421906822106': {
+      'name': 'Blue Frog Keto Almond, Peanut & Raspberry Cereal',
+      'brand': 'Blue Frog',
+      'ingredients': [
+        'nuts 53% (peanut 27%, almond 16%)',
+        'coconut',
+        'seeds 35% (sunflower, pumpkin, sesame, chia)',
+        'fibre rich tapioca syrup',
+        'freeze dried raspberries 1%',
+        'natural vanilla extract',
+        'monk fruit',
+        'sea salt',
+        'natural antioxidant (rosemary extract)',
+      ],
+      'allergens': ['peanuts', 'sesame', 'almond'],
+      'mayContainItems': ['Tree Nuts'],
+      'traces_tags': ['en:nuts'],
+      'traces': 'nuts',
+      'crossContamination': ['tree nuts'],
+      'isAustralianProduct': true,
+      'image': null,
+    },
     '9300617302353': {
       'name': 'Cadbury Cherry Ripe Double Dipped',
       'brand': 'Cadbury',
