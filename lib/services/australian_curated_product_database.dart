@@ -2554,7 +2554,7 @@ class AustralianCuratedProductDatabase {
     // (generic Tree Nuts line, not named nuts). Labelled gluten free.
     // Coconut is in the ingredient list, not the contains statement.
     '9421906822106': {
-      'name': 'Blue Frog Keto Almond, Peanut & Raspberry Cereal',
+      'name': 'Blue Frog Keto Cereal Almond, Peanut & Raspberry',
       'brand': 'Blue Frog',
       'ingredients': [
         'nuts 53% (peanut 27%, almond 16%)',
@@ -2572,6 +2572,32 @@ class AustralianCuratedProductDatabase {
       'traces_tags': ['en:nuts'],
       'traces': 'nuts',
       'crossContamination': ['tree nuts'],
+      'isAustralianProduct': true,
+      'image': null,
+    },
+    // NZ pack CONTAINS almonds, sesame. MAY CONTAIN peanuts, tree nuts
+    // (generic Tree Nuts line, not named nuts). Labelled gluten free.
+    // Coconut is in the ingredient list, not the contains statement.
+    '9421906822380': {
+      'name': 'Blue Frog Keto Cereal Almond Butter & Vanilla Bean',
+      'brand': 'Blue Frog',
+      'ingredients': [
+        'seeds 50% (sunflower, pumpkin, sesame, chia)',
+        'nuts 36% (almond, almond butter 8%)',
+        'coconut',
+        'fibre rich tapioca syrup',
+        'sunflower oil',
+        'natural flavour',
+        'sea salt',
+        'monk fruit',
+        'natural vanilla extract',
+        'natural antioxidant (rosemary extract)',
+      ],
+      'allergens': ['almond', 'sesame'],
+      'mayContainItems': ['Peanuts', 'Tree Nuts'],
+      'traces_tags': ['en:peanuts', 'en:nuts'],
+      'traces': 'peanuts, nuts',
+      'crossContamination': ['peanuts', 'tree nuts'],
       'isAustralianProduct': true,
       'image': null,
     },
