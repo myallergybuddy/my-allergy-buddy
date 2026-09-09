@@ -2601,6 +2601,30 @@ class AustralianCuratedProductDatabase {
       'isAustralianProduct': true,
       'image': null,
     },
+    // NZ pack CONTAINS almond, cashew, macadamia, sesame. MAY CONTAIN peanut,
+    // tree nuts (generic Tree Nuts line, not named nuts). Labelled gluten
+    // free. Coconut is in the ingredient list, not the contains statement.
+    '9421903833938': {
+      'name': 'Blue Frog Macadamia, Almond & Manuka Honey',
+      'brand': 'Blue Frog',
+      'ingredients': [
+        'nuts 57% (almonds 26%, cashew, macadamia 7%)',
+        'coconut',
+        'seeds 30% (sunflower, pumpkin, sesame)',
+        'honey (bush, manuka 1%)',
+        'sunflower oil',
+        'fibre rich tapioca syrup',
+        'vanilla extract',
+        'natural antioxidant (rosemary extract)',
+      ],
+      'allergens': ['almond', 'cashew', 'macadamia', 'sesame'],
+      'mayContainItems': ['Peanuts', 'Tree Nuts'],
+      'traces_tags': ['en:peanuts', 'en:nuts'],
+      'traces': 'peanuts, nuts',
+      'crossContamination': ['peanuts', 'tree nuts'],
+      'isAustralianProduct': true,
+      'image': null,
+    },
     '9300617302353': {
       'name': 'Cadbury Cherry Ripe Double Dipped',
       'brand': 'Cadbury',
