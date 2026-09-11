@@ -762,6 +762,32 @@ class AustralianCuratedProductDatabase {
       'isAustralianProduct': true,
       'image': null,
     },
+    // Pack CONTAINS gluten (oats, barley), milk, soy. MAY CONTAIN tree nuts,
+    // wheat, other gluten containing cereals (generic Tree Nuts line, not
+    // named nuts). Coconut is in the ingredient list, not the contains
+    // statement. Whole milk chocolate pieces: cocoa 32% min, milk solids 21%.
+    '5010477356192': {
+      'name': 'Jordans Crunchy Oat Clusters Milk Chocolate',
+      'brand': 'Jordans',
+      'ingredients': [
+        'whole grain oat cereals (46%) (oat flakes, oat flour)',
+        'sugar',
+        'milk chocolate chunks (13%) (sugar, cocoa butter, whole milk powder, cocoa mass, emulsifier (soya lecithin), flavour)',
+        'whole milk chocolate pieces contain cocoa 32% minimum, milk solids 21%',
+        'barley flakes',
+        'vegetable oil',
+        'rice flour',
+        'desiccated coconut',
+        'flavour',
+      ],
+      'allergens': ['gluten', 'oats', 'barley', 'milk', 'soy'],
+      'mayContainItems': ['Tree Nuts', 'Wheat'],
+      'traces_tags': ['en:nuts', 'en:wheat'],
+      'traces': 'nuts, wheat',
+      'crossContamination': ['tree nuts', 'wheat'],
+      'isAustralianProduct': true,
+      'image': null,
+    },
     '9310015240614': {
       'name': 'Red Rock Deli Sea Salt Chips',
       'brand': 'Red Rock Deli',
