@@ -15,9 +15,7 @@ final Map<String, List<String>> basicAllergenCategories = {
   'Food': [
     'Peanuts',
     'Milk',
-    'Pecan',
     'Wheat',
-    'Soy',
     'Banana',
     'Celery',
   ],

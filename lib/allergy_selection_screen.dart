@@ -25,10 +25,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
     'Food': [
       {'name': 'Peanuts', 'scientific': 'Arachis hypogaea'},
       {'name': 'Milk', 'scientific': 'Lactose'},
-      {'name': 'Tree Nuts', 'scientific': 'Various'},
-      {'name': 'Pecan', 'scientific': 'Carya illinoinensis'},
       {'name': 'Wheat', 'scientific': 'Triticum aestivum'},
-      {'name': 'Soy', 'scientific': 'Glycine max'},
       {'name': 'Shrimp', 'scientific': 'Penaeidae'},
       {'name': 'Banana', 'scientific': 'Musa'},
       {'name': 'Celery', 'scientific': 'Apium graveolens'},
