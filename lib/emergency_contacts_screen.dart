@@ -706,45 +706,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
   }
 
   void _showPremiumUpgradeDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Upgrade to Premium',
-          style: GoogleFonts.nunito(
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'You\'ve reached the free plan limit of 2 emergency contacts. Upgrade to Premium to add up to 10 emergency contacts.',
-              style: GoogleFonts.nunito(
-                fontSize: 16,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const PremiumUpgradeWidget(),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Maybe Later',
-              style: GoogleFonts.nunito(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    PremiumUpgradeWidget.show(context);
   }
 
   Widget _buildEmptyContactSlot(int slotNumber) {

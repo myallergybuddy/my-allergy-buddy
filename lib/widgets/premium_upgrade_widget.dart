@@ -7,6 +7,53 @@ class PremiumUpgradeWidget extends StatefulWidget {
 
   const PremiumUpgradeWidget({super.key, this.onUpgradeComplete});
 
+  /// Full-screen-safe dialog so Choose Plan is not clipped by nested cards.
+  static Future<void> show(
+    BuildContext context, {
+    VoidCallback? onUpgradeComplete,
+  }) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        final height = MediaQuery.sizeOf(dialogContext).height * 0.85;
+        return Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: SizedBox(
+            width: 450,
+            height: height,
+            child: Column(
+              children: [
+                Align(
+                  alignment: Alignment.topRight,
+                  child: IconButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    icon: const Icon(Icons.close),
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+                    child: PremiumUpgradeWidget(
+                      onUpgradeComplete: () {
+                        onUpgradeComplete?.call();
+                        if (dialogContext.mounted) {
+                          Navigator.pop(dialogContext);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   State<PremiumUpgradeWidget> createState() => _PremiumUpgradeWidgetState();
 }
@@ -187,6 +234,52 @@ class _PremiumUpgradeWidgetState extends State<PremiumUpgradeWidget> {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _showSubscriptionOptions = true;
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4A9E9C),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 3,
+                  ),
+                  child: Text(
+                    'Choose Plan',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _restorePurchases,
+                  icon: Icon(Icons.refresh, color: const Color(0xFF4A9E9C)),
+                  label: Text(
+                    'Restore Purchases',
+                    style: TextStyle(color: const Color(0xFF4A9E9C)),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    side: BorderSide(color: const Color(0xFF4A9E9C)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -215,52 +308,6 @@ class _PremiumUpgradeWidgetState extends State<PremiumUpgradeWidget> {
                     _buildFeatureItem('Scan History'),
                   ],
                 ),
-                              ),
-                const SizedBox(height: 12),
-                SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _showSubscriptionOptions = true;
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4A9E9C),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 3,
-                  ),
-                  child: Text(
-                    'Choose Plan',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                              ),
-                const SizedBox(height: 8),
-                SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _restorePurchases,
-                  icon: Icon(Icons.refresh, color: const Color(0xFF4A9E9C)),
-                  label: Text(
-                    'Restore Purchases',
-                    style: TextStyle(color: const Color(0xFF4A9E9C)),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    side: BorderSide(color: const Color(0xFF4A9E9C)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
               ),
             ],
           ),
@@ -270,9 +317,7 @@ class _PremiumUpgradeWidgetState extends State<PremiumUpgradeWidget> {
   }
 
   Widget _buildSubscriptionScreen() {
-    return Container(
-      constraints: const BoxConstraints(maxHeight: 500),
-      child: Card(
+    return Card(
         elevation: 8,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -391,7 +436,6 @@ class _PremiumUpgradeWidgetState extends State<PremiumUpgradeWidget> {
           ),
         ),
       ),
-    ),
     );
   }
   

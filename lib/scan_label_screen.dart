@@ -1483,10 +1483,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
   }
 
   void _showUpgradeDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => const PremiumUpgradeWidget(),
-    );
+    PremiumUpgradeWidget.show(context);
   }
 
   // Photo scan methods

@@ -195,50 +195,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _showUpgradeDialog() async {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Upgrade to Premium',
-          style: GoogleFonts.nunito(
-            fontWeight: FontWeight.bold,
-            color: _textColor,
-          ),
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Upgrade to Premium to unlock all features and enhance your allergy management.',
-                  style: GoogleFonts.nunito(
-                    fontSize: 16,
-                    color: _textColor,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const PremiumUpgradeWidget(),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Maybe Later',
-              style: GoogleFonts.nunito(
-                color: _subtitleColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    await PremiumUpgradeWidget.show(context);
   }
 
   Future<void> _showLocationStatus() async {

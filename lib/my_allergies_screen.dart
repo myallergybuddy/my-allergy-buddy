@@ -180,55 +180,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
                               height: 48,
                             child: ElevatedButton.icon(
                               onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: Text(
-                                        'Upgrade to Premium',
-                                        style: GoogleFonts.nunito(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black,
-                                        ),
-                                      ),
-                                      content: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Upgrade to Premium to access 100+ additional allergens and advanced features.',
-                                            style: GoogleFonts.nunito(
-                                              fontSize: 16,
-                                              color: Colors.black87,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          const PremiumUpgradeWidget(),
-                                        ],
-                                      ),
-                                      actions: [
-                                        SizedBox(
-                                          height: 48,
-                                          child: TextButton(
-                                            onPressed: () => Navigator.pop(context),
-                                            style: TextButton.styleFrom(
-                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                            child: Text(
-                                              'Maybe Later',
-                                              style: GoogleFonts.nunito(
-                                                color: Colors.grey[600],
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 18,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                );
+                                PremiumUpgradeWidget.show(context);
                               },
                               icon: const Icon(Icons.star, color: Colors.white, size: 16),
                               label: Text(
