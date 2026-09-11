@@ -926,7 +926,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
     required double fontSize,
     required FontWeight fontWeight,
   }) {
-    final baseStyle = GoogleFonts.ptSans(
+    final baseStyle = GoogleFonts.nunito(
       fontSize: fontSize,
       fontWeight: fontWeight,
       letterSpacing: 2.0,
@@ -1273,7 +1273,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
                             child: _outlinedSeverityText(
                               severity,
                               fillColor: _severityColor(severity),
-                              fontSize: 16,
+                              fontSize: 14,
                               fontWeight: FontWeight.w500,
                             ),
                           );
@@ -1285,7 +1285,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
                           child: _outlinedSeverityText(
                             severity,
                             fillColor: _severityColor(severity),
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
                         );

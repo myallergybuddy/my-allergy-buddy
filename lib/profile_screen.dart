@@ -927,8 +927,8 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                                             child: _outlinedSeverityText(
                                               allergy['severity'],
                                               fillColor: severityColor,
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
                                             ),
                                           ),
                                           if (allergy['category'] != null) ...[
@@ -1619,7 +1619,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     required double fontSize,
     required FontWeight fontWeight,
   }) {
-    final baseStyle = GoogleFonts.ptSans(
+    final baseStyle = GoogleFonts.nunito(
       fontSize: fontSize,
       fontWeight: fontWeight,
       letterSpacing: 2.0,

@@ -362,7 +362,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
                         allergy['severity'] ?? severity,
                         fillColor: severityColor,
                         fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     if (allergy['category'] != null)
@@ -408,7 +408,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
     required double fontSize,
     required FontWeight fontWeight,
   }) {
-    final baseStyle = GoogleFonts.ptSans(
+    final baseStyle = GoogleFonts.nunito(
       fontSize: fontSize,
       fontWeight: fontWeight,
       letterSpacing: 2.0,
