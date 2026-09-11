@@ -741,6 +741,27 @@ class AustralianCuratedProductDatabase {
       'isAustralianProduct': true,
       'image': null,
     },
+    // Pack CONTAINS gluten (oats). MAY CONTAIN tree nuts, wheat, other gluten
+    // containing cereals (generic Tree Nuts line, not named nuts).
+    '5010477360793': {
+      'name': 'Jordans Simply Granola Crunchy Oat and Honey',
+      'brand': 'Jordans',
+      'ingredients': [
+        'whole grain oat flakes (77%)',
+        'sugar',
+        'vegetable oil',
+        'honey (1%)',
+        'sunflower seeds',
+        'flavour',
+      ],
+      'allergens': ['gluten', 'oats'],
+      'mayContainItems': ['Tree Nuts', 'Wheat'],
+      'traces_tags': ['en:nuts', 'en:wheat'],
+      'traces': 'nuts, wheat',
+      'crossContamination': ['tree nuts', 'wheat'],
+      'isAustralianProduct': true,
+      'image': null,
+    },
     '9310015240614': {
       'name': 'Red Rock Deli Sea Salt Chips',
       'brand': 'Red Rock Deli',
