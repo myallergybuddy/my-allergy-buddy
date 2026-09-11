@@ -98,27 +98,62 @@ class RevenueCatService {
     await PremiumService.setPremiumStatus(hasPremium, expiryDate: expiryDate);
   }
 
+  /// Last user-visible reason [getProducts] returned no store plans.
+  static String? lastProductError;
+
   /// Get available subscription products from RevenueCat offerings.
   static Future<List<Map<String, dynamic>>> getProducts() async {
+    lastProductError = null;
     try {
       if (!_isInitialized) await initialize();
 
       if (!_revenueCatConfigured) {
+        lastProductError =
+            'Subscriptions are not configured on this build.';
+        debugPrint('RevenueCat: SDK not configured');
         return kDebugMode ? _fallbackProducts() : [];
       }
 
-      final offerings = await Purchases.getOfferings();
-      final currentOffering = offerings.current;
-
-      if (currentOffering == null ||
-          currentOffering.availablePackages.isEmpty) {
-        debugPrint('RevenueCat: no current offering or packages available');
-        return kDebugMode ? _fallbackProducts() : [];
+      final packages = <Package>[];
+      try {
+        final offerings = await Purchases.getOfferings();
+        if (offerings.current != null &&
+            offerings.current!.availablePackages.isNotEmpty) {
+          packages.addAll(offerings.current!.availablePackages);
+        } else {
+          for (final offering in offerings.all.values) {
+            packages.addAll(offering.availablePackages);
+          }
+        }
+        debugPrint(
+          'RevenueCat: offerings current=${offerings.current?.identifier} '
+          'all=${offerings.all.length} packages=${packages.length}',
+        );
+      } catch (e) {
+        debugPrint('RevenueCat: getOfferings failed: $e');
       }
 
-      return currentOffering.availablePackages.map(_packageToProductMap).toList();
+      if (packages.isNotEmpty) {
+        return packages.map(_packageToProductMap).toList();
+      }
+
+      final storeProducts = await Purchases.getProducts(
+        RevenueCatConfig.productIds,
+        productCategory: ProductCategory.subscription,
+      );
+      debugPrint(
+        'RevenueCat: store products by id=${storeProducts.length}',
+      );
+      if (storeProducts.isNotEmpty) {
+        return storeProducts.map(_storeProductToProductMap).toList();
+      }
+
+      lastProductError =
+          'Google Play did not return subscription prices. USB installs often cannot load plans — install from Play internal testing with a license-tester Google account, then try again.';
+      return kDebugMode ? _fallbackProducts() : [];
     } catch (e) {
       debugPrint('Error getting products: $e');
+      lastProductError = 'Could not load plans: $e';
       return kDebugMode ? _fallbackProducts() : [];
     }
   }
@@ -133,6 +168,18 @@ class RevenueCatService {
       'priceString': product.priceString,
       'price': product.price,
       'package': package,
+      'storeProduct': product,
+    };
+  }
+
+  static Map<String, dynamic> _storeProductToProductMap(StoreProduct product) {
+    return {
+      'identifier': product.identifier,
+      'title': product.title,
+      'description': product.description,
+      'priceString': product.priceString,
+      'price': product.price,
+      'storeProduct': product,
     };
   }
 
@@ -182,6 +229,10 @@ class RevenueCatService {
 
       if (package != null) {
         customerInfo = await Purchases.purchasePackage(package);
+      } else if (product['storeProduct'] is StoreProduct) {
+        customerInfo = await Purchases.purchaseStoreProduct(
+          product['storeProduct'] as StoreProduct,
+        );
       } else {
         final productId = product['identifier'] as String?;
         if (productId == null) return null;
@@ -191,7 +242,10 @@ class RevenueCatService {
         if (resolvedPackage != null) {
           customerInfo = await Purchases.purchasePackage(resolvedPackage);
         } else {
-          final storeProducts = await Purchases.getProducts([productId]);
+          final storeProducts = await Purchases.getProducts(
+            [productId],
+            productCategory: ProductCategory.subscription,
+          );
           if (storeProducts.isEmpty) {
             debugPrint('RevenueCat: product not found: $productId');
             return null;

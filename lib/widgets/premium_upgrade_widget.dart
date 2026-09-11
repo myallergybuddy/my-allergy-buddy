@@ -408,8 +408,21 @@ class _PremiumUpgradeWidgetState extends State<PremiumUpgradeWidget> {
                     color: Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Center(
-                    child: Text('No subscription plans available'),
+                  child: Column(
+                    children: [
+                      Text(
+                        RevenueCatService.lastProductError ??
+                            'No subscription plans available',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey.shade800),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: _loadProducts,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                      ),
+                    ],
                   ),
                 ),
               ],
