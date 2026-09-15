@@ -645,6 +645,26 @@ class AustralianCuratedProductDatabase {
       'isAustralianProduct': true,
       'image': null,
     },
+    // Pack CONTAINS gluten (oats, wheat). MAY CONTAIN milk, tree nuts, lupin
+    // (generic Tree Nuts line, not named nuts). Gluten (wheat) is in the
+    // ingredient list, so wheat is a contains allergen, not a trace.
+    '9300605161894': {
+      'name': 'Uncle Tobys Oats Protein Quick Sachets Blueberry Maple Pancake 8 Pack',
+      'brand': 'Uncle Tobys',
+      'ingredients': [
+        'uncle tobys whole grain rolled oats (58%)',
+        'gluten (wheat)',
+        'sugar',
+        'natural flavours',
+      ],
+      'allergens': ['gluten', 'oats', 'wheat'],
+      'mayContainItems': ['Milk', 'Tree Nuts', 'Lupin'],
+      'traces_tags': ['en:milk', 'en:nuts', 'en:lupin'],
+      'traces': 'milk, nuts, lupin',
+      'crossContamination': ['milk', 'tree nuts', 'lupin'],
+      'isAustralianProduct': true,
+      'image': null,
+    },
     // Pack CONTAINS gluten (oats, barley). MAY CONTAIN tree nuts, wheat,
     // other gluten containing cereals (generic Tree Nuts line, not named
     // nuts). Coconut is in the ingredient list, not the contains statement.
