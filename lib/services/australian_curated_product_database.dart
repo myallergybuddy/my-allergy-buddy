@@ -742,6 +742,47 @@ class AustralianCuratedProductDatabase {
       'isAustralianProduct': true,
       'image': null,
     },
+    // Pack CONTAINS gluten (oats). MAY CONTAIN milk, soy, peanut, tree nuts,
+    // sesame, sulphites, lupin (generic Tree Nuts line, not named nuts).
+    '9348219001656': {
+      'name': 'Red Tractor Rolled Oats',
+      'brand': 'Red Tractor',
+      'ingredients': [
+        'australian wholegrain rolled oats (100%)',
+      ],
+      'allergens': ['gluten', 'oats'],
+      'mayContainItems': [
+        'Milk',
+        'Soy',
+        'Peanuts',
+        'Tree Nuts',
+        'Sesame',
+        'Sulphites',
+        'Lupin',
+      ],
+      'traces_tags': [
+        'en:milk',
+        'en:soybeans',
+        'en:peanuts',
+        'en:nuts',
+        'en:sesame-seeds',
+        'en:sulphur-dioxide-and-sulphites',
+        'en:lupin',
+      ],
+      'traces':
+          'milk, soybeans, peanuts, nuts, sesame seeds, sulphur dioxide and sulphites, lupin',
+      'crossContamination': [
+        'milk',
+        'soy',
+        'peanuts',
+        'tree nuts',
+        'sesame',
+        'sulphites',
+        'lupin',
+      ],
+      'isAustralianProduct': true,
+      'image': null,
+    },
     // Pack CONTAINS gluten (oats, barley). MAY CONTAIN tree nuts, wheat,
     // other gluten containing cereals (generic Tree Nuts line, not named
     // nuts). Coconut is in the ingredient list, not the contains statement.
