@@ -688,6 +688,27 @@ class AustralianCuratedProductDatabase {
       'isAustralianProduct': true,
       'image': null,
     },
+    // Pack CONTAINS gluten (oats), milk. MAY CONTAIN tree nuts, lupin, wheat
+    // (generic Tree Nuts line, not named nuts). Freeze dried strawberry is
+    // in the ingredient list only; no sulphites stated on this flavour.
+    '9300605162242': {
+      'name': 'Uncle Tobys Overnight Oat Sachets Strawberry & Vanilla Flavour',
+      'brand': 'Uncle Tobys',
+      'ingredients': [
+        'uncle tobys whole grain rolled oats (81%)',
+        'sugar',
+        'skim milk powder',
+        'natural flavours',
+        'freeze dried strawberry (0.6%)',
+      ],
+      'allergens': ['gluten', 'oats', 'milk'],
+      'mayContainItems': ['Tree Nuts', 'Lupin', 'Wheat'],
+      'traces_tags': ['en:nuts', 'en:lupin', 'en:wheat'],
+      'traces': 'nuts, lupin, wheat',
+      'crossContamination': ['tree nuts', 'lupin', 'wheat'],
+      'isAustralianProduct': true,
+      'image': null,
+    },
     // Pack CONTAINS gluten (oats, barley). MAY CONTAIN tree nuts, wheat,
     // other gluten containing cereals (generic Tree Nuts line, not named
     // nuts). Coconut is in the ingredient list, not the contains statement.
