@@ -725,6 +725,23 @@ class AustralianCuratedProductDatabase {
       'isAustralianProduct': true,
       'image': null,
     },
+    // Pack CONTAINS gluten (oats). MAY CONTAIN peanut, tree nuts (generic
+    // Tree Nuts line, not named nuts). Pack name is rolled oats; ingredient
+    // list is Australian premium quick oats.
+    '9350704008873': {
+      'name': 'Healthy Garden Wholegrain Rolled Oats',
+      'brand': 'Healthy Garden',
+      'ingredients': [
+        'australian premium quick oats',
+      ],
+      'allergens': ['gluten', 'oats'],
+      'mayContainItems': ['Peanuts', 'Tree Nuts'],
+      'traces_tags': ['en:peanuts', 'en:nuts'],
+      'traces': 'peanuts, nuts',
+      'crossContamination': ['peanuts', 'tree nuts'],
+      'isAustralianProduct': true,
+      'image': null,
+    },
     // Pack CONTAINS gluten (oats, barley). MAY CONTAIN tree nuts, wheat,
     // other gluten containing cereals (generic Tree Nuts line, not named
     // nuts). Coconut is in the ingredient list, not the contains statement.
