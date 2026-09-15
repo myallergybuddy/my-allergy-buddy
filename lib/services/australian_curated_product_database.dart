@@ -665,6 +665,29 @@ class AustralianCuratedProductDatabase {
       'isAustralianProduct': true,
       'image': null,
     },
+    // Pack CONTAINS gluten (oats), milk, sulphites. MAY CONTAIN tree nuts,
+    // lupin, wheat (generic Tree Nuts line, not named nuts). Apple uses
+    // preservative 223 (sulphites); pack notes some dried fruits contain
+    // sulphites to maintain natural colour and shelf life.
+    '9300605162259': {
+      'name': 'Uncle Tobys Overnight Oat Sachets Apple & Brown Sugar 10 Pack',
+      'brand': 'Uncle Tobys',
+      'ingredients': [
+        'uncle tobys whole grain rolled oats (78%)',
+        'sugar',
+        'apple (6%) preservative (223) (sulphites)',
+        'some dried fruits contain sulphites to maintain natural colour and shelf life',
+        'skim milk powder',
+        'natural flavour',
+      ],
+      'allergens': ['gluten', 'oats', 'milk', 'sulphites'],
+      'mayContainItems': ['Tree Nuts', 'Lupin', 'Wheat'],
+      'traces_tags': ['en:nuts', 'en:lupin', 'en:wheat'],
+      'traces': 'nuts, lupin, wheat',
+      'crossContamination': ['tree nuts', 'lupin', 'wheat'],
+      'isAustralianProduct': true,
+      'image': null,
+    },
     // Pack CONTAINS gluten (oats, barley). MAY CONTAIN tree nuts, wheat,
     // other gluten containing cereals (generic Tree Nuts line, not named
     // nuts). Coconut is in the ingredient list, not the contains statement.
