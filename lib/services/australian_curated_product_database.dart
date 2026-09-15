@@ -649,7 +649,7 @@ class AustralianCuratedProductDatabase {
     // (generic Tree Nuts line, not named nuts). Gluten (wheat) is in the
     // ingredient list, so wheat is a contains allergen, not a trace.
     '9300605161894': {
-      'name': 'Uncle Tobys Oats Protein Quick Sachets Blueberry Maple Pancake 8 Pack',
+      'name': 'Uncle Tobys Oats Protein Quick Sachets Blueberry Maple Pancake',
       'brand': 'Uncle Tobys',
       'ingredients': [
         'uncle tobys whole grain rolled oats (58%)',
@@ -666,19 +666,19 @@ class AustralianCuratedProductDatabase {
       'image': null,
     },
     // Pack CONTAINS gluten (oats), milk, sulphites. MAY CONTAIN tree nuts,
-    // lupin, wheat (generic Tree Nuts line, not named nuts). Apple uses
-    // preservative 223 (sulphites); pack notes some dried fruits contain
-    // sulphites to maintain natural colour and shelf life.
+    // lupin, wheat (generic Tree Nuts line, not named nuts). Wheat is a
+    // may-contain, not a contains allergen. Dried apple uses preservative
+    // 223 (sulphites); pack notes some dried fruits contain sulphites.
     '9300605162259': {
-      'name': 'Uncle Tobys Overnight Oat Sachets Apple & Brown Sugar 10 Pack',
+      'name': 'Uncle Tobys Overnight Oat Sachets Apple & Brown Sugar',
       'brand': 'Uncle Tobys',
       'ingredients': [
         'uncle tobys whole grain rolled oats (78%)',
         'sugar',
-        'apple (6%) preservative (223) (sulphites)',
-        'some dried fruits contain sulphites to maintain natural colour and shelf life',
+        'apple (6%) (preservative (223) (sulphites))',
         'skim milk powder',
         'natural flavour',
+        'some dried fruits contain sulphites to maintain natural colour and shelf life',
       ],
       'allergens': ['gluten', 'oats', 'milk', 'sulphites'],
       'mayContainItems': ['Tree Nuts', 'Lupin', 'Wheat'],
