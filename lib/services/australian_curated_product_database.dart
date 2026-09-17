@@ -784,8 +784,9 @@ class AustralianCuratedProductDatabase {
       'image': null,
     },
     // Pack CONTAINS gluten (oats). Wheat free means wheat is not listed as a
-    // contains allergen; oats still contain gluten. No may-contain statement
-    // was provided, so traces are not invented from other Red Tractor SKUs.
+    // contains allergen; oats still contain gluten. MAY CONTAIN milk, soy,
+    // peanut, tree nuts, sesame, sulphites, lupin (generic Tree Nuts line,
+    // not named nuts).
     '9348219002738': {
       'name': 'Red Tractor Wheat Free Rolled Oats',
       'brand': 'Red Tractor',
@@ -793,8 +794,35 @@ class AustralianCuratedProductDatabase {
         'australian wheat free rolled oats (100%)',
       ],
       'allergens': ['gluten', 'oats'],
-      'mayContainItems': <String>[],
-      'crossContamination': <String>[],
+      'mayContainItems': [
+        'Milk',
+        'Soy',
+        'Peanuts',
+        'Tree Nuts',
+        'Sesame',
+        'Sulphites',
+        'Lupin',
+      ],
+      'traces_tags': [
+        'en:milk',
+        'en:soybeans',
+        'en:peanuts',
+        'en:nuts',
+        'en:sesame-seeds',
+        'en:sulphur-dioxide-and-sulphites',
+        'en:lupin',
+      ],
+      'traces':
+          'milk, soybeans, peanuts, nuts, sesame seeds, sulphur dioxide and sulphites, lupin',
+      'crossContamination': [
+        'milk',
+        'soy',
+        'peanuts',
+        'tree nuts',
+        'sesame',
+        'sulphites',
+        'lupin',
+      ],
       'isAustralianProduct': true,
       'image': null,
     },
