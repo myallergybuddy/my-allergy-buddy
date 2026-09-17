@@ -865,6 +865,48 @@ class AustralianCuratedProductDatabase {
       'isAustralianProduct': true,
       'image': null,
     },
+    // Pack CONTAINS gluten (oats), soy. MAY CONTAIN milk, peanut, tree nuts,
+    // sesame, egg, sulphites, lupin (generic Tree Nuts line, not named nuts).
+    '9348219001830': {
+      'name': 'Red Tractor Protein Instant Oats',
+      'brand': 'Red Tractor',
+      'ingredients': [
+        'wholegrain instant oats (89%)',
+        'soy protein crisp (11%) (soy protein isolate, tapioca starch, soy lecithin, salt)',
+      ],
+      'allergens': ['gluten', 'oats', 'soy'],
+      'mayContainItems': [
+        'Milk',
+        'Peanuts',
+        'Tree Nuts',
+        'Sesame',
+        'Egg',
+        'Sulphites',
+        'Lupin',
+      ],
+      'traces_tags': [
+        'en:milk',
+        'en:peanuts',
+        'en:nuts',
+        'en:sesame-seeds',
+        'en:eggs',
+        'en:sulphur-dioxide-and-sulphites',
+        'en:lupin',
+      ],
+      'traces':
+          'milk, peanuts, nuts, sesame seeds, eggs, sulphur dioxide and sulphites, lupin',
+      'crossContamination': [
+        'milk',
+        'peanuts',
+        'tree nuts',
+        'sesame',
+        'egg',
+        'sulphites',
+        'lupin',
+      ],
+      'isAustralianProduct': true,
+      'image': null,
+    },
     // Pack CONTAINS gluten (oats, barley). MAY CONTAIN tree nuts, wheat,
     // other gluten containing cereals (generic Tree Nuts line, not named
     // nuts). Coconut is in the ingredient list, not the contains statement.
