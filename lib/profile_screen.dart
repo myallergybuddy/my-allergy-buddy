@@ -40,6 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
   final _medicationController = TextEditingController();
   final _notesController = TextEditingController();
   DateTime? _selectedDate;
+  bool _isAddingMedication = false;
 
   @override
   void initState() {
@@ -342,119 +343,106 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
       _medicationController.clear();
       _notesController.clear();
       _selectedDate = null;
+      _isAddingMedication = false;
     });
 
     _saveMedications();
     _showSuccessSnackBar('Medication added successfully!');
   }
 
-  void _showAddMedicationDialog() {
-    showDialog(
+  bool get _hasMedicationDraft =>
+      _medicationController.text.trim().isNotEmpty ||
+      _selectedDate != null ||
+      _notesController.text.trim().isNotEmpty;
+
+  void _startAddingMedication() {
+    _medicationController.clear();
+    _notesController.clear();
+    _selectedDate = null;
+    setState(() => _isAddingMedication = true);
+  }
+
+  void _cancelAddingMedication() {
+    setState(() {
+      _isAddingMedication = false;
+      _medicationController.clear();
+      _notesController.clear();
+      _selectedDate = null;
+    });
+  }
+
+  Future<void> _pickMedicationExpiryDate() async {
+    final date = await showDatePicker(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Add Medication',
-          style: GoogleFonts.nunito(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+    );
+    if (date != null) {
+      setState(() {
+        _selectedDate = date;
+      });
+    }
+  }
+
+  Widget _buildAddMedicationFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          controller: _medicationController,
+          onChanged: (_) => setState(() {}),
+          decoration: const InputDecoration(
+            labelText: 'Medication Name *',
+            prefixIcon: Icon(Icons.medication, color: Color(0xFF4A9E9C)),
           ),
         ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _medicationController,
-                decoration: const InputDecoration(
-                  labelText: 'Medication Name *',
-                  prefixIcon: Icon(Icons.medication, color: Color(0xFF4A9E9C)),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter medication name';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              InkWell(
-                onTap: () async {
-                  final date = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                    lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-                  );
-                  if (date != null) {
-                    setState(() {
-                      _selectedDate = date;
-                    });
-                  }
-                },
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'Expiry Date *',
-                    prefixIcon: Icon(Icons.calendar_today, color: Color(0xFF4A9E9C)),
-                  ),
-                  child: Text(
-                    _selectedDate == null
-                        ? 'Select Date'
-                        : DateFormat('MMM dd, yyyy').format(_selectedDate!),
-                    style: GoogleFonts.nunito(
-                      color: _selectedDate == null ? Theme.of(context).colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (optional)',
-                  prefixIcon: Icon(Icons.note, color: Color(0xFF4A9E9C)),
-                ),
-                maxLines: 3,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: _pickMedicationExpiryDate,
+          child: InputDecorator(
+            decoration: const InputDecoration(
+              labelText: 'Expiry Date *',
+              prefixIcon: Icon(Icons.calendar_today, color: Color(0xFF4A9E9C)),
+            ),
             child: Text(
-              'Cancel',
+              _selectedDate == null
+                  ? 'Select Date'
+                  : DateFormat('MMM dd, yyyy').format(_selectedDate!),
               style: GoogleFonts.nunito(
-                color: Colors.grey[600],
+                color: _selectedDate == null
+                    ? Theme.of(context).colorScheme.onSurfaceVariant
+                    : Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              if (_medicationController.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter medication name'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-              if (_selectedDate == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please select expiry date'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-              _addMedication();
-              Navigator.pop(context);
-            },
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _notesController,
+          onChanged: (_) => setState(() {}),
+          decoration: const InputDecoration(
+            labelText: 'Notes (optional)',
+            prefixIcon: Icon(Icons.note, color: Color(0xFF4A9E9C)),
+          ),
+          maxLines: 3,
+        ),
+        const SizedBox(height: 12),
+        _buildAddMedicationActions(),
+      ],
+    );
+  }
+
+  Widget _buildAddMedicationActions() {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton(
+            onPressed: _addMedication,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4A9E9C),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -468,8 +456,215 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
               ),
             ),
           ),
-        ],
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: TextButton(
+            onPressed: _cancelAddingMedication,
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.nunito(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  BoxDecoration _medicationsBoxDecoration() {
+    return BoxDecoration(
+      color: const Color(0xFFE0F2F1),
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.05),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMedicationBoxTile({
+    required String name,
+    DateTime? expiryDate,
+    String? notes,
+    bool isPreview = false,
+    bool showBottomBorder = false,
+    Widget? trailing,
+  }) {
+    final trimmedName = name.trim();
+    final trimmedNotes = notes?.trim() ?? '';
+    final daysUntilExpiry = expiryDate?.difference(DateTime.now()).inDays;
+    final isExpiringSoon =
+        daysUntilExpiry != null && daysUntilExpiry >= 0 && daysUntilExpiry <= 30;
+    final isExpired = daysUntilExpiry != null && daysUntilExpiry < 0;
+
+    Color iconColor = const Color(0xFF4A9E9C);
+    Color iconBg = const Color(0xFF4A9E9C).withValues(alpha: 0.1);
+    if (isExpired) {
+      iconColor = Colors.red;
+      iconBg = Colors.red.withValues(alpha: 0.1);
+    } else if (isExpiringSoon) {
+      iconColor = Colors.orange;
+      iconBg = Colors.orange.withValues(alpha: 0.1);
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFE0F2F1),
+        borderRadius: BorderRadius.circular(20),
+        border: isPreview
+            ? Border.all(
+                color: const Color(0xFF4A9E9C).withValues(alpha: 0.45),
+                width: 1.5,
+              )
+            : Border(
+                bottom: showBottomBorder
+                    ? BorderSide(color: Colors.grey.withValues(alpha: 0.1), width: 0.5)
+                    : BorderSide.none,
+              ),
       ),
+      child: ListTile(
+        dense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        minVerticalPadding: 0,
+        minLeadingWidth: 40,
+        horizontalTitleGap: 12,
+        leading: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: iconBg,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            Icons.health_and_safety,
+            color: iconColor,
+            size: 16,
+          ),
+        ),
+        title: Text(
+          trimmedName.isEmpty ? 'Medication name' : trimmedName,
+          style: GoogleFonts.nunito(
+            fontWeight: FontWeight.bold,
+            color: trimmedName.isEmpty ? Colors.black54 : Colors.black,
+            fontSize: 14,
+            fontStyle: trimmedName.isEmpty ? FontStyle.italic : FontStyle.normal,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (expiryDate != null) ...[
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: 14,
+                    color: isExpired
+                        ? Colors.red
+                        : isExpiringSoon
+                            ? Colors.orange
+                            : Colors.black,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Expires: ${DateFormat('MMM dd, yyyy').format(expiryDate)}',
+                    style: GoogleFonts.nunito(
+                      color: isExpired
+                          ? Colors.red
+                          : isExpiringSoon
+                              ? Colors.orange
+                              : Colors.black,
+                      fontWeight: isExpired || isExpiringSoon
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (trimmedNotes.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                trimmedNotes,
+                style: GoogleFonts.nunito(
+                  color: Colors.black,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+            if (!isPreview && (isExpired || isExpiringSoon)) ...[
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isExpired
+                      ? Colors.red.withValues(alpha: 0.1)
+                      : Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  isExpired ? 'EXPIRED' : 'Expires soon',
+                  style: GoogleFonts.nunito(
+                    color: isExpired ? Colors.red : Colors.orange,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        trailing: isPreview
+            ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4A9E9C).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Preview',
+                  style: GoogleFonts.nunito(
+                    color: const Color(0xFF4A9E9C),
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              )
+            : trailing,
+      ),
+    );
+  }
+
+  Widget _buildMedicationDraftPreview({bool showBottomBorder = false}) {
+    if (!_hasMedicationDraft) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        child: Text(
+          'Type a medication, expiry date, or notes to preview it here',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.nunito(
+            color: Colors.black54,
+            fontSize: 14,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      );
+    }
+
+    return _buildMedicationBoxTile(
+      name: _medicationController.text,
+      expiryDate: _selectedDate,
+      notes: _notesController.text,
+      isPreview: true,
+      showBottomBorder: showBottomBorder,
     );
   }
 
@@ -988,6 +1183,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                     });
                     _showSuccessSnackBar('Medication settings saved!');
                   },
+                  showHeaderActions: !_isAddingMedication,
                   children: [
                     const SizedBox(height: 8),
                     Text(
@@ -998,61 +1194,71 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                       ),
                     ),
                     const SizedBox(height: 8),
+                    if (_isAddingMedication) ...[
+                      _buildAddMedicationFields(),
+                      const SizedBox(height: 12),
+                    ],
                     Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.health_and_safety,
-                            size: 32,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'No medications added yet',
-                            style: GoogleFonts.nunito(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              fontSize: 16,
+                      padding: _isAddingMedication
+                          ? EdgeInsets.zero
+                          : const EdgeInsets.all(16),
+                      decoration: _isAddingMedication
+                          ? _medicationsBoxDecoration()
+                          : BoxDecoration(
+                              color: Theme.of(context).cardColor,
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Add your medications to track expiry dates',
-                            style: GoogleFonts.nunito(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              fontSize: 14,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: _showAddMedicationDialog,
-                              icon: const Icon(Icons.add),
-                              label: Text(
-                                'Add Medication',
-                                style: GoogleFonts.nunito(
-                                  fontWeight: FontWeight.bold,
+                      child: _isAddingMedication
+                          ? _buildMedicationDraftPreview()
+                          : Column(
+                              children: [
+                                Icon(
+                                  Icons.health_and_safety,
+                                  size: 32,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF4A9E9C),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'No medications added yet',
+                                  style: GoogleFonts.nunito(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    fontSize: 16,
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Add your medications to track expiry dates',
+                                  style: GoogleFonts.nunito(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    fontSize: 14,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 16),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: _startAddingMedication,
+                                    icon: const Icon(Icons.add),
+                                    label: Text(
+                                      'Add Medication',
+                                      style: GoogleFonts.nunito(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF4A9E9C),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
                     ),
                   ],
                 ),
@@ -1076,178 +1282,62 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                               ),
                             ),
                           ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _buildEditButton(
-                                onTap: () {
-                                  if (_isEditingSavedMedications) {
-                                    _showAddMedicationDialog();
-                                  } else {
-                                    setState(() {
-                                      _isEditingSavedMedications = true;
-                                    });
-                                  }
-                                },
-                                label: _isEditingSavedMedications ? 'Add' : 'Edit',
-                                icon: _isEditingSavedMedications ? Icons.add : Icons.edit,
-                              ),
-                            ],
-                          ),
+                          if (!_isAddingMedication)
+                            _buildEditButton(
+                              onTap: () {
+                                if (_isEditingSavedMedications) {
+                                  _startAddingMedication();
+                                } else {
+                                  setState(() {
+                                    _isEditingSavedMedications = true;
+                                  });
+                                }
+                              },
+                              label: _isEditingSavedMedications ? 'Add' : 'Edit',
+                              icon: _isEditingSavedMedications ? Icons.add : Icons.edit,
+                            ),
                         ],
                       ),
                       const SizedBox(height: 8),
+                      if (_isAddingMedication) ...[
+                        _buildAddMedicationFields(),
+                        const SizedBox(height: 12),
+                      ],
                       Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE0F2F1),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
+                        decoration: _medicationsBoxDecoration(),
                         child: Column(
-                          children: _medications.map((medication) {
-                            final daysUntilExpiry = medication.expiryDate.difference(DateTime.now()).inDays;
-                            final isExpiringSoon = daysUntilExpiry <= 30;
-                            final isExpired = daysUntilExpiry < 0;
-                            
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE0F2F1),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border(
-                                  bottom: _medications.indexOf(medication) < _medications.length - 1
-                                      ? BorderSide(color: Colors.grey.withValues(alpha: 0.1), width: 0.5)
-                                      : BorderSide.none,
-                                ),
-                              ),
-                              child: ListTile(
-                                dense: true,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                minVerticalPadding: 0,
-                                minLeadingWidth: 40,
-                                horizontalTitleGap: 12,
-                                leading: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: isExpired 
-                                      ? Colors.red.withValues(alpha: 0.1)
-                                      : isExpiringSoon 
-                                        ? Colors.orange.withValues(alpha: 0.1)
-                                        : const Color(0xFF4A9E9C).withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    Icons.health_and_safety,
-                                    color: isExpired 
-                                      ? Colors.red
-                                      : isExpiringSoon 
-                                        ? Colors.orange
-                                        : const Color(0xFF4A9E9C),
-                                    size: 16,
-                                  ),
-                                ),
-                                title: Text(
-                                  medication.name,
-                                  style: GoogleFonts.nunito(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 2),
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.calendar_today,
-                                          size: 14,
-                                          color: isExpired 
-                                            ? Colors.red
-                                            : isExpiringSoon 
-                                              ? Colors.orange
-                                              : Colors.black,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'Expires: ${DateFormat('MMM dd, yyyy').format(medication.expiryDate)}',
-                                          style: GoogleFonts.nunito(
-                                            color: isExpired 
-                                              ? Colors.red
-                                              : isExpiringSoon 
-                                                ? Colors.orange
-                                                : Colors.black,
-                                            fontWeight: isExpired || isExpiringSoon ? FontWeight.bold : FontWeight.normal,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    if (medication.notes != null && medication.notes!.isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        medication.notes!,
-                                        style: GoogleFonts.nunito(
-                                          color: Colors.black,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                    if (isExpired || isExpiringSoon) ...[
-                                      const SizedBox(height: 4),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: isExpired 
-                                            ? Colors.red.withValues(alpha: 0.1)
-                                            : Colors.orange.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          isExpired 
-                                            ? 'EXPIRED'
-                                            : 'Expires soon',
-                                          style: GoogleFonts.nunito(
-                                            color: isExpired ? Colors.red : Colors.orange,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
+                          children: [
+                            for (int i = 0; i < _medications.length; i++)
+                              _buildMedicationBoxTile(
+                                name: _medications[i].name,
+                                expiryDate: _medications[i].expiryDate,
+                                notes: _medications[i].notes,
+                                showBottomBorder: i < _medications.length - 1 || _isAddingMedication,
                                 trailing: _isEditingSavedMedications
-                                  ? Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        _buildIconActionButton(
-                                          onTap: () => _showEditMedicationDialog(
-                                            medication,
-                                            _medications.indexOf(medication),
+                                    ? Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          _buildIconActionButton(
+                                            onTap: () => _showEditMedicationDialog(
+                                              _medications[i],
+                                              i,
+                                            ),
+                                            icon: Icons.edit,
+                                            color: const Color(0xFF4A9E9C),
                                           ),
-                                          icon: Icons.edit,
-                                          color: const Color(0xFF4A9E9C),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        _buildIconActionButton(
-                                          onTap: () => _deleteMedication(medication),
-                                          icon: Icons.delete,
-                                          color: Colors.red,
-                                        ),
-                                      ],
-                                    )
-                                  : null,
+                                          const SizedBox(width: 6),
+                                          _buildIconActionButton(
+                                            onTap: () => _deleteMedication(_medications[i]),
+                                            icon: Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                        ],
+                                      )
+                                    : null,
                               ),
-                            );
-                          }).toList(),
+                            if (_isAddingMedication)
+                              _buildMedicationDraftPreview(),
+                          ],
                         ),
                       ),
                     ],
@@ -1326,6 +1416,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     required VoidCallback onEditToggle,
     required VoidCallback onSave,
     VoidCallback? onCancel,
+    bool showHeaderActions = true,
     required List<Widget> children,
   }) {
     return Container(
@@ -1361,11 +1452,13 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                           color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: _buildActionButtons(isEditing, onEditToggle, onSave, onCancel),
-                      ),
+                      if (showHeaderActions) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: _buildActionButtons(isEditing, onEditToggle, onSave, onCancel),
+                        ),
+                      ],
                     ],
                   );
                 } else {
@@ -1383,8 +1476,10 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      ..._buildActionButtons(isEditing, onEditToggle, onSave, onCancel),
+                      if (showHeaderActions) ...[
+                        const SizedBox(width: 12),
+                        ..._buildActionButtons(isEditing, onEditToggle, onSave, onCancel),
+                      ],
                     ],
                   );
                 }
