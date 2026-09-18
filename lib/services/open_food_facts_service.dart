@@ -7,20 +7,33 @@ import 'html_text_utils.dart';
 import 'premium_product_service.dart';
 
 class OpenFoodFactsService {
-  static const String baseUrlV3 = 'https://world.openfoodfacts.org/api/v3/product/';
-  static const String baseUrlV2 = 'https://world.openfoodfacts.org/api/v2/product/';
-  static const String baseUrlV0 = 'https://world.openfoodfacts.org/api/v0/product/';
+  /// Current product read API (v3.6). v2 remains a fallback; v0 is retired.
+  static const String baseUrlV3 =
+      'https://world.openfoodfacts.org/api/v3.6/product/';
+  static const String baseUrlV2 =
+      'https://world.openfoodfacts.org/api/v2/product/';
   static const String searchUrlV2 = 'https://world.openfoodfacts.org/api/v2/search';
   static const String searchUrl = 'https://world.openfoodfacts.org/cgi/search.pl';
   static const Map<String, String> _headers = {
-    'User-Agent': 'MyAllergyBuddy/1.0 (contact: myallergybuddy@gmail.com)',
+    'User-Agent': 'MyAllergyBuddy/1.1 (contact: myallergybuddy@gmail.com)',
     'Accept': 'application/json',
   };
+  static const String _productFields =
+      'product_name,product_name_en,generic_name,brands,code,ingredients,'
+      'ingredients_text,ingredients_text_en,ingredients_text_with_allergens,'
+      'ingredients_text_with_allergens_en,allergens,allergens_tags,'
+      'allergens_from_ingredients,allergens_from_user,traces,traces_tags,'
+      'traces_from_ingredients,image_front_url,image_url,nutrition_grades,'
+      'nutrition_grade_fr,nova_group,ecoscore_grade,environmental_score_grade,'
+      'quantity,packaging_tags,categories_tags,labels_tags,origins,'
+      'countries_tags,manufacturing_places,last_modified_t,last_updated_t,'
+      'tags_sources';
   static const Map<String, String> _productQuery = {
     'lc': 'en',
     'tags_lc': 'en',
     'cc': 'au',
     'product_type': 'all',
+    'fields': _productFields,
   };
   
   // Cache for recently fetched products
@@ -129,16 +142,16 @@ class OpenFoodFactsService {
   static Future<Map<String, dynamic>?> _fetchSingleBarcodeFromApi(String barcode) async {
     final endpoints = <Map<String, String>>[
       {
-        'label': 'v3',
-        'url': Uri.parse('$baseUrlV3$barcode').replace(queryParameters: _productQuery).toString(),
+        'label': 'v3.6',
+        'url': Uri.parse('$baseUrlV3$barcode')
+            .replace(queryParameters: _productQuery)
+            .toString(),
       },
       {
         'label': 'v2',
-        'url': Uri.parse('$baseUrlV2$barcode').replace(queryParameters: _productQuery).toString(),
-      },
-      {
-        'label': 'v0',
-        'url': '$baseUrlV0$barcode.json',
+        'url': Uri.parse('$baseUrlV2$barcode')
+            .replace(queryParameters: _productQuery)
+            .toString(),
       },
     ];
 
@@ -331,15 +344,22 @@ class OpenFoodFactsService {
     // Extract ingredients using comprehensive approach
     List<String> ingredients = _extractAllPossibleIngredients(productData);
 
-    // Extract allergens from official tags, ingredient-derived tags, and label text.
+    // Extract allergens from pack/manufacturer tags first (v3.6 tags_sources),
+    // then aggregated tags, then ingredient-derived tags and label text.
     final allergens = <String>[];
     void addAllergen(String allergen) {
       if (allergen.isEmpty) return;
       if (!allergens.contains(allergen)) allergens.add(allergen);
     }
 
-    for (final tag in _parseAllergenTags(productData['allergens_tags'])) {
+    final packAllergenTags = _tagsFromSources(productData, 'allergens');
+    for (final tag in _parseAllergenTags(packAllergenTags)) {
       addAllergen(tag);
+    }
+    if (packAllergenTags.isEmpty) {
+      for (final tag in _parseAllergenTags(productData['allergens_tags'])) {
+        addAllergen(tag);
+      }
     }
     for (final tag in _parseAllergenTags(productData['allergens_from_ingredients'])) {
       addAllergen(tag);
@@ -365,6 +385,7 @@ class OpenFoodFactsService {
         .toList();
     final origins = productData['origins']?.toString() ?? '';
     final brands = productData['brands']?.toString().toLowerCase() ?? '';
+    final packTraceTags = _tagsFromSources(productData, 'traces');
 
     return {
       'name': productData['product_name_en'] ??
@@ -379,14 +400,17 @@ class OpenFoodFactsService {
       'nutrition_grade': productData['nutrition_grades'] ??
           productData['nutrition_grade_fr'],
       'nova_group': productData['nova_group'],
-      'ecoscore_grade': productData['ecoscore_grade'],
+      'ecoscore_grade': productData['environmental_score_grade'] ??
+          productData['ecoscore_grade'],
       'quantity': productData['quantity'],
       'packaging': productData['packaging_tags'],
       'categories': productData['categories_tags'],
       'labels': productData['labels_tags'],
       'origins': origins,
       'countries': countries,
-      'traces_tags': _normalizeTagList(productData['traces_tags']),
+      'traces_tags': _normalizeTagList(
+        packTraceTags.isNotEmpty ? packTraceTags : productData['traces_tags'],
+      ),
       'traces': productData['traces']?.toString() ?? '',
       'traces_from_ingredients':
           productData['traces_from_ingredients']?.toString() ?? '',
@@ -398,6 +422,7 @@ class OpenFoodFactsService {
           productData['ingredients_text_with_allergens_en'],
       'ingredients_text_with_allergens':
           productData['ingredients_text_with_allergens'],
+      'tags_sources': productData['tags_sources'],
       'isAustralianProduct': countries.contains('en:australia') ||
           origins.toLowerCase().contains('australia') ||
           brands.contains('australia'),
@@ -589,6 +614,25 @@ class OpenFoodFactsService {
   }
 
 
+
+  /// Pack and manufacturer tags from API v3.6 `tags_sources`, falling back to
+  /// the aggregated `*_tags` field used by v2.
+  static dynamic _tagsFromSources(Map<String, dynamic> productData, String type) {
+    const preferredSources = ['packaging', 'manufacturer'];
+    final sources = productData['tags_sources'];
+    if (sources is Map) {
+      final bySource = sources[type];
+      if (bySource is Map) {
+        for (final source in preferredSources) {
+          final entry = bySource[source];
+          if (entry is! Map) continue;
+          final tags = entry['tags'];
+          if (tags is List && tags.isNotEmpty) return tags;
+        }
+      }
+    }
+    return productData['${type}_tags'];
+  }
 
   /// Parse allergen tags into readable allergen names with Australian support
   static List<String> _parseAllergenTags(dynamic allergenTags) {
@@ -834,11 +878,18 @@ class OpenFoodFactsService {
       }
     }
 
-    for (final tag in _parseAllergenTags(productData['traces_tags'])) {
+    final packTraces = _tagsFromSources(productData, 'traces');
+    for (final tag in _parseAllergenTags(
+      packTraces is List && packTraces.isNotEmpty
+          ? packTraces
+          : productData['traces_tags'],
+    )) {
       addItem(tag);
     }
-    for (final tag in _parseAllergenTags(productData['traces_from_ingredients'])) {
-      addItem(tag);
+    if (packTraces is! List || packTraces.isEmpty) {
+      for (final tag in _parseAllergenTags(productData['traces_from_ingredients'])) {
+        addItem(tag);
+      }
     }
 
     if (productData['traces'] != null) {
@@ -898,6 +949,7 @@ class OpenFoodFactsService {
       'ingredients_text_with_allergens': product['ingredients_text_with_allergens'],
       'ingredients_text_en': product['ingredients_text_en'],
       'ingredients_text': product['ingredients_text'],
+      'tags_sources': product['tags_sources'],
     });
     if ((refreshed['mayContainItems'] as List).isEmpty &&
         product['mayContainItems'] is List &&

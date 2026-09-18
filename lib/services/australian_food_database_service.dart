@@ -2134,7 +2134,7 @@ class AustralianFoodDatabaseService {
     'open_food_facts': {
       'name': 'Open Food Facts',
       'status': 'active',
-      'api_url': 'https://world.openfoodfacts.org/api/v3/product/',
+      'api_url': 'https://world.openfoodfacts.org/api/v3.6/product/',
       'requires_auth': false,
       'rate_limit': 'moderate',
       'coverage': 'global',

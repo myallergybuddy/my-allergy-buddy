@@ -21,8 +21,17 @@ class USDAFoodDataService {
     }
 
     try {
+      final uri = Uri.parse('$_baseUrl/foods/search').replace(
+        queryParameters: {
+          'api_key': _apiKey,
+          'query': query,
+          'pageSize': '$pageSize',
+          'pageNumber': '$pageNumber',
+          'dataType': dataType,
+        },
+      );
       final response = await http.get(
-        Uri.parse('$_baseUrl/foods/search?api_key=$_apiKey&query=$query&pageSize=$pageSize&pageNumber=$pageNumber&dataType=$dataType'),
+        uri,
         headers: {
           'Content-Type': 'application/json',
           'User-Agent': 'MyAllergyBuddy/1.0 (Flutter App)',
@@ -67,7 +76,9 @@ class USDAFoodDataService {
 
     try {
       final response = await http.get(
-        Uri.parse('$_baseUrl/food/$fdcId?api_key=$_apiKey'),
+        Uri.parse('$_baseUrl/food/$fdcId').replace(
+          queryParameters: {'api_key': _apiKey},
+        ),
         headers: {
           'Content-Type': 'application/json',
           'User-Agent': 'MyAllergyBuddy/1.0 (Flutter App)',

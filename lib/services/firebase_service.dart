@@ -94,11 +94,28 @@ class FirebaseService {
     try {
       await _analytics?.logEvent(
         name: name,
-        parameters: parameters,
+        parameters: _analyticsParameters(parameters),
       );
     } catch (e) {
       debugPrint('Error logging analytics event: $e');
     }
+  }
+
+  /// Analytics v12+ accepts only String or num parameter values.
+  static Map<String, Object>? _analyticsParameters(
+    Map<String, dynamic>? parameters,
+  ) {
+    if (parameters == null) return null;
+    final converted = <String, Object>{};
+    parameters.forEach((key, value) {
+      if (value == null) return;
+      if (value is String || value is num) {
+        converted[key] = value;
+      } else {
+        converted[key] = value.toString();
+      }
+    });
+    return converted;
   }
 
   /// Log user property

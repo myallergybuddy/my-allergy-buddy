@@ -89,7 +89,7 @@ class ProductLookupService {
       return _notFound();
     }
 
-    // 2. Open Food Facts (premium, manual, cache, API v3/v2/v0)
+    // 2. Open Food Facts (premium, manual, cache, API v3.6/v2)
     final openFoodFactsResult = await OpenFoodFactsService.getProduct(barcode);
     if (openFoodFactsResult != null) {
       if (kDebugMode) {
