@@ -552,7 +552,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
           style: GoogleFonts.nunito(
             fontWeight: FontWeight.bold,
             color: trimmedName.isEmpty ? Colors.black54 : Colors.black,
-            fontSize: 14,
+            fontSize: 17,
             fontStyle: trimmedName.isEmpty ? FontStyle.italic : FontStyle.normal,
           ),
         ),
@@ -565,7 +565,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                 children: [
                   Icon(
                     Icons.calendar_today,
-                    size: 14,
+                    size: 16,
                     color: isExpired
                         ? Colors.red
                         : isExpiringSoon
@@ -584,7 +584,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                       fontWeight: isExpired || isExpiringSoon
                           ? FontWeight.bold
                           : FontWeight.normal,
-                      fontSize: 12,
+                      fontSize: 14,
                     ),
                   ),
                 ],
@@ -596,7 +596,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
                 trimmedNotes,
                 style: GoogleFonts.nunito(
                   color: Colors.black,
-                  fontSize: 12,
+                  fontSize: 13,
                 ),
               ),
             ],
