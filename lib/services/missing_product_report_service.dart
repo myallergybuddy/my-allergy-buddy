@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -28,7 +27,6 @@ class MissingProductReportService {
     required bool hasFront,
     required bool hasBack,
     required bool hasBarcodePhoto,
-    String appVersion = '',
   }) {
     final photos = <String>[];
     if (hasFront) photos.add('front of pack');
@@ -49,16 +47,7 @@ class MissingProductReportService {
             : 'Photos attached: ${photos.join(', ')}',
       )
       ..writeln()
-      ..writeln(
-        'Please review and add this to the secure catalog '
-        '(myallergybuddy_barcode_database). Do not upload to Open Food Facts.',
-      );
-
-    if (appVersion.isNotEmpty) {
-      buffer
-        ..writeln()
-        ..writeln('App version: $appVersion');
-    }
+      ..writeln('Please review this product and add to secure database.');
 
     return buffer.toString();
   }
@@ -73,12 +62,6 @@ class MissingProductReportService {
     File? backPhoto,
     File? barcodePhoto,
   }) async {
-    String appVersion = '';
-    try {
-      final pkg = await PackageInfo.fromPlatform();
-      appVersion = '${pkg.version} (${pkg.buildNumber})';
-    } catch (_) {}
-
     final attachments = await _labeledAttachments(
       frontPhoto: frontPhoto,
       backPhoto: backPhoto,
@@ -96,7 +79,6 @@ class MissingProductReportService {
         hasFront: frontPhoto != null,
         hasBack: backPhoto != null,
         hasBarcodePhoto: barcodePhoto != null,
-        appVersion: appVersion,
       ),
       attachmentPaths: attachments,
       isHTML: false,

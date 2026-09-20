@@ -13,7 +13,7 @@ void main() {
     expect(MissingProductReportService.subjectFor('  '), 'Missing product report');
   });
 
-  test('body lists attached photos and does not mention Open Food Facts upload', () {
+  test('body lists attached photos and asks for a secure-database review', () {
     final body = MissingProductReportService.bodyFor(
       barcode: '9300652801234',
       productName: 'Test biscuits',
@@ -22,13 +22,11 @@ void main() {
       hasFront: true,
       hasBack: true,
       hasBarcodePhoto: false,
-      appVersion: '1.0.0 (1)',
     );
 
     expect(body, contains('Barcode: 9300652801234'));
     expect(body, contains('Photos attached: front of pack, back (ingredients / allergen panel)'));
-    expect(body, contains('myallergybuddy_barcode_database'));
-    expect(body, contains('Do not upload to Open Food Facts'));
-    expect(body, contains('App version: 1.0.0 (1)'));
+    expect(body, contains('Please review this product and add to secure database.'));
+    expect(body, isNot(contains('App version:')));
   });
 }
