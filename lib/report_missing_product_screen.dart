@@ -250,9 +250,8 @@ class _ReportMissingProductScreenState extends State<ReportMissingProductScreen>
         backPhoto: _backPhoto,
       );
       if (!mounted) return;
-      _showSnackBar(
-        'Your email app opened. Send the message to myallergybuddy@gmail.com to finish the report.',
-      );
+      await _showThankYouDialog();
+      if (!mounted) return;
       Navigator.pop(context);
     } catch (e) {
       if (kDebugMode) {
@@ -268,6 +267,50 @@ class _ReportMissingProductScreenState extends State<ReportMissingProductScreen>
         setState(() => _isSubmitting = false);
       }
     }
+  }
+
+  Future<void> _showThankYouDialog() {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Thank you for taking the time to improve My Allergy Buddy',
+            style: GoogleFonts.nunito(
+              fontWeight: FontWeight.bold,
+              color: _primaryColor,
+              fontSize: 18,
+            ),
+          ),
+          content: Text(
+            'We will review the information you have provided as a matter of importance',
+            style: GoogleFonts.nunito(
+              fontSize: 16,
+              height: 1.4,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'OK',
+                style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
