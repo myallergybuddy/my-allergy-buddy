@@ -3,6 +3,8 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class FirebaseService {
   static FirebaseAnalytics? _analytics;
@@ -23,12 +25,19 @@ class FirebaseService {
       
       // Initialize Crashlytics
       _crashlytics = FirebaseCrashlytics.instance;
+      await _crashlytics!.setCrashlyticsCollectionEnabled(true);
       
       // Configure Crashlytics
       FlutterError.onError = _crashlytics!.recordFlutterFatalError;
+      WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+        _crashlytics?.recordError(error, stack, fatal: true);
+        return true;
+      };
       
-      // Request notification permissions
-      await _requestNotificationPermissions();
+      // Analytics stays off until the in-app privacy policy is accepted.
+      final prefs = await SharedPreferences.getInstance();
+      final hasAcceptedPrivacy = prefs.getBool('privacy_accepted') ?? false;
+      await applyPrivacyConsent(accepted: hasAcceptedPrivacy);
       
       // Set up message handlers
       await _setupMessageHandlers();
@@ -37,6 +46,18 @@ class FirebaseService {
     } catch (e) {
       debugPrint('Error initializing Firebase services: $e');
       _crashlytics?.recordError(e, StackTrace.current);
+    }
+  }
+
+  /// Enable analytics (and notification permission) only after privacy consent.
+  static Future<void> applyPrivacyConsent({required bool accepted}) async {
+    try {
+      await _analytics?.setAnalyticsCollectionEnabled(accepted);
+      if (accepted) {
+        await _requestNotificationPermissions();
+      }
+    } catch (e) {
+      debugPrint('Error applying privacy consent: $e');
     }
   }
 
@@ -206,13 +227,14 @@ class FirebaseService {
 
   /// Test Crashlytics by forcing a crash
   static void testCrash() {
+    if (!kDebugMode) return;
     debugPrint('Testing Crashlytics - forcing a crash...');
-    // Force a crash to test Crashlytics
     throw Exception('Test crash for Crashlytics verification');
   }
 
   /// Test Crashlytics with custom error
   static void testCustomCrash(String message) {
+    if (!kDebugMode) return;
     debugPrint('Testing Crashlytics with custom message: $message');
     throw Exception('Custom test crash: $message');
   }

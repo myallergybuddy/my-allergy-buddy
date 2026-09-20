@@ -17,7 +17,6 @@ import 'my_allergies_screen.dart';
 import 'services/revenue_cat_service.dart';
 import 'emergency_contacts_screen.dart';
 import 'settings_screen.dart';
-import 'australian_database_screen.dart';
 import 'profile_screen.dart';
 
 void main() {
@@ -116,7 +115,6 @@ class MyApp extends StatelessWidget {
         '/my_allergies': (context) => const MyAllergiesScreen(),
         '/emergency_contacts': (context) => const EmergencyContactsScreen(),
         '/settings': (context) => const SettingsScreen(),
-        '/australian_database': (context) => const AustralianDatabaseScreen(),
       },
       debugShowCheckedModeBanner: false,
     );

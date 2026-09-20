@@ -23,15 +23,21 @@ class EncryptionService {
 
   
   /// Get or create encryption key
-  static Future<String?> _getEncryptionKey() async {
-    String? key = await _secureStorage.read(key: _keyName);
-    return key;
+  static Future<String> _getEncryptionKey() async {
+    final existing = await _secureStorage.read(key: _keyName);
+    if (existing != null && existing.isNotEmpty) return existing;
+    final generated = encrypt.Key.fromSecureRandom(32).base64;
+    await _secureStorage.write(key: _keyName, value: generated);
+    return generated;
   }
   
   /// Get or create initialization vector (IV)
-  static Future<String?> _getEncryptionIV() async {
-    String? iv = await _secureStorage.read(key: _ivName);
-    return iv;
+  static Future<String> _getEncryptionIV() async {
+    final existing = await _secureStorage.read(key: _ivName);
+    if (existing != null && existing.isNotEmpty) return existing;
+    final generated = encrypt.IV.fromSecureRandom(16).base64;
+    await _secureStorage.write(key: _ivName, value: generated);
+    return generated;
   }
   
   /// Encrypt passcode
@@ -40,8 +46,8 @@ class EncryptionService {
       final key = await _getEncryptionKey();
       final iv = await _getEncryptionIV();
       
-      final encrypter = encrypt.Encrypter(encrypt.AES(encrypt.Key.fromBase64(key!)));
-      final encrypted = encrypter.encrypt(passcode, iv: encrypt.IV.fromBase64(iv!));
+      final encrypter = encrypt.Encrypter(encrypt.AES(encrypt.Key.fromBase64(key)));
+      final encrypted = encrypter.encrypt(passcode, iv: encrypt.IV.fromBase64(iv));
       
       return encrypted.base64;
     } catch (e) {
@@ -57,8 +63,8 @@ class EncryptionService {
       final key = await _getEncryptionKey();
       final iv = await _getEncryptionIV();
       
-      final encrypter = encrypt.Encrypter(encrypt.AES(encrypt.Key.fromBase64(key!)));
-      final decrypted = encrypter.decrypt64(encryptedPasscode, iv: encrypt.IV.fromBase64(iv!));
+      final encrypter = encrypt.Encrypter(encrypt.AES(encrypt.Key.fromBase64(key)));
+      final decrypted = encrypter.decrypt64(encryptedPasscode, iv: encrypt.IV.fromBase64(iv));
       
       return decrypted;
     } catch (e) {

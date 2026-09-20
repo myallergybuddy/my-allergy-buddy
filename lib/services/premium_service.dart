@@ -22,7 +22,8 @@ class PremiumService {
     'Custom emergency contact groups',
   ];
   
-  /// True for debug builds, dart-define installs, or a persisted developer override.
+  /// True for debug builds or dart-define installs. Store builds never inherit
+  /// a leftover SharedPreferences override from a previous debug install.
   static Future<bool> hasDeveloperPremiumUnlock() async {
     if (kDebugMode || developerPremiumUnlock) {
       if (developerPremiumUnlock) {
@@ -30,14 +31,7 @@ class PremiumService {
       }
       return true;
     }
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool(_developerOverrideKey) ?? false;
-    } catch (e) {
-      debugPrint('Error reading developer premium override: $e');
-      return false;
-    }
+    return false;
   }
 
   static Future<void> _persistDeveloperOverride() async {
@@ -125,8 +119,9 @@ class PremiumService {
     }
   }
   
-  /// Simulate premium purchase (for testing)
+  /// Simulate premium purchase (debug builds only)
   static Future<bool> simulatePremiumPurchase() async {
+    if (!kDebugMode) return false;
     try {
       await setPremiumStatus(true);
       debugPrint('Premium purchase simulated successfully');
@@ -137,8 +132,9 @@ class PremiumService {
     }
   }
   
-  /// Simulate premium expiration (for testing)
+  /// Simulate premium expiration (debug builds only)
   static Future<bool> simulatePremiumExpiration() async {
+    if (!kDebugMode) return false;
     try {
       await setPremiumStatus(false);
       debugPrint('Premium expiration simulated successfully');

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'services/firebase_service.dart';
 import 'widgets/user_guide_prompt.dart';
 
 class PrivacyPolicyScreen extends StatefulWidget {
@@ -63,6 +64,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('privacy_accepted', true);
+      await FirebaseService.applyPrivacyConsent(accepted: true);
       await UserGuidePrompt.scheduleAfterOnboarding();
       
       if (mounted) {
@@ -353,12 +355,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                 'Your device storage is cleared or reset',
               ]),
               _subSection('b. Device Backups'),
-              _sectionBody('Your data may be included in:'),
-              _bulletList([
-                'Google device backups (Android)',
-                'Apple iCloud backups (if applicable)',
-              ]),
-              _sectionBody('These backups are controlled by your device settings and provider policies.'),
+              _sectionBody('On Android, Google Auto Backup and cloud/device-to-device backup of app data are disabled so allergy and emergency information stays on the device. When an iOS version is released, data may still be included in Apple iCloud backups according to your device settings.'),
               _subSection('c. Cloud Services (Third Parties)'),
               _sectionBody('We use third-party services for specific functions:'),
               _bulletList([

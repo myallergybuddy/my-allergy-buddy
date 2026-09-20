@@ -14,6 +14,12 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Billing permission for Google Play -->
     <uses-permission android:name="com.android.vending.BILLING" />
+    <!-- Local / FCM notifications (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- This app does not record audio or use advertising IDs -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove" />
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
     
     <application
         android:label="@string/app_name"
@@ -21,7 +27,10 @@
         android:icon="@mipmap/launcher_icon"
         android:usesCleartextTraffic="false"
         android:hardwareAccelerated="true"
-        android:largeHeap="true">
+        android:largeHeap="true"
+        android:allowBackup="false"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -47,6 +56,16 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Analytics stays off until the user accepts the in-app privacy policy. -->
+        <meta-data
+            android:name="firebase_analytics_collection_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_adid_collection_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_ssaid_collection_enabled"
+            android:value="false" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
@@ -81,6 +100,27 @@
         <intent>
             <action android:name="android.intent.action.SEND_MULTIPLE" />
             <data android:mimeType="*/*" />
+        </intent>
+        <!-- Emergency call / SMS and in-app https links (url_launcher) -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="tel" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="sms" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="smsto" />
         </intent>
     </queries>
 </manifest>

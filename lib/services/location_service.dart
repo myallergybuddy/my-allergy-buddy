@@ -1,6 +1,7 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 
 class LocationService {
@@ -70,7 +71,7 @@ class LocationService {
       
       return position;
     } catch (e) {
-      print('Error getting location: $e');
+      debugPrint('Error getting location: $e');
       return null;
     }
   }
@@ -98,7 +99,7 @@ class LocationService {
       }
       return null;
     } catch (e) {
-      print('Error getting last known location: $e');
+      debugPrint('Error getting last known location: $e');
       return null;
     }
   }
@@ -122,7 +123,7 @@ class LocationService {
       
       await prefs.setString(_locationKey, jsonEncode(locationData));
     } catch (e) {
-      print('Error saving location: $e');
+      debugPrint('Error saving location: $e');
     }
   }
   
@@ -160,7 +161,7 @@ class LocationService {
       
       return await launchUrl(smsUri);
     } catch (e) {
-      print('Error sharing location via SMS: $e');
+      debugPrint('Error sharing location via SMS: $e');
       return false;
     }
   }
@@ -178,10 +179,10 @@ class LocationService {
       
       // In a real implementation, this would connect to emergency services API
       // For now, we'll just return success
-      print('Location shared with emergency services: ${position.latitude}, ${position.longitude}');
+      debugPrint('Location shared with emergency services: ${position.latitude}, ${position.longitude}');
       return true;
     } catch (e) {
-      print('Error sharing location with emergency services: $e');
+      debugPrint('Error sharing location with emergency services: $e');
       return false;
     }
   }
@@ -221,7 +222,7 @@ class LocationService {
       
       return allSuccess;
     } catch (e) {
-      print('Error notifying emergency contacts: $e');
+      debugPrint('Error notifying emergency contacts: $e');
       return false;
     }
   }
@@ -244,7 +245,7 @@ class LocationService {
         'permissionStatus': permission.toString(),
       };
     } catch (e) {
-      print('Error getting location status: $e');
+      debugPrint('Error getting location status: $e');
       return {
         'locationEnabled': false,
         'serviceEnabled': false,
