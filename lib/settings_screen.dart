@@ -8,7 +8,6 @@ import 'terms_screen.dart';
 import 'about_developer_screen.dart';
 
 import 'support_screen.dart';
-import 'notifications_settings_screen.dart';
 
 
 import 'services/location_service.dart';
@@ -1103,24 +1102,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildSection(
                     title: 'Account',
                     children: [
-                      _buildListTile(
-                        title: 'Notifications',
-                        subtitle: 'Manage notification preferences',
-                        icon: Icons.notifications,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const NotificationsSettingsScreen(),
-                            ),
-                          );
-                        },
-                        trailing: Icon(
-                          Icons.arrow_forward_ios,
-                          color: Colors.grey[400],
-                          size: 16,
-                        ),
-                      ),
                       _buildSwitchTile(
                         title: 'Location',
                         subtitle: 'Share location only while using the app, for emergency calls',

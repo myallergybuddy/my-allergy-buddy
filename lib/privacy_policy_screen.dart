@@ -307,7 +307,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                 'App alerts',
                 'Safety-related messages (if enabled)',
               ]),
-              _sectionBody('Notifications can be disabled at any time in device or app settings.'),
+              _sectionBody('Notifications can be disabled at any time in your device settings.'),
               _subSection('d. Internet Access'),
               _sectionBody('Used for:'),
               _bulletList([
