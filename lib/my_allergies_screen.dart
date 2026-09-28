@@ -103,6 +103,8 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
                     ],
                   ),
                   _buildEditButton(
+                    label: _allergies.isEmpty ? 'Add' : 'Edit',
+                    icon: _allergies.isEmpty ? Icons.add : Icons.edit,
                     onTap: () async {
                       final result = await Navigator.push(
                         context,
@@ -123,9 +125,20 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
               
               // Allergies List grouped by severity (High first)
               Expanded(
-                child: ListView(
-                  children: _buildGroupedAllergyList(),
-                ),
+                child: _allergies.isEmpty
+                    ? Align(
+                        alignment: Alignment.topLeft,
+                        child: Text(
+                          'Add all your allergies here.',
+                          style: GoogleFonts.nunito(
+                            fontSize: 16,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      )
+                    : ListView(
+                        children: _buildGroupedAllergyList(),
+                      ),
               ),
               
               // Premium Upgrade Section
