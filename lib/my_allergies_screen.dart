@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'allergy_selection_screen.dart';
 import 'widgets/premium_upgrade_widget.dart';
 import 'scan_label_screen.dart';
+import 'services/health_record_store.dart';
 import 'services/revenue_cat_service.dart';
 import 'tree_nuts_grouping.dart';
 
@@ -29,7 +30,7 @@ class _MyAllergiesScreenState extends State<MyAllergiesScreen> {
 
   Future<void> _loadAllergies() async {
     final prefs = await SharedPreferences.getInstance();
-    final allergiesJson = prefs.getStringList('saved_allergies') ?? [];
+    final allergiesJson = await HealthRecordStore.readStringList(prefs, 'saved_allergies');
     
     setState(() {
       _allergies = allergiesJson

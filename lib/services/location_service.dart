@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
+import 'health_record_store.dart';
 
 class LocationService {
   static const String _locationKey = 'last_known_location';
@@ -80,7 +81,7 @@ class LocationService {
   static Future<Position?> getLastKnownLocation() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final locationJson = prefs.getString(_locationKey);
+      final locationJson = await HealthRecordStore.readString(prefs, _locationKey);
       
       if (locationJson != null) {
         final locationData = jsonDecode(locationJson);
@@ -121,7 +122,7 @@ class LocationService {
         'headingAccuracy': position.headingAccuracy,
       };
       
-      await prefs.setString(_locationKey, jsonEncode(locationData));
+      await HealthRecordStore.writeString(prefs, _locationKey, jsonEncode(locationData));
     } catch (e) {
       debugPrint('Error saving location: $e');
     }
@@ -191,7 +192,7 @@ class LocationService {
   static Future<bool> notifyEmergencyContacts() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final contactsJson = prefs.getStringList('emergency_contacts') ?? [];
+      final contactsJson = await HealthRecordStore.readStringList(prefs, 'emergency_contacts');
       
       if (contactsJson.isEmpty) {
         return true; // No contacts to notify

@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'widgets/premium_upgrade_widget.dart';
 import 'widgets/product_comparison_widget.dart';
 import 'services/firebase_service.dart';
+import 'services/health_record_store.dart';
 import 'services/revenue_cat_service.dart';
 
 class ScanHistoryScreen extends StatefulWidget {
@@ -44,7 +45,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
 
     try {
     final prefs = await SharedPreferences.getInstance();
-      final historyJson = prefs.getStringList('enhanced_scan_history') ?? [];
+      final historyJson = await HealthRecordStore.readStringList(prefs, 'enhanced_scan_history');
     
     final history = historyJson
           .map((json) {
@@ -81,7 +82,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
 
   Future<void> _deleteHistoryItem(EnhancedScanResult item) async {
     final prefs = await SharedPreferences.getInstance();
-    final historyJson = prefs.getStringList('enhanced_scan_history') ?? [];
+    final historyJson = await HealthRecordStore.readStringList(prefs, 'enhanced_scan_history');
     
     // Remove the item
     final updatedHistory = historyJson.where((json) {
@@ -93,7 +94,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
       }
     }).toList();
     
-    await prefs.setStringList('enhanced_scan_history', updatedHistory);
+    await HealthRecordStore.writeStringList(prefs, 'enhanced_scan_history', updatedHistory);
     
     setState(() {
       scanHistory.remove(item);

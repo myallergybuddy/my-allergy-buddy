@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'health_record_store.dart';
 import 'premium_service.dart';
 
 class NotificationService {
@@ -588,7 +589,7 @@ class NotificationService {
   Future<void> _notifyAllEmergencyContacts() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final contactsJson = prefs.getStringList('emergency_contacts') ?? [];
+      final contactsJson = await HealthRecordStore.readStringList(prefs, 'emergency_contacts');
       
       if (contactsJson.isEmpty) {
         debugPrint('No emergency contacts to notify');

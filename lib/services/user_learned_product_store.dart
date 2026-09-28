@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'australian_curated_product_database.dart';
 import 'barcode_utils.dart';
 import 'encryption_service.dart';
+import 'health_record_store.dart';
 import 'product_database_service.dart';
 
 /// Encrypted on-device catalog (`myallergybuddy_barcode_database`) of
@@ -319,7 +320,7 @@ class UserLearnedProductStore {
   static Future<void> backfillUnlinkedPhotoScans() async {
     final prefs = await SharedPreferences.getInstance();
     final linked = prefs.getStringList(_linkedPhotosKey) ?? [];
-    final photoHistory = prefs.getStringList('scan_history') ?? [];
+    final photoHistory = await HealthRecordStore.readStringList(prefs, 'scan_history');
 
     final unlinkedPhotos = <Map<String, dynamic>>[];
     for (final json in photoHistory) {
@@ -359,7 +360,7 @@ class UserLearnedProductStore {
     final ingredients = trimNutritionNoise(_stringList(photo['ingredients']));
     if (ingredients.isEmpty) return;
 
-    final historyMeta = _productMetaFromHistory(prefs, barcode);
+    final historyMeta = await _productMetaFromHistory(prefs, barcode);
     await savePhotoIngredients(
       barcode: barcode,
       ingredients: ingredients,
@@ -541,8 +542,8 @@ class UserLearnedProductStore {
     required Duration maxAge,
   }) async {
     final sources = [
-      prefs.getStringList('enhanced_scan_history') ?? const <String>[],
-      prefs.getStringList('scan_history') ?? const <String>[],
+      await HealthRecordStore.readStringList(prefs, 'enhanced_scan_history'),
+      await HealthRecordStore.readStringList(prefs, 'scan_history'),
     ];
 
     Map<String, dynamic>? newest;
@@ -573,11 +574,11 @@ class UserLearnedProductStore {
     return newest;
   }
 
-  static Map<String, dynamic>? _productMetaFromHistory(
+  static Future<Map<String, dynamic>?> _productMetaFromHistory(
     SharedPreferences prefs,
     String barcode,
-  ) {
-    final history = prefs.getStringList('enhanced_scan_history') ?? [];
+  ) async {
+    final history = await HealthRecordStore.readStringList(prefs, 'enhanced_scan_history');
     for (final json in history.reversed) {
       try {
         final map = Map<String, dynamic>.from(jsonDecode(json) as Map);

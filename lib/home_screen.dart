@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'emergency_contacts_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'widgets/premium_upgrade_widget.dart';
+import 'services/health_record_store.dart';
 import 'services/revenue_cat_service.dart';
 import 'widgets/user_guide_prompt.dart';
 
@@ -41,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       debugPrint('HomeScreen: Loading user name...');
       final prefs = await SharedPreferences.getInstance();
-      final name = prefs.getString('profile_name') ?? '';
+      final name = await HealthRecordStore.readString(prefs, 'profile_name') ?? '';
       debugPrint('HomeScreen: User name loaded: $name');
       if (mounted) {
         setState(() {

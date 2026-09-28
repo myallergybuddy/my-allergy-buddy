@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'services/health_record_store.dart';
 import 'services/location_service.dart';
 import 'services/premium_service.dart';
 import 'widgets/premium_upgrade_widget.dart';
@@ -65,7 +66,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
 
   Future<void> _loadContacts() async {
     final prefs = await SharedPreferences.getInstance();
-    final contactsJson = prefs.getStringList('emergency_contacts') ?? [];
+    final contactsJson = await HealthRecordStore.readStringList(prefs, 'emergency_contacts');
     setState(() {
       _contacts.clear();
       _contacts.addAll(contactsJson.map((json) => Map<String, String>.from(jsonDecode(json))));
@@ -75,7 +76,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
   Future<void> _saveContacts() async {
     final prefs = await SharedPreferences.getInstance();
     final contactsJson = _contacts.map((c) => jsonEncode(c)).toList();
-    await prefs.setStringList('emergency_contacts', contactsJson);
+    await HealthRecordStore.writeStringList(prefs, 'emergency_contacts', contactsJson);
   }
 
   @override

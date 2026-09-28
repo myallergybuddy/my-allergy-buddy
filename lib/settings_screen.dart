@@ -13,6 +13,7 @@ import 'notifications_settings_screen.dart';
 
 import 'services/location_service.dart';
 import 'services/encryption_service.dart';
+import 'services/health_record_store.dart';
 import 'services/premium_service.dart';
 import 'widgets/premium_upgrade_widget.dart';
 
@@ -744,7 +745,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _showPasscodeResetDialog() async {
     final prefs = await SharedPreferences.getInstance();
-    final phoneNumber = prefs.getString('profile_phone') ?? '';
+    final phoneNumber = await HealthRecordStore.readString(prefs, 'profile_phone') ?? '';
     
     if (phoneNumber.isEmpty) {
       _showErrorSnackBar('Please add a phone number in your profile first');

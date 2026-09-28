@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'widgets/premium_upgrade_widget.dart';
+import 'services/health_record_store.dart';
 import 'services/revenue_cat_service.dart';
 import 'tree_nuts_grouping.dart';
 
@@ -493,7 +494,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
   Future<void> _loadSavedAllergies() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final allergiesJson = prefs.getStringList('saved_allergies') ?? [];
+      final allergiesJson = await HealthRecordStore.readStringList(prefs, 'saved_allergies');
       
       if (allergiesJson.isNotEmpty) {
         final savedAllergiesList = allergiesJson
@@ -542,7 +543,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
           .map((allergy) => jsonEncode(allergy))
           .toList();
       
-      await prefs.setStringList('saved_allergies', allergiesJson);
+      await HealthRecordStore.writeStringList(prefs, 'saved_allergies', allergiesJson);
 
       final normalized = TreeNutsGrouping.normalizeSelection(selectedAllergies);
       setState(() {
@@ -1310,7 +1311,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
   Future<void> _removeFromSavedAllergies(String allergenName) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final allergiesJson = prefs.getStringList('saved_allergies') ?? [];
+      final allergiesJson = await HealthRecordStore.readStringList(prefs, 'saved_allergies');
       
       final updatedAllergies = allergiesJson
           .map((json) => Map<String, dynamic>.from(jsonDecode(json)))
@@ -1318,7 +1319,7 @@ class _AllergySelectionScreenState extends State<AllergySelectionScreen> {
           .map((allergy) => jsonEncode(allergy))
           .toList();
       
-      await prefs.setStringList('saved_allergies', updatedAllergies);
+      await HealthRecordStore.writeStringList(prefs, 'saved_allergies', updatedAllergies);
       
       // Remove from savedAllergies map
       setState(() {

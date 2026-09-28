@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'models/medication.dart';
+import 'services/health_record_store.dart';
 import 'package:flutter/services.dart';
 import 'scan_label_screen.dart';
 import 'tree_nuts_grouping.dart';
@@ -80,7 +81,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
 
   Future<void> _loadMedications() async {
     final prefs = await SharedPreferences.getInstance();
-    final medicationsJson = prefs.getStringList('medications') ?? [];
+    final medicationsJson = await HealthRecordStore.readStringList(prefs, 'medications');
     setState(() {
       _medications = medicationsJson
           .map((json) => Medication.fromJson(jsonDecode(json)))
@@ -90,11 +91,11 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
 
   Future<void> _loadProfileData() async {
     final prefs = await SharedPreferences.getInstance();
+    final name = await HealthRecordStore.readString(prefs, 'profile_name') ?? '';
+    final phone = await HealthRecordStore.readString(prefs, 'profile_phone') ?? '';
     setState(() {
-      _name = prefs.getString('profile_name') ?? '';
-      _phone = prefs.getString('profile_phone') ?? '';
-      
-      // Update controllers with loaded data
+      _name = name;
+      _phone = phone;
       _nameController.text = _name;
       _phoneController.text = _phone;
     });
@@ -102,7 +103,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
 
   Future<void> _loadAllergies() async {
     final prefs = await SharedPreferences.getInstance();
-    final allergiesJson = prefs.getStringList('saved_allergies') ?? [];
+    final allergiesJson = await HealthRecordStore.readStringList(prefs, 'saved_allergies');
     setState(() {
       _allergies = allergiesJson
           .map((json) => Map<String, dynamic>.from(jsonDecode(json)))
@@ -112,8 +113,8 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
 
   Future<void> _saveProfileData() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('profile_name', _name);
-    await prefs.setString('profile_phone', _phone);
+    await HealthRecordStore.writeString(prefs, 'profile_name', _name);
+    await HealthRecordStore.writeString(prefs, 'profile_phone', _phone);
   }
 
   Future<void> _saveMedications() async {
@@ -121,7 +122,7 @@ class _ProfileScreenState extends State<ProfileScreen> with WidgetsBindingObserv
     final medicationsJson = _medications
         .map((med) => jsonEncode(med.toJson()))
         .toList();
-    await prefs.setStringList('medications', medicationsJson);
+    await HealthRecordStore.writeStringList(prefs, 'medications', medicationsJson);
   }
 
   Future<void> _deleteMedication(Medication medication) async {

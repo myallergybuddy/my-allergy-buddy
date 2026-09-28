@@ -14,6 +14,7 @@ import 'services/revenue_cat_service.dart';
 import 'services/australian_food_database_service.dart';
 import 'services/spoonacular_service.dart';
 import 'services/ocr_service.dart';
+import 'services/health_record_store.dart';
 import 'services/user_learned_product_store.dart';
 import 'services/australian_curated_product_database.dart';
 import 'models/enhanced_scan_result.dart';
@@ -119,7 +120,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
 
   Future<void> _loadUserAllergies() async {
     final prefs = await SharedPreferences.getInstance();
-    final allergiesJson = prefs.getStringList('saved_allergies') ?? [];
+    final allergiesJson = await HealthRecordStore.readStringList(prefs, 'saved_allergies');
     setState(() {
       userAllergies = allergiesJson
           .map((json) => Map<String, dynamic>.from(jsonDecode(json)))
@@ -1321,7 +1322,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
     if (!_isPremium) return;
     
     final prefs = await SharedPreferences.getInstance();
-    final historyJson = prefs.getStringList('enhanced_scan_history') ?? [];
+    final historyJson = await HealthRecordStore.readStringList(prefs, 'enhanced_scan_history');
     
     // Add new scan result
     historyJson.add(result.toJsonString());
@@ -1331,7 +1332,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
       historyJson.removeRange(0, historyJson.length - 50);
     }
     
-    await prefs.setStringList('enhanced_scan_history', historyJson);
+    await HealthRecordStore.writeStringList(prefs, 'enhanced_scan_history', historyJson);
   }
 
 
@@ -1861,9 +1862,9 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
       );
 
       final prefs = await SharedPreferences.getInstance();
-      final scanHistory = prefs.getStringList('scan_history') ?? [];
+      final scanHistory = await HealthRecordStore.readStringList(prefs, 'scan_history');
       scanHistory.add(jsonEncode(photoScanResult.toJson()));
-      await prefs.setStringList('scan_history', scanHistory);
+      await HealthRecordStore.writeStringList(prefs, 'scan_history', scanHistory);
 
       await _saveToScanHistory(photoScanResult);
 
