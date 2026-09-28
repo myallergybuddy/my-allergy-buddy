@@ -74,10 +74,6 @@ class _FAQScreenState extends State<FAQScreen> {
           'answer': 'Premium includes: 10 emergency contacts, advanced allergen database, priority customer support, scan history, and advanced analytics.',
         },
         {
-          'question': 'How do I backup my allergy information?',
-          'answer': 'Your allergy information is automatically synced to your account. You can also export your data from Settings > Data & Privacy.',
-        },
-        {
           'question': 'Can I use the app offline?',
           'answer': 'Basic scanning and your saved allergy information work offline. However, product database updates and new product lookups require an internet connection.',
         },
@@ -94,28 +90,6 @@ class _FAQScreenState extends State<FAQScreen> {
         {
           'question': 'How many emergency contacts can I have?',
           'answer': 'Free users can have 2 emergency contacts. Premium users can have up to 10 emergency contacts. Emergency service calls and emergency text messages are unlimited on every plan.',
-        },
-        {
-          'question': 'Do emergency contacts need the app installed?',
-          'answer': 'No, emergency contacts will receive regular SMS messages. However, if they have the app, they\'ll get more detailed information about your situation.',
-        },
-      ],
-    },
-    // Privacy and Security
-    {
-      'category': 'Privacy and Security',
-      'questions': [
-        {
-          'question': 'Is my allergy information secure?',
-          'answer': 'Yes, we use industry-standard encryption to protect your data. Your allergy information is stored securely and only accessible to you.',
-        },
-        {
-          'question': 'Where is my data stored?',
-          'answer': 'Your data is stored locally on your device. We use on-device secure storage and preferences for things like your allergies, emergency contacts, and history. We do not upload your personal data to remote servers.',
-        },
-        {
-          'question': 'Can I delete my account and data?',
-          'answer': 'Yes, you can delete your account and all associated data from Settings > Data & Privacy > Delete Account.',
         },
       ],
     },
