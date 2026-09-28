@@ -225,10 +225,9 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                 'Feature usage patterns',
                 'App interactions',
                 'Session duration',
-                'Scan outcomes (high-level only)',
-                'Number of allergens detected (aggregated data)',
+                'Product scans, including the product name and the specific allergen names detected',
               ]),
-              _sectionBody('We do not collect full ingredient lists or full scanned images.'),
+              _sectionBody('When you scan a product, the product scan, the product name, and the specific allergen names are sent to Firebase Analytics. We do not collect full ingredient lists or full scanned images.'),
               _subSection('b. Crash and Diagnostic Data'),
               _sectionBody('Collected via Firebase Crashlytics:'),
               _bulletList([
