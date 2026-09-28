@@ -39,7 +39,7 @@
       <p>How we protect your data</p>
     </header>
 
-    <p class="last-updated">Last updated: July 2026</p>
+    <p class="last-updated">Last updated: September 2026</p>
 
     <div class="legal-content">
       <h2>1. Introduction</h2>
@@ -113,9 +113,10 @@
       <p>By entering information into My Allergy Buddy or enabling optional features, you consent to the collection and use of that information in accordance with this Privacy Policy.</p>
 
       <h2>5. Information We Collect Automatically</h2>
-      <p>When you use the app, we may automatically collect technical and usage information, including:</p>
+      <p>When you use the app, we may collect technical and usage information. Some of this is collected from first launch, and some only after you accept this Privacy Policy, as described below.</p>
       <h3>a. Analytics and App Usage</h3>
       <p>Collected via Firebase Analytics:</p>
+      <p>Firebase Analytics collection starts after you accept this Privacy Policy in the app. Until then, analytics events are not collected.</p>
       <ul>
         <li>Feature usage patterns</li>
         <li>App interactions</li>
@@ -123,8 +124,10 @@
         <li>Product scans, including the product name and the specific allergen names detected</li>
       </ul>
       <p>When you scan a product, the product scan, the product name, and the specific allergen names are sent to Firebase Analytics. We do not collect full ingredient lists or full scanned images.</p>
+      <p>When you scan a barcode, that barcode is sent to Open Food Facts to look up the product.</p>
       <h3>b. Crash and Diagnostic Data</h3>
       <p>Collected via Firebase Crashlytics:</p>
+      <p>Firebase Crashlytics operates from first launch, including before you accept this Privacy Policy, so we can diagnose crashes during onboarding.</p>
       <ul>
         <li>Device model</li>
         <li>Operating system version</li>
@@ -133,6 +136,7 @@
       </ul>
       <p>This helps us improve stability and fix bugs.</p>
       <h3>c. Device and Technical Information</h3>
+      <p>Some of this technical information is included in Crashlytics reports from first launch, and some is included in Analytics after you accept this Privacy Policy.</p>
       <ul>
         <li>Device type</li>
         <li>Operating system version</li>
@@ -142,17 +146,18 @@
       </ul>
       <h3>d. Push Notification Data</h3>
       <p>Collected via Firebase Cloud Messaging:</p>
+      <p>Firebase Cloud Messaging push-token registration starts from first launch, including before you accept this Privacy Policy. The app does not request notification permission until after you accept this Privacy Policy.</p>
       <ul>
         <li>Device push notification token</li>
         <li>Delivery metadata required for notifications</li>
       </ul>
       <h3>e. Location Information</h3>
-      <p>Location is only accessed when you explicitly enable features that require it, such as:</p>
+      <p>Location is only accessed while you are using the app, and only when you explicitly enable features that require it, such as:</p>
       <ul>
         <li>Sending your location to emergency contacts</li>
         <li>Generating a map link</li>
       </ul>
-      <p>We do not continuously track your location.</p>
+      <p>We request "While using the app" location only. We do not request Always / background location, and we do not continuously track your location.</p>
 
       <h2>6. How We Use Your Information</h2>
       <p>We use collected information only where it is reasonably necessary to operate, maintain, and improve My Allergy Buddy.</p>
@@ -166,7 +171,7 @@
         <li>Deliver push notifications you enable</li>
         <li>Improve app performance and user experience</li>
         <li>Diagnose crashes and fix technical issues</li>
-        <li>Analyse feature usage at a general, aggregated level</li>
+        <li>Analyse feature usage, including product names and the specific allergen names from scans sent to Firebase Analytics</li>
         <li>Manage subscriptions and entitlements via Google Play, Apple App Store, and RevenueCat</li>
         <li>Store your security settings locally on your device</li>
       </ul>
@@ -255,6 +260,7 @@
       <p>We use third-party services for specific functions:</p>
       <ul>
         <li>Google Firebase (Analytics, Crashlytics, Cloud Messaging)</li>
+        <li>Open Food Facts (barcode product lookup)</li>
         <li>RevenueCat (subscription management)</li>
         <li>Google Play / Apple App Store (billing and purchases)</li>
       </ul>
@@ -292,6 +298,7 @@
       <p>We use the following services:</p>
       <ul>
         <li>Google Firebase (Analytics, Crashlytics, Cloud Messaging)</li>
+        <li>Open Food Facts (barcode scans are sent to look up the product)</li>
         <li>Google ML Kit (on-device text recognition)</li>
         <li>Google Maps (location links where used)</li>
         <li>Google Play Billing and Apple In-App Purchases</li>

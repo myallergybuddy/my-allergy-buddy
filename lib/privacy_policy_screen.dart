@@ -218,9 +218,10 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
               _subSection('e. Consent Statement'),
               _sectionBody('By entering information into My Allergy Buddy or enabling optional features, you consent to the collection and use of that information in accordance with this Privacy Policy.'),
               _sectionTitle('5. Information We Collect Automatically'),
-              _sectionBody('When you use the app, we may automatically collect technical and usage information, including:'),
+              _sectionBody('When you use the app, we may collect technical and usage information. Some of this is collected from first launch, and some only after you accept this Privacy Policy, as described below.'),
               _subSection('a. Analytics and App Usage'),
               _sectionBody('Collected via Firebase Analytics:'),
+              _sectionBody('Firebase Analytics collection starts after you accept this Privacy Policy in the app. Until then, analytics events are not collected.'),
               _bulletList([
                 'Feature usage patterns',
                 'App interactions',
@@ -228,8 +229,10 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                 'Product scans, including the product name and the specific allergen names detected',
               ]),
               _sectionBody('When you scan a product, the product scan, the product name, and the specific allergen names are sent to Firebase Analytics. We do not collect full ingredient lists or full scanned images.'),
+              _sectionBody('When you scan a barcode, that barcode is sent to Open Food Facts to look up the product.'),
               _subSection('b. Crash and Diagnostic Data'),
               _sectionBody('Collected via Firebase Crashlytics:'),
+              _sectionBody('Firebase Crashlytics operates from first launch, including before you accept this Privacy Policy, so we can diagnose crashes during onboarding.'),
               _bulletList([
                 'Device model',
                 'Operating system version',
@@ -238,6 +241,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
               ]),
               _sectionBody('This helps us improve stability and fix bugs.'),
               _subSection('c. Device and Technical Information'),
+              _sectionBody('Some of this technical information is included in Crashlytics reports from first launch, and some is included in Analytics after you accept this Privacy Policy.'),
               _bulletList([
                 'Device type',
                 'Operating system version',
@@ -247,6 +251,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
               ]),
               _subSection('d. Push Notification Data'),
               _sectionBody('Collected via Firebase Cloud Messaging:'),
+              _sectionBody('Firebase Cloud Messaging push-token registration starts from first launch, including before you accept this Privacy Policy. The app does not request notification permission until after you accept this Privacy Policy.'),
               _bulletList([
                 'Device push notification token',
                 'Delivery metadata required for notifications',
@@ -269,7 +274,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                 'Deliver push notifications you enable',
                 'Improve app performance and user experience',
                 'Diagnose crashes and fix technical issues',
-                'Analyse feature usage at a general, aggregated level',
+                'Analyse feature usage, including product names and the specific allergen names from scans sent to Firebase Analytics',
                 'Manage subscriptions and entitlements via Google Play, Apple App Store, and RevenueCat',
                 'Store your security settings locally on your device',
               ]),
@@ -359,6 +364,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
               _sectionBody('We use third-party services for specific functions:'),
               _bulletList([
                 'Google Firebase (Analytics, Crashlytics, Cloud Messaging)',
+                'Open Food Facts (barcode product lookup)',
                 'RevenueCat (subscription management)',
                 'Google Play / Apple App Store (billing and purchases)',
               ]),
@@ -390,6 +396,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
               _sectionBody('My Allergy Buddy uses trusted third-party service providers to operate core features of the app.\n\nThese providers may process information on servers located outside Australia.\n\nWe use the following services:'),
               _bulletList([
                 'Google Firebase (Analytics, Crashlytics, Cloud Messaging)',
+                'Open Food Facts (barcode scans are sent to look up the product)',
                 'Google ML Kit (on-device text recognition)',
                 'Google Maps (location links where used)',
                 'Google Play Billing and Apple In-App Purchases',

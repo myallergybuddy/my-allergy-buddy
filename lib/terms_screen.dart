@@ -304,7 +304,7 @@ class TermsScreenState extends State<TermsScreen> {
                 'RevenueCat (subscription verification)',
                 'Google Play / Apple App Store services',
                 'Device-native SMS, location, and calling APIs',
-                'Food/product databases where available',
+                'Open Food Facts (barcode scans are sent to look up the product)',
               ]),
               _sectionBody('Each third-party provider operates under its own terms and privacy policies.\n\nWe are not responsible for:'),
               _bulletList([
