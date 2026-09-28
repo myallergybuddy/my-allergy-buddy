@@ -57,7 +57,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _initializeSettings();
-    _migratePasscodeIfNeeded();
   }
 
   @override
@@ -96,6 +95,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final prefs = await SharedPreferences.getInstance();
     final isPremium = await PremiumService.isPremiumUser();
     
+    final storedPasscode = prefs.getString('passcode') ?? '';
+    final migratedPasscode =
+        await EncryptionService.migrateStoredPasscode(storedPasscode);
+    if (migratedPasscode != storedPasscode) {
+      await prefs.setString('passcode', migratedPasscode);
+      await prefs.setBool(
+        'passcode_encrypted',
+        EncryptionService.isPasscodeVerifier(migratedPasscode),
+      );
+    }
+
     if (mounted) {
       setState(() {
         _isProUser = isPremium;
@@ -104,12 +114,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _locationEnabled = prefs.getBool('location_enabled') ?? true;
         _passcodeLockEnabled = prefs.getBool('passcode_lock_enabled') ?? false;
         _isPasscodeSet = prefs.getBool('is_passcode_set') ?? false;
-        
-        // Load encrypted passcode - we'll decrypt it when needed for verification
-        final encryptedPasscode = prefs.getString('passcode') ?? '';
-        if (encryptedPasscode.isNotEmpty) {
-          _passcode = encryptedPasscode; // Store encrypted version for verification
-        }
+        _passcode = migratedPasscode;
       });
     }
   }
@@ -124,13 +129,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       
-      // Encrypt passcode before saving
-      String encryptedPasscode = '';
-      if (_passcode.isNotEmpty && !EncryptionService.isEncrypted(_passcode)) {
-        // Only encrypt if it's not already encrypted
-        encryptedPasscode = await EncryptionService.encryptPasscode(_passcode);
-      } else {
-        encryptedPasscode = _passcode; // Already encrypted or empty
+      var storedPasscode = _passcode;
+      if (storedPasscode.isNotEmpty &&
+          !EncryptionService.isPasscodeVerifier(storedPasscode)) {
+        storedPasscode =
+            await EncryptionService.migrateStoredPasscode(storedPasscode);
+        _passcode = storedPasscode;
       }
       
       await Future.wait([
@@ -139,8 +143,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         prefs.setBool('location_enabled', _locationEnabled),
         prefs.setBool('passcode_lock_enabled', _passcodeLockEnabled),
         prefs.setBool('is_passcode_set', _isPasscodeSet),
-        prefs.setString('passcode', encryptedPasscode),
-        prefs.setBool('passcode_encrypted', true), // Mark as encrypted
+        prefs.setString('passcode', storedPasscode),
+        prefs.setBool(
+          'passcode_encrypted',
+          EncryptionService.isPasscodeVerifier(storedPasscode),
+        ),
       ]);
 
       if (mounted) {
@@ -709,23 +716,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
-              if (passcodeController.text != _passcode) {
+            onPressed: () async {
+              final navigator = Navigator.of(context);
+              if (!await _verifyPasscode(passcodeController.text)) {
+                if (!mounted) return;
                 _showErrorSnackBar('Incorrect passcode');
                 return;
               }
-              
+              if (!mounted) return;
+
               setState(() {
                 _passcode = '';
                 _isPasscodeSet = false;
                 _passcodeLockEnabled = false;
               });
-              
+
               _saveSettings();
-              Navigator.pop(context);
-              if (mounted) {
-                _showSuccessSnackBar('Passcode removed successfully!');
-              }
+              navigator.pop();
+              _showSuccessSnackBar('Passcode removed successfully!');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -946,27 +954,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// Migrate existing passcodes to encrypted format
-  Future<void> _migratePasscodeIfNeeded() async {
-    await EncryptionService.migratePlainTextPasscode();
-  }
-
-  /// Verify passcode against stored encrypted passcode
+  /// Verify passcode against the stored one-way verifier.
   Future<bool> _verifyPasscode(String inputPasscode) async {
     if (_passcode.isEmpty) return false;
-    
+
     try {
-      if (EncryptionService.isEncrypted(_passcode)) {
-        // Decrypt stored passcode and compare
-        final decryptedPasscode = await EncryptionService.decryptPasscode(_passcode);
-        return decryptedPasscode == inputPasscode;
-      } else if (EncryptionService.isHashed(_passcode)) {
-        // Verify against hashed passcode
-        return EncryptionService.verifyPasscode(inputPasscode, _passcode);
-      } else {
-        // Legacy plain text comparison
-        return _passcode == inputPasscode;
-      }
+      return EncryptionService.passcodeMatches(_passcode, inputPasscode);
     } catch (e) {
       debugPrint('Passcode verification error: $e');
       return false;

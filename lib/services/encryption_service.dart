@@ -10,6 +10,8 @@ class EncryptionService {
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
   static const String _keyName = 'passcode_encryption_key';
   static const String _ivName = 'passcode_encryption_iv';
+  static const String _passcodePepperName = 'passcode_hmac_pepper';
+  static const String _passcodeVerifierPrefix = 'hmac1.';
   static const String _barcodeDatabaseAesKeyName =
       'myallergybuddy_barcode_database_aes_key';
   static const String _legacyPrivateCatalogAesKeyName =
@@ -40,7 +42,104 @@ class EncryptionService {
     return generated;
   }
   
-  /// Encrypt passcode
+  /// True when [stored] is a one-way passcode verifier, not a recoverable PIN.
+  static bool isPasscodeVerifier(String stored) =>
+      stored.startsWith(_passcodeVerifierPrefix);
+
+  /// Store a 4-digit passcode as HMAC-SHA256(pepper, salt + pin).
+  ///
+  /// The pepper lives in the platform keystore. SharedPreferences then holds
+  /// a salt and a MAC, so the digits cannot be decrypted back out.
+  static Future<String> protectPasscode(String passcode) async {
+    final pepper = await _passcodePepper();
+    final salt = encrypt.IV.fromSecureRandom(16).bytes;
+    final mac = _passcodeMac(pepper, salt, passcode);
+    return '$_passcodeVerifierPrefix${base64Encode(salt)}.${base64Encode(mac)}';
+  }
+
+  /// Check [passcode] against a verifier, a legacy AES blob, a SHA-256 hash, or plain digits.
+  static Future<bool> passcodeMatches(String stored, String passcode) async {
+    if (stored.isEmpty || passcode.isEmpty) return false;
+    if (isPasscodeVerifier(stored)) {
+      return _verifyPasscodeVerifier(stored, passcode);
+    }
+    if (isHashed(stored)) {
+      return verifyPasscode(passcode, stored);
+    }
+    if (RegExp(r'^\d{4}$').hasMatch(stored)) {
+      return _fixedTimeEquals(utf8.encode(stored), utf8.encode(passcode));
+    }
+    final decrypted = await decryptPasscode(stored);
+    if (decrypted == null) return false;
+    return _fixedTimeEquals(utf8.encode(decrypted), utf8.encode(passcode));
+  }
+
+  /// Replace a recoverable or unsalted passcode with a verifier when the PIN is known
+  /// or can be recovered by this device.
+  static Future<String> migrateStoredPasscode(String stored) async {
+    if (stored.isEmpty || isPasscodeVerifier(stored)) return stored;
+    if (RegExp(r'^\d{4}$').hasMatch(stored)) {
+      return protectPasscode(stored);
+    }
+    if (isHashed(stored)) {
+      for (var i = 0; i < 10000; i++) {
+        final pin = i.toString().padLeft(4, '0');
+        if (verifyPasscode(pin, stored)) {
+          return protectPasscode(pin);
+        }
+      }
+      return stored;
+    }
+    final decrypted = await decryptPasscode(stored);
+    if (decrypted != null && RegExp(r'^\d{4}$').hasMatch(decrypted)) {
+      return protectPasscode(decrypted);
+    }
+    return stored;
+  }
+
+  static Future<List<int>> _passcodePepper() async {
+    final existing = await _secureStorage.read(key: _passcodePepperName);
+    if (existing != null && existing.isNotEmpty) {
+      return base64Decode(existing);
+    }
+    final pepper = encrypt.Key.fromSecureRandom(32).bytes;
+    await _secureStorage.write(
+      key: _passcodePepperName,
+      value: base64Encode(pepper),
+    );
+    return pepper;
+  }
+
+  static List<int> _passcodeMac(List<int> pepper, List<int> salt, String passcode) {
+    final hmac = Hmac(sha256, pepper);
+    return hmac.convert(<int>[...salt, ...utf8.encode(passcode)]).bytes;
+  }
+
+  static Future<bool> _verifyPasscodeVerifier(String stored, String passcode) async {
+    final parts = stored.split('.');
+    if (parts.length != 3 || parts[0] != 'hmac1') return false;
+    try {
+      final salt = base64Decode(parts[1]);
+      final expected = base64Decode(parts[2]);
+      final pepper = await _passcodePepper();
+      final actual = _passcodeMac(pepper, salt, passcode);
+      return _fixedTimeEquals(actual, expected);
+    } catch (e) {
+      debugPrint('Passcode verifier error: $e');
+      return false;
+    }
+  }
+
+  static bool _fixedTimeEquals(List<int> a, List<int> b) {
+    if (a.length != b.length) return false;
+    var diff = 0;
+    for (var i = 0; i < a.length; i++) {
+      diff |= a[i] ^ b[i];
+    }
+    return diff == 0;
+  }
+
+  /// Legacy reversible passcode encryption. Used only to migrate old installs.
   static Future<String> encryptPasscode(String passcode) async {
     try {
       final key = await _getEncryptionKey();
@@ -52,7 +151,6 @@ class EncryptionService {
       return encrypted.base64;
     } catch (e) {
       debugPrint('Encryption error: $e');
-      // Fallback to hashing if encryption fails
       return _hashPasscode(passcode);
     }
   }
@@ -105,21 +203,15 @@ class EncryptionService {
            RegExp(r'^[a-fA-F0-9]+$').hasMatch(storedPasscode);
   }
   
-  /// Migrate existing plain text passcodes to encrypted
+  /// Replace a plain, hashed, or reversible passcode with a one-way verifier.
   static Future<void> migratePlainTextPasscode() async {
     final prefs = await SharedPreferences.getInstance();
-    final plainTextPasscode = prefs.getString('passcode');
-    final isEncrypted = prefs.getBool('passcode_encrypted') ?? false;
-    
-    if (!isEncrypted && plainTextPasscode != null && 
-        plainTextPasscode.length == 4 && 
-        !isHashed(plainTextPasscode)) {
-      // This is likely a plain text passcode, encrypt it
-      final encryptedPasscode = await encryptPasscode(plainTextPasscode);
-      await prefs.setString('passcode', encryptedPasscode);
-      await prefs.setBool('passcode_encrypted', true);
-      debugPrint('Migrated plain text passcode to encrypted format');
-    }
+    final stored = prefs.getString('passcode') ?? '';
+    final migrated = await migrateStoredPasscode(stored);
+    if (migrated == stored) return;
+    await prefs.setString('passcode', migrated);
+    await prefs.setBool('passcode_encrypted', isPasscodeVerifier(migrated));
+    debugPrint('Migrated passcode to one-way verifier');
   }
   
   /// Clear all encryption keys (for testing or security reset)
@@ -136,7 +228,9 @@ class EncryptionService {
     
     String status = 'None';
     if (storedPasscode.isNotEmpty) {
-      if (isEncrypted) {
+      if (isPasscodeVerifier(storedPasscode)) {
+        status = 'One-way (HMAC-SHA256)';
+      } else if (isEncrypted) {
         status = 'Encrypted (AES-256)';
       } else if (isHashed(storedPasscode)) {
         status = 'Hashed (SHA-256)';
