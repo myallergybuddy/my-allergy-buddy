@@ -320,9 +320,9 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
               _subSection('a. Emergency SMS'),
               _sectionBody('If you activate emergency messaging:'),
               _bulletList([
-                'SMS messages may be sent to your selected emergency contacts',
-                'Messages may include your location link (if permission is granted)',
-                'Messages are only sent when you explicitly initiate the action',
+                'Texting a contact opens your SMS app with a message ready to send',
+                'You tap Send. The app does not send the text itself',
+                'The draft can include a location link if you have allowed location',
                 'There is no in-app limit on the number of emergency SMS messages you may send',
                 'Your mobile carrier’s standard SMS charges may still apply',
               ]),

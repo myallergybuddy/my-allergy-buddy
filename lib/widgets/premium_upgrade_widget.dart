@@ -426,6 +426,18 @@ class _PremiumUpgradeWidgetState extends State<PremiumUpgradeWidget> {
                   ),
                 ),
               ],
+              const SizedBox(height: 8),
+              Text(
+                'Each plan renews automatically at the price shown until you cancel. '
+                'Payment is charged to your Google Play account. '
+                'Cancel anytime in Google Play → Payments and subscriptions → Subscriptions, '
+                'at least 24 hours before the period ends.',
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
@@ -481,6 +493,13 @@ class _PremiumUpgradeWidgetState extends State<PremiumUpgradeWidget> {
         ],
       ),
     );
+  }
+
+  String _billingPeriodLabel(String id) {
+    if (id.contains('week')) return 'per week';
+    if (id.contains('month')) return 'per month';
+    if (id.contains('year')) return 'per year';
+    return '';
   }
 
   Widget _buildSubscriptionCard(Map<String, dynamic> product) {
@@ -564,25 +583,9 @@ class _PremiumUpgradeWidgetState extends State<PremiumUpgradeWidget> {
                       color: Color(0xFF4A9E9C),
                     ),
                   ),
-                  if (product['priceString']?.toString().contains('week') == true)
+                  if (_billingPeriodLabel(id).isNotEmpty)
                     Text(
-                      'per week',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                      ),
-                    )
-                  else if (product['priceString']?.toString().contains('month') == true)
-                    Text(
-                      'per month',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                      ),
-                    )
-                  else if (product['priceString']?.toString().contains('year') == true)
-                    Text(
-                      'per year',
+                      _billingPeriodLabel(id),
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 12,

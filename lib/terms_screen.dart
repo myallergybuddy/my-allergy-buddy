@@ -221,14 +221,14 @@ class TermsScreenState extends State<TermsScreen> {
               _bulletList([
                 'Location is requested as “While using the app” only',
                 'Location is only used when you explicitly activate emergency features',
-                'Location may be shared only with your chosen contacts via SMS or messaging tools',
+                'A location link can be included in a message you send from your SMS app',
                 'Location services can be disabled at any time',
               ]),
               _sectionBody('We do not request Always / background location, and we do not continuously track or store your location.'),
               _subSection('5.3 SMS and Messaging'),
               _bulletList([
-                'SMS messages are sent only when you choose to initiate them',
-                'Messages may include your location link if enabled',
+                'Texting a contact opens your SMS app with a message ready to send',
+                'You tap Send. The app does not send the text itself',
                 'There is no in-app limit on emergency SMS messages',
                 'Delivery depends on carrier, device, and network availability',
                 'Standard SMS charges may apply',

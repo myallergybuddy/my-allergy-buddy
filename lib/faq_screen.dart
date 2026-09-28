@@ -13,7 +13,7 @@ class _FAQScreenState extends State<FAQScreen> {
   static const Color _primaryColor = Color(0xFF4A9E9C);
   
   // Track which FAQ items are expanded
-  final Set<int> _expandedItems = {};
+  final Set<String> _expandedItems = {};
 
   // FAQ data
   final List<Map<String, dynamic>> _faqItems = [
@@ -23,19 +23,19 @@ class _FAQScreenState extends State<FAQScreen> {
       'questions': [
         {
           'question': 'How do I scan a product barcode?',
-          'answer': 'Tap the camera icon on the home screen, point your camera at the product barcode, and wait for the app to automatically detect and scan it. Make sure the barcode is well-lit and clearly visible.',
+          'answer': 'On the home screen, tap Scan a Label. Point the camera at the barcode and hold the phone steady in good light until the product is found.',
         },
         {
-          'question': 'What if the barcode doesn\'t scan?',
-          'answer': 'Try cleaning the barcode, ensuring good lighting, and holding your device steady. If it still doesn\'t work, you can manually search for the product or add it to our database.',
+          'question': 'What if the barcode does not scan?',
+          'answer': 'Wipe the barcode, improve the light, and hold the phone steady. If it still does not scan, tap Report this product after the attempt, or go to Settings, then Support, then Report a missing product.',
         },
         {
           'question': 'Can I scan products without barcodes?',
-          'answer': 'Yes! You can use the camera to take a photo of the product label and our AI will analyze the ingredients text to identify potential allergens.',
+          'answer': 'Yes. On the scan screen, tap Photo Scan and take a photo of the ingredient label, or choose one from your gallery. The text is read on your phone.',
         },
         {
-          'question': 'Why can\'t I find my product in the database?',
-          'answer': 'Our database is constantly growing. If a product is missing, go to Settings → Support → Report a missing product, or tap Report this product after a scan. You can email photos of the front, ingredients, and barcode so we can add it to our secure catalog.',
+          'question': 'Why can I not find my product?',
+          'answer': 'Not every product is in the lookup yet. Go to Settings, then Support, then Report a missing product, or tap Report this product after a scan. You can email photos of the front, the ingredients, and the barcode so it can be added.',
         },
       ],
     },
@@ -44,20 +44,16 @@ class _FAQScreenState extends State<FAQScreen> {
       'category': 'Allergies and Safety',
       'questions': [
         {
-          'question': 'How do I add my allergies to the app?',
-          'answer': 'Go to Settings > My Allergies, then select all the allergens you need to avoid.',
+          'question': 'How do I add my allergies?',
+          'answer': 'On the home screen, tap My Allergies and select the allergens you need to avoid.',
         },
         {
-          'question': 'What should I do if I have a severe allergic reaction?',
-          'answer': 'If you are having a severe allergic reaction you must use your epipen and call emergency services (000) Australia by hitting the emergency button in this app. All emergency contacts will be notified of your emergency and location (if location settings has been implemented).',
+          'question': 'What should I do in a severe allergic reaction?',
+          'answer': 'Use your prescribed adrenaline injector if you have one, and call 000. In the app, open Emergency Contacts to call emergency services. Texting a contact opens your SMS app so you can send the message yourself. The app does not call 000 or send texts on its own.',
         },
         {
-          'question': 'How accurate is the allergen detection?',
-          'answer': 'We use multiple databases and AI technology to provide the most accurate information possible. However, always double-check product labels and consult with healthcare professionals for serious allergies.',
-        },
-        {
-          'question': 'Can I trust the app\'s allergy warnings?',
-          'answer': 'While we strive for accuracy, always verify with product labels and consult healthcare professionals. The app is a helpful tool but not a replacement for careful label reading.',
+          'question': 'How accurate is allergen detection?',
+          'answer': 'Results come from product databases and from text read on the label. Always read the packet yourself and follow your doctor\'s advice. The app is a guide, not a medical device.',
         },
       ],
     },
@@ -67,15 +63,15 @@ class _FAQScreenState extends State<FAQScreen> {
       'questions': [
         {
           'question': 'How do I upgrade to Premium?',
-          'answer': 'Tap the "Upgrade to Premium" button on the home screen or go to Settings > Premium. Choose from our available subscription plans.',
+          'answer': 'Tap Upgrade to Premium on the home screen, or open Settings and tap Upgrade, then choose a plan.',
         },
         {
-          'question': 'What features are included in Premium?',
-          'answer': 'Premium includes: 10 emergency contacts, advanced allergen database, priority customer support, scan history, and advanced analytics.',
+          'question': 'What is included in Premium?',
+          'answer': 'Premium includes up to 10 emergency contacts, the advanced allergen database, scan history, and priority support. The free plan includes 2 emergency contacts.',
         },
         {
           'question': 'Can I use the app offline?',
-          'answer': 'Basic scanning and your saved allergy information work offline. However, product database updates and new product lookups require an internet connection.',
+          'answer': 'Your saved allergies stay on the phone and can be viewed offline. Looking up a new barcode needs an internet connection. Photo Scan reads label text on the phone.',
         },
       ],
     },
@@ -85,11 +81,11 @@ class _FAQScreenState extends State<FAQScreen> {
       'questions': [
         {
           'question': 'How do I add emergency contacts?',
-          'answer': 'Go to the Emergency Contacts section from the home screen. Tap the "+" button to add contacts with their name, phone number, and relationship to you.',
+          'answer': 'On the home screen, tap Emergency Contacts, then tap + and enter a name, phone number, and relationship.',
         },
         {
           'question': 'How many emergency contacts can I have?',
-          'answer': 'Free users can have 2 emergency contacts. Premium users can have up to 10 emergency contacts. Emergency service calls and emergency text messages are unlimited on every plan.',
+          'answer': 'The free plan includes 2 emergency contacts. Premium includes up to 10. Calling 000 and opening an SMS are available on every plan. You still confirm each text in your SMS app.',
         },
       ],
     },
@@ -98,27 +94,27 @@ class _FAQScreenState extends State<FAQScreen> {
       'category': 'Premium and Billing',
       'questions': [
         {
-          'question': 'How do I cancel my Premium subscription?',
-          'answer': 'You can cancel through your device\'s app store settings (Google Play Store or Apple App Store) or contact our support team.',
+          'question': 'How do I cancel Premium?',
+          'answer': 'Open the Google Play Store, then Payments and subscriptions, then Subscriptions, and cancel My Allergy Buddy. The plan renews until you cancel it there.',
         },
         {
-          'question': 'How do I restore my Premium purchase?',
-          'answer': 'Go to Settings > Premium and tap "Restore Purchases". Make sure you\'re signed in with the same account used for the original purchase.',
+          'question': 'How do I restore a purchase?',
+          'answer': 'Open Upgrade to Premium and tap Restore Purchases. Use the same Google account you used to subscribe.',
         },
         {
-          'question': 'What payment methods are accepted?',
-          'answer': 'We accept all major credit cards, PayPal, and payment methods supported by Google Play Store and Apple App Store.',
+          'question': 'How do I pay?',
+          'answer': 'Payment is handled by Google Play. The methods available are the ones already set up on that Google account.',
         },
       ],
     },
   ];
 
-  void _toggleExpansion(int index) {
+  void _toggleExpansion(String id) {
     setState(() {
-      if (_expandedItems.contains(index)) {
-        _expandedItems.remove(index);
+      if (_expandedItems.contains(id)) {
+        _expandedItems.remove(id);
       } else {
-        _expandedItems.add(index);
+        _expandedItems.add(id);
       }
     });
   }
@@ -154,7 +150,7 @@ class _FAQScreenState extends State<FAQScreen> {
           category['questions'].length,
           (questionIndex) => _buildFAQItem(
             category['questions'][questionIndex],
-            questionIndex,
+            '${category['category']}-$questionIndex',
           ),
         ),
         const SizedBox(height: 16),
@@ -162,8 +158,8 @@ class _FAQScreenState extends State<FAQScreen> {
     );
   }
 
-  Widget _buildFAQItem(Map<String, dynamic> item, int index) {
-    final isExpanded = _expandedItems.contains(index);
+  Widget _buildFAQItem(Map<String, dynamic> item, String id) {
+    final isExpanded = _expandedItems.contains(id);
     
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -186,7 +182,7 @@ class _FAQScreenState extends State<FAQScreen> {
         children: [
           // Question header
           InkWell(
-            onTap: () => _toggleExpansion(index),
+            onTap: () => _toggleExpansion(id),
             borderRadius: BorderRadius.circular(12),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -292,7 +288,7 @@ class _FAQScreenState extends State<FAQScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Find answers to common questions about MyAllergyBuddy. If you can\'t find what you\'re looking for, contact our support team.',
+                    'Answers for scanning, allergies, emergency contacts, and Premium. If you still need help, contact support.',
                     style: GoogleFonts.nunito(
                       fontSize: 14,
                       color: Colors.black87,

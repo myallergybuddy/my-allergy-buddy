@@ -151,7 +151,9 @@ class LocationService {
       }
       
       String locationText = generateLocationText(position.latitude, position.longitude);
-      String message = 'EMERGENCY: $contactName, I need help! $locationText';
+      String message =
+          'EMERGENCY: I need help. I may be having an allergic reaction. '
+          'Please call 000. $locationText';
       
       // Create SMS URL
       final Uri smsUri = Uri(

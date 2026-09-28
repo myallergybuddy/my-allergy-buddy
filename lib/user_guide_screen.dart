@@ -53,7 +53,7 @@ class UserGuideScreen extends StatelessWidget {
       number: 5,
       title: 'Add emergency contacts',
       description:
-          'Tap Emergency Contacts on the home screen to save people who should be notified in an emergency. Keep this list up to date.',
+          'Tap Emergency Contacts on the home screen to save people you can call or text in an emergency. Texting opens your SMS app so you can tap Send. Keep this list up to date.',
       icon: Icons.emergency,
       color: Colors.red,
       destination: _GuideDestination.emergencyContacts,

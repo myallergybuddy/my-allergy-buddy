@@ -349,7 +349,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
     }
   }
 
-  Future<void> _shareLocationWithContact(String contactName) async {
+  Future<void> _shareLocationWithContact(String _) async {
     // Check if location sharing is enabled
     final prefs = await SharedPreferences.getInstance();
     final locationEnabled = prefs.getBool('location_enabled') ?? false;
@@ -373,11 +373,9 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
         return;
       }
       
-      // Get current location and share via SMS
+      // A phone call does not include location. SMS sharing is a separate action.
       final position = await LocationService.getCurrentLocation();
-      if (position != null) {
-        _showSuccessSnackBar('Location shared with $contactName');
-      } else {
+      if (position == null) {
         _showErrorSnackBar('Could not get current location');
       }
     }
@@ -595,7 +593,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
       
       final Uri phoneUri = Uri(scheme: 'tel', path: emergencyNumber);
       if (await launchUrl(phoneUri)) {
-        _showSuccessSnackBar('Calling emergency services with location...');
+        _showSuccessSnackBar('Opening the phone app to call 000.');
         // Share location with emergency services
         await _shareLocationWithEmergencyServices();
       } else {
@@ -628,7 +626,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
       bool success = await LocationService.shareLocationWithEmergencyServices();
       
       if (success) {
-        _showSuccessSnackBar('Location shared with emergency services');
+        _showSuccessSnackBar('Phone app opened to call 000. Your location is not sent automatically.');
         // Also notify emergency contacts
         await _notifyEmergencyContacts();
       } else {
@@ -644,9 +642,9 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
       try {
         bool success = await LocationService.notifyEmergencyContacts();
         if (success) {
-          _showSuccessSnackBar('Emergency contacts notified with your location');
+          _showSuccessSnackBar('SMS opened for your emergency contacts. Tap Send in each message.');
         } else {
-          _showErrorSnackBar('Failed to notify some emergency contacts');
+          _showErrorSnackBar('Could not open SMS for some contacts');
         }
       } catch (e) {
         _showErrorSnackBar('Error notifying emergency contacts');

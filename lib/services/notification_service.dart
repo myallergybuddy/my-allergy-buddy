@@ -479,7 +479,7 @@ class NotificationService {
     // Show emergency system notification
     await _showEmergencySystemNotification(
       title: '🚨 EMERGENCY ALERT',
-      body: 'Anaphylactic reaction detected! Emergency contacts notified.',
+      body: 'SMS app opened so you can text emergency contacts. Call 000 yourself.',
       payload: jsonEncode({
         'type': 'emergency',
         'action': 'anaphylactic_reaction',
@@ -513,7 +513,7 @@ class NotificationService {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  '🚨 AUTOMATIC ACTIONS TAKEN:',
+                  'What you still need to do:',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.red,
@@ -521,16 +521,16 @@ class NotificationService {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  '• Emergency services notified\n'
-                  '• All emergency contacts messaged\n'
-                  '• Location shared with contacts\n'
-                  '• Emergency screen activated',
+                  '• Call 000 yourself\n'
+                  '• Your SMS app opens for each emergency contact\n'
+                  '• Tap Send in each message\n'
+                  '• This app does not send the text for you',
                   style: TextStyle(fontSize: 14),
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Message sent to contacts:\n'
-                  '"I am having an anaphylactic reaction. Emergency services has been notified. This is my current location."',
+                  'Message ready to send:\n'
+                  '"EMERGENCY: I need help. I may be having an allergic reaction. Please call 000. My location: …"',
                   style: TextStyle(
                     fontSize: 12,
                     fontStyle: FontStyle.italic,
@@ -710,9 +710,9 @@ class NotificationService {
       final latitude = location['latitude']!;
       final longitude = location['longitude']!;
       
-      final message = 'EMERGENCY: I am having an anaphylactic reaction. '
-          'Emergency services has been notified. '
-          'This is my current location: https://maps.google.com/?q=$latitude,$longitude';
+      final message = 'EMERGENCY: I need help. I may be having an allergic reaction. '
+          'Please call 000. '
+          'My location: https://maps.google.com/?q=$latitude,$longitude';
       
       final Uri smsUri = Uri(
         scheme: 'sms',
@@ -722,7 +722,7 @@ class NotificationService {
       
       final success = await launchUrl(smsUri);
       if (success) {
-        debugPrint('Emergency SMS sent to $contactName');
+        debugPrint('Emergency SMS composer opened for $contactName');
         
         // Track SMS delivery
         await _trackSmsDelivery(contactName, phoneNumber, message);
