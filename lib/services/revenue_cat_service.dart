@@ -197,9 +197,9 @@ class RevenueCatService {
         'identifier': RevenueCatConfig.productYearly,
         'title': 'Premium Yearly',
         'description':
-            'Access to all premium features for 1 year (Save 30%)',
-        'priceString': r'$74.99',
-        'price': 74.99,
+            'Access to all premium features for 1 year (Save 35%)',
+        'priceString': r'$69.99',
+        'price': 69.99,
       },
     ];
   }

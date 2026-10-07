@@ -257,7 +257,7 @@ class TermsScreenState extends State<TermsScreen> {
               _bulletList([
                 'Weekly: \$3.99',
                 'Monthly: \$8.99',
-                'Yearly: \$74.99',
+                'Yearly: \$69.99',
               ]),
               _subSection('7.2 Billing'),
               _bulletList([

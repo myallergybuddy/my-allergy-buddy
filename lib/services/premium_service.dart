@@ -202,13 +202,13 @@ class PremiumService {
       PremiumPlan(
         id: 'yearly',
         name: 'Yearly Premium',
-        price: 74.99,
+        price: 69.99,
         currency: 'AUD',
         duration: '12 months',
-        description: 'Full premium access for 12 months (Save 30%)',
+        description: 'Full premium access for 12 months (Save 35%)',
         features: premiumFeatures,
         isPopular: true,
-        savings: 'Save 30%',
+        savings: 'Save 35%',
       ),
     ];
   }
