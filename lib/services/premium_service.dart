@@ -192,7 +192,7 @@ class PremiumService {
       PremiumPlan(
         id: 'monthly',
         name: 'Monthly Premium',
-        price: 8.99,
+        price: 7.99,
         currency: 'AUD',
         duration: '1 month',
         description: 'Full premium access for 1 month',
@@ -205,10 +205,10 @@ class PremiumService {
         price: 69.99,
         currency: 'AUD',
         duration: '12 months',
-        description: 'Full premium access for 12 months (Save 35%)',
+        description: 'Full premium access for 12 months (Save 27%)',
         features: premiumFeatures,
         isPopular: true,
-        savings: 'Save 35%',
+        savings: 'Save 27%',
       ),
     ];
   }
