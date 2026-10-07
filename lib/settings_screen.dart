@@ -12,7 +12,7 @@ import 'support_screen.dart';
 
 import 'services/location_service.dart';
 import 'services/encryption_service.dart';
-import 'services/health_record_store.dart';
+import 'services/app_lock_service.dart';
 import 'services/premium_service.dart';
 import 'widgets/premium_upgrade_widget.dart';
 
@@ -508,7 +508,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showPasscodeChangeDialog() {
+  void _showPasscodeResetDialog() {
     final TextEditingController currentPasscodeController = TextEditingController();
     final TextEditingController newPasscodeController = TextEditingController();
     final TextEditingController confirmPasscodeController = TextEditingController();
@@ -521,16 +521,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         builder: (context, setState) {
           String getTitle() {
             switch (step) {
-              case 1: return 'Current Passcode';
+              case 1: return 'Reset Passcode';
               case 2: return 'New Passcode';
               case 3: return 'Confirm New Passcode';
-              default: return 'Change Passcode';
+              default: return 'Reset Passcode';
             }
           }
           
           String getMessage() {
             switch (step) {
-              case 1: return 'Enter your current passcode';
+              case 1: return 'Enter your current passcode. If you have forgotten it, clear this app\'s storage in Android settings.';
               case 2: return 'Create a new 4-digit passcode';
               case 3: return 'Please confirm your new passcode';
               default: return '';
@@ -608,7 +608,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     case 1:
                       // Verify current passcode
                       if (!await _verifyPasscode(currentInput)) {
-                        _showErrorSnackBar('Incorrect passcode');
                         return;
                       }
                       setState(() {
@@ -638,265 +637,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       if (!context.mounted) return;
 
                       Navigator.pop(context);
-                      _showSuccessSnackBar('Passcode changed successfully!');
-                      break;
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4A9E9C),
-                  foregroundColor: Colors.white,
-                ),
-                child: Text(
-                  step == 3 ? 'Confirm' : 'Next',
-                  style: GoogleFonts.nunito(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  void _showRemovePasscodeDialog() {
-    final TextEditingController passcodeController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Remove Passcode',
-          style: GoogleFonts.nunito(
-            fontWeight: FontWeight.bold,
-            color: Colors.red,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Enter your current passcode to remove it',
-              style: GoogleFonts.nunito(
-                fontSize: 16,
-                color: _textColor,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: passcodeController,
-              decoration: InputDecoration(
-                labelText: 'Passcode',
-                hintText: 'Enter 4 digits',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                prefixIcon: const Icon(Icons.lock, color: Color(0xFF4A9E9C)),
-              ),
-              keyboardType: TextInputType.number,
-              maxLength: 4,
-              obscureText: true,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.nunito(
-                color: _subtitleColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final navigator = Navigator.of(context);
-              if (!await _verifyPasscode(passcodeController.text)) {
-                if (!mounted) return;
-                _showErrorSnackBar('Incorrect passcode');
-                return;
-              }
-              if (!mounted) return;
-
-              setState(() {
-                _passcode = '';
-                _isPasscodeSet = false;
-                _passcodeLockEnabled = false;
-              });
-
-              _saveSettings();
-              navigator.pop();
-              _showSuccessSnackBar('Passcode removed successfully!');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: Text(
-              'Remove',
-              style: GoogleFonts.nunito(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showPasscodeResetDialog() async {
-    final prefs = await SharedPreferences.getInstance();
-    final phoneNumber = await HealthRecordStore.readString(prefs, 'profile_phone') ?? '';
-    
-    if (phoneNumber.isEmpty) {
-      _showErrorSnackBar('Please add a phone number in your profile first');
-      return;
-    }
-
-    if (!mounted) return;
-
-    final TextEditingController resetCodeController = TextEditingController();
-    final TextEditingController newPasscodeController = TextEditingController();
-    final TextEditingController confirmPasscodeController = TextEditingController();
-    int step = 1; // 1: send code, 2: enter code, 3: new passcode, 4: confirm passcode
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          String getTitle() {
-            switch (step) {
-              case 1: return 'Reset Passcode';
-              case 2: return 'Enter Reset Code';
-              case 3: return 'New Passcode';
-              case 4: return 'Confirm Passcode';
-              default: return 'Reset Passcode';
-            }
-          }
-          
-          String getMessage() {
-            switch (step) {
-              case 1: return 'We\'ll send a reset code to $phoneNumber';
-              case 2: return 'Enter the 6-digit code sent to your phone';
-              case 3: return 'Create a new 4-digit passcode';
-              case 4: return 'Please confirm your new passcode';
-              default: return '';
-            }
-          }
-
-          return AlertDialog(
-            title: Text(
-              getTitle(),
-              style: GoogleFonts.nunito(
-                fontWeight: FontWeight.bold,
-                color: _textColor,
-              ),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  getMessage(),
-                  style: GoogleFonts.nunito(
-                    fontSize: 16,
-                    color: _textColor,
-                  ),
-                ),
-                if (step > 1) ...[
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: step == 2 ? resetCodeController : 
-                              step == 3 ? newPasscodeController : confirmPasscodeController,
-                    decoration: InputDecoration(
-                      labelText: step == 2 ? 'Reset Code' : 'Passcode',
-                      hintText: step == 2 ? 'Enter 6 digits' : 'Enter 4 digits',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      prefixIcon: Icon(
-                        step == 2 ? Icons.security : Icons.lock,
-                        color: const Color(0xFF4A9E9C),
-                      ),
-                    ),
-                    keyboardType: TextInputType.number,
-                    maxLength: step == 2 ? 6 : 4,
-                    obscureText: step > 2,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
-                  ),
-                ],
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'Cancel',
-                  style: GoogleFonts.nunito(
-                    color: _subtitleColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  switch (step) {
-                    case 1:
-                      // Send reset code (simulated)
-                      setState(() {
-                        step = 2;
-                      });
-                      _showSuccessSnackBar('Reset code sent to $phoneNumber');
-                      break;
-                    case 2:
-                      // Verify reset code
-                      if (resetCodeController.text.length != 6) {
-                        _showErrorSnackBar('Please enter 6-digit code');
-                        return;
-                      }
-                      // In a real app, you would verify the code with your backend
-                      setState(() {
-                        step = 3;
-                      });
-                      break;
-                    case 3:
-                      // New passcode
-                      if (newPasscodeController.text.length != 4) {
-                        _showErrorSnackBar('Passcode must be 4 digits');
-                        return;
-                      }
-                      setState(() {
-                        step = 4;
-                      });
-                      break;
-                    case 4:
-                      // Confirm new passcode
-                      if (newPasscodeController.text != confirmPasscodeController.text) {
-                        _showErrorSnackBar('Passcodes do not match');
-                        return;
-                      }
-                      
-                      // Save new passcode
-                      setState(() {
-                        _passcode = newPasscodeController.text;
-                        _isPasscodeSet = true;
-                        _passcodeLockEnabled = true;
-                      });
-                      
-                      await _saveSettings();
-
-                      if (!context.mounted) return;
-
-                      Navigator.pop(context);
-                      if (!mounted) return;
                       _showSuccessSnackBar('Passcode reset successfully!');
                       break;
                   }
@@ -906,7 +646,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   foregroundColor: Colors.white,
                 ),
                 child: Text(
-                  step == 1 ? 'Send Code' : (step == 4 ? 'Confirm' : 'Next'),
+                  step == 3 ? 'Confirm' : 'Next',
                   style: GoogleFonts.nunito(
                     fontWeight: FontWeight.bold,
                   ),
@@ -958,7 +698,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (_passcode.isEmpty) return false;
 
     try {
-      return EncryptionService.passcodeMatches(_passcode, inputPasscode);
+      final result = await AppLockService.unlock(inputPasscode);
+      if (result.success) return true;
+      if (!mounted) return false;
+      if (result.wait != null) {
+        _showErrorSnackBar(
+          'Too many attempts. Try again in ${result.wait!.inSeconds} seconds.',
+        );
+      } else if (result.attemptsRemaining > 0) {
+        _showErrorSnackBar(
+          'Incorrect passcode. ${result.attemptsRemaining} attempts left before a wait.',
+        );
+      } else {
+        _showErrorSnackBar('Incorrect passcode');
+      }
+      return false;
     } catch (e) {
       debugPrint('Passcode verification error: $e');
       return false;
@@ -1205,7 +959,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       else ...[
                         _buildSwitchTile(
                           title: 'Passcode Lock',
-                          subtitle: 'Require passcode to access the app',
+                          subtitle: 'Ask for the passcode when the app opens',
                           value: _passcodeLockEnabled,
                           icon: Icons.lock,
                           onChanged: (value) {
@@ -1220,20 +974,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                         _buildListTile(
-                          title: 'Change Passcode',
-                          subtitle: 'Update your current passcode',
-                          icon: Icons.edit,
-                          onTap: _showPasscodeChangeDialog,
-                        ),
-                        _buildListTile(
-                          title: 'Remove Passcode',
-                          subtitle: 'Remove passcode protection',
-                          icon: Icons.lock_open,
-                          onTap: _showRemovePasscodeDialog,
-                        ),
-                        _buildListTile(
                           title: 'Reset Passcode',
-                          subtitle: 'Forgot your passcode? Reset it via SMS',
+                          subtitle: 'Set a new 4-digit passcode',
                           icon: Icons.restore,
                           onTap: _showPasscodeResetDialog,
                         ),
