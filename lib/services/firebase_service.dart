@@ -397,13 +397,6 @@ class FirebaseService {
     );
   }
 
-  /// Log when user sets passcode
-  static Future<void> logPasscodeSet() async {
-    await logEvent(
-      name: 'passcode_set',
-    );
-  }
-
   /// Log when user enables location services
   static Future<void> logLocationEnabled({
     required bool enabled,

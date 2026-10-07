@@ -18,7 +18,6 @@ import 'services/revenue_cat_service.dart';
 import 'emergency_contacts_screen.dart';
 import 'settings_screen.dart';
 import 'profile_screen.dart';
-import 'widgets/app_lock_gate.dart';
 
 void main() {
   runZonedGuarded(() async {
@@ -118,9 +117,6 @@ class MyApp extends StatelessWidget {
         '/settings': (context) => const SettingsScreen(),
       },
       debugShowCheckedModeBanner: false,
-      builder: (context, child) {
-        return AppLockGate(child: child ?? const SizedBox.shrink());
-      },
     );
   }
 }

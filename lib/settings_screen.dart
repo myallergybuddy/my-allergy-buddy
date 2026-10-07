@@ -11,8 +11,6 @@ import 'support_screen.dart';
 
 
 import 'services/location_service.dart';
-import 'services/encryption_service.dart';
-import 'services/app_lock_service.dart';
 import 'services/premium_service.dart';
 import 'widgets/premium_upgrade_widget.dart';
 
@@ -36,17 +34,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // State variables
   bool _isProUser = false;
   bool _notificationsEnabled = true;
-  bool _biometricEnabled = false;
   bool _locationEnabled = true;
   String _appVersion = '';
   String _buildNumber = '';
   bool _isLoading = true;
   bool _isSaving = false;
-  
-  // Security settings
-  bool _passcodeLockEnabled = false;
-  String _passcode = '';
-  bool _isPasscodeSet = false;
 
   // Colors (light mode only)
   Color get _textColor => Colors.black;
@@ -93,27 +85,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     final isPremium = await PremiumService.isPremiumUser();
-    
-    final storedPasscode = prefs.getString('passcode') ?? '';
-    final migratedPasscode =
-        await EncryptionService.migrateStoredPasscode(storedPasscode);
-    if (migratedPasscode != storedPasscode) {
-      await prefs.setString('passcode', migratedPasscode);
-      await prefs.setBool(
-        'passcode_encrypted',
-        EncryptionService.isPasscodeVerifier(migratedPasscode),
-      );
-    }
+
+    await prefs.remove('passcode');
+    await prefs.remove('passcode_encrypted');
+    await prefs.remove('passcode_lock_enabled');
+    await prefs.remove('is_passcode_set');
+    await prefs.remove('passcode_fail_count');
+    await prefs.remove('passcode_lockout_until');
+    await prefs.remove('biometric_enabled');
 
     if (mounted) {
       setState(() {
         _isProUser = isPremium;
         _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
-        _biometricEnabled = prefs.getBool('biometric_enabled') ?? false;
         _locationEnabled = prefs.getBool('location_enabled') ?? true;
-        _passcodeLockEnabled = prefs.getBool('passcode_lock_enabled') ?? false;
-        _isPasscodeSet = prefs.getBool('is_passcode_set') ?? false;
-        _passcode = migratedPasscode;
       });
     }
   }
@@ -127,26 +112,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      
-      var storedPasscode = _passcode;
-      if (storedPasscode.isNotEmpty &&
-          !EncryptionService.isPasscodeVerifier(storedPasscode)) {
-        storedPasscode =
-            await EncryptionService.migrateStoredPasscode(storedPasscode);
-        _passcode = storedPasscode;
-      }
-      
+
       await Future.wait([
         prefs.setBool('notifications_enabled', _notificationsEnabled),
-        prefs.setBool('biometric_enabled', _biometricEnabled),
         prefs.setBool('location_enabled', _locationEnabled),
-        prefs.setBool('passcode_lock_enabled', _passcodeLockEnabled),
-        prefs.setBool('is_passcode_set', _isPasscodeSet),
-        prefs.setString('passcode', storedPasscode),
-        prefs.setBool(
-          'passcode_encrypted',
-          EncryptionService.isPasscodeVerifier(storedPasscode),
-        ),
       ]);
 
       if (mounted) {
@@ -396,269 +365,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showPasscodeSetupDialog() {
-    final TextEditingController passcodeController = TextEditingController();
-    final TextEditingController confirmPasscodeController = TextEditingController();
-    bool isConfirming = false;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: Text(
-              isConfirming ? 'Confirm Passcode' : 'Set Passcode',
-              style: GoogleFonts.nunito(
-                fontWeight: FontWeight.bold,
-                color: _textColor,
-              ),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  isConfirming 
-                    ? 'Please confirm your 4-digit passcode'
-                    : 'Create a 4-digit passcode to secure your data',
-                  style: GoogleFonts.nunito(
-                    fontSize: 16,
-                    color: _textColor,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: isConfirming ? confirmPasscodeController : passcodeController,
-                  decoration: InputDecoration(
-                    labelText: 'Passcode',
-                    hintText: 'Enter 4 digits',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    prefixIcon: const Icon(Icons.lock, color: Color(0xFF4A9E9C)),
-                  ),
-                  keyboardType: TextInputType.number,
-                  maxLength: 4,
-                  obscureText: true,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'Cancel',
-                  style: GoogleFonts.nunito(
-                    color: _subtitleColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  final currentPasscode = isConfirming ? confirmPasscodeController.text : passcodeController.text;
-                  
-                  if (currentPasscode.length != 4) {
-                    _showErrorSnackBar('Passcode must be 4 digits');
-                    return;
-                  }
-                  
-                  if (!isConfirming) {
-                    // First passcode entry
-                    setState(() {
-                      isConfirming = true;
-                    });
-                  } else {
-                    // Confirm passcode
-                    if (passcodeController.text != confirmPasscodeController.text) {
-                      _showErrorSnackBar('Passcodes do not match');
-                      return;
-                    }
-                    
-                    // Save passcode
-                    setState(() {
-                      _passcode = passcodeController.text;
-                      _isPasscodeSet = true;
-                      _passcodeLockEnabled = true;
-                    });
-                    
-                    _saveSettings();
-                    Navigator.pop(context);
-                    _showSuccessSnackBar('Passcode set successfully!');
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4A9E9C),
-                  foregroundColor: Colors.white,
-                ),
-                child: Text(
-                  isConfirming ? 'Confirm' : 'Next',
-                  style: GoogleFonts.nunito(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  void _showPasscodeResetDialog() {
-    final TextEditingController currentPasscodeController = TextEditingController();
-    final TextEditingController newPasscodeController = TextEditingController();
-    final TextEditingController confirmPasscodeController = TextEditingController();
-    int step = 1; // 1: current passcode, 2: new passcode, 3: confirm new passcode
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          String getTitle() {
-            switch (step) {
-              case 1: return 'Reset Passcode';
-              case 2: return 'New Passcode';
-              case 3: return 'Confirm New Passcode';
-              default: return 'Reset Passcode';
-            }
-          }
-          
-          String getMessage() {
-            switch (step) {
-              case 1: return 'Enter your current passcode. If you have forgotten it, clear this app\'s storage in Android settings.';
-              case 2: return 'Create a new 4-digit passcode';
-              case 3: return 'Please confirm your new passcode';
-              default: return '';
-            }
-          }
-          
-          TextEditingController getController() {
-            switch (step) {
-              case 1: return currentPasscodeController;
-              case 2: return newPasscodeController;
-              case 3: return confirmPasscodeController;
-              default: return currentPasscodeController;
-            }
-          }
-
-          return AlertDialog(
-            title: Text(
-              getTitle(),
-              style: GoogleFonts.nunito(
-                fontWeight: FontWeight.bold,
-                color: _textColor,
-              ),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  getMessage(),
-                  style: GoogleFonts.nunito(
-                    fontSize: 16,
-                    color: _textColor,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: getController(),
-                  decoration: InputDecoration(
-                    labelText: 'Passcode',
-                    hintText: 'Enter 4 digits',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    prefixIcon: const Icon(Icons.lock, color: Color(0xFF4A9E9C)),
-                  ),
-                  keyboardType: TextInputType.number,
-                  maxLength: 4,
-                  obscureText: true,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'Cancel',
-                  style: GoogleFonts.nunito(
-                    color: _subtitleColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  final currentInput = getController().text;
-                  
-                  if (currentInput.length != 4) {
-                    _showErrorSnackBar('Passcode must be 4 digits');
-                    return;
-                  }
-                  
-                  switch (step) {
-                    case 1:
-                      // Verify current passcode
-                      if (!await _verifyPasscode(currentInput)) {
-                        return;
-                      }
-                      setState(() {
-                        step = 2;
-                      });
-                      break;
-                    case 2:
-                      // New passcode
-                      setState(() {
-                        step = 3;
-                      });
-                      break;
-                    case 3:
-                      // Confirm new passcode
-                      if (newPasscodeController.text != confirmPasscodeController.text) {
-                        _showErrorSnackBar('Passcodes do not match');
-                        return;
-                      }
-                      
-                      // Save new passcode
-                      setState(() {
-                        _passcode = newPasscodeController.text;
-                      });
-                      
-                      await _saveSettings();
-
-                      if (!context.mounted) return;
-
-                      Navigator.pop(context);
-                      _showSuccessSnackBar('Passcode reset successfully!');
-                      break;
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4A9E9C),
-                  foregroundColor: Colors.white,
-                ),
-                child: Text(
-                  step == 3 ? 'Confirm' : 'Next',
-                  style: GoogleFonts.nunito(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
   Widget _buildStatusRow(String label, String status, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -686,137 +392,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Verify passcode against the stored one-way verifier.
-  Future<bool> _verifyPasscode(String inputPasscode) async {
-    if (_passcode.isEmpty) return false;
-
-    try {
-      final result = await AppLockService.unlock(inputPasscode);
-      if (result.success) return true;
-      if (!mounted) return false;
-      if (result.wait != null) {
-        _showErrorSnackBar(
-          'Too many attempts. Try again in ${result.wait!.inSeconds} seconds.',
-        );
-      } else if (result.attemptsRemaining > 0) {
-        _showErrorSnackBar(
-          'Incorrect passcode. ${result.attemptsRemaining} attempts left before a wait.',
-        );
-      } else {
-        _showErrorSnackBar('Incorrect passcode');
-      }
-      return false;
-    } catch (e) {
-      debugPrint('Passcode verification error: $e');
-      return false;
-    }
-  }
-
-
-
-  Future<void> _showSecurityStatus() async {
-    final encryptionStatus = await EncryptionService.getEncryptionStatus();
-    
-    if (!mounted) return;
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Security Status',
-          style: GoogleFonts.nunito(
-            fontWeight: FontWeight.bold,
-            color: _textColor,
-            fontSize: 20,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildStatusRow(
-              'Passcode Protection',
-              _passcodeLockEnabled ? 'Enabled' : 'Disabled',
-              _passcodeLockEnabled ? Colors.green : Colors.red,
-            ),
-            _buildStatusRow(
-              'Passcode Set',
-              _isPasscodeSet ? 'Yes' : 'No',
-              _isPasscodeSet ? Colors.green : Colors.orange,
-            ),
-            _buildStatusRow(
-              'Encryption',
-              encryptionStatus['status'],
-              _getEncryptionColor(encryptionStatus['status']),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Security Features:',
-              style: GoogleFonts.nunito(
-                fontWeight: FontWeight.bold,
-                color: _textColor,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildSecurityFeatureRow('AES-256 Encryption', true),
-            _buildSecurityFeatureRow('Secure Key Storage', true),
-            _buildSecurityFeatureRow('Automatic Migration', true),
-            _buildSecurityFeatureRow('Fallback Hashing', true),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Close',
-              style: GoogleFonts.nunito(
-                color: _primaryColor,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getEncryptionColor(String status) {
-    switch (status) {
-      case 'Encrypted (AES-256)':
-        return Colors.green;
-      case 'Hashed (SHA-256)':
-        return Colors.orange;
-      case 'Plain Text (Legacy)':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  Widget _buildSecurityFeatureRow(String feature, bool enabled) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Icon(
-            enabled ? Icons.check_circle : Icons.cancel,
-            color: enabled ? Colors.green : Colors.red,
-            size: 16,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            feature,
-            style: GoogleFonts.nunito(
-              color: _textColor,
-              fontSize: 14,
             ),
           ),
         ],
@@ -942,44 +517,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onTap: null,
                         trailing: Icon(Icons.check_circle, color: Colors.green, size: 20),
                       ),
-                    ],
-                  ),
-
-                  // Security
-                  _buildSection(
-                    title: 'Security',
-                    children: [
-                      if (!_isPasscodeSet)
-                        _buildListTile(
-                          title: 'Set Passcode',
-                          subtitle: 'Create a 4-digit passcode to secure your data',
-                          icon: Icons.lock_outline,
-                          onTap: _showPasscodeSetupDialog,
-                        )
-                      else ...[
-                        _buildSwitchTile(
-                          title: 'Passcode Lock',
-                          subtitle: 'Ask for the passcode when the app opens',
-                          value: _passcodeLockEnabled,
-                          icon: Icons.lock,
-                          onChanged: (value) {
-                            setState(() {
-                              _passcodeLockEnabled = value;
-                            });
-                            _saveSettings();
-                          },
-                          trailing: IconButton(
-                            icon: const Icon(Icons.security, color: Color(0xFF4A9E9C)),
-                            onPressed: _showSecurityStatus,
-                          ),
-                        ),
-                        _buildListTile(
-                          title: 'Reset Passcode',
-                          subtitle: 'Set a new 4-digit passcode',
-                          icon: Icons.restore,
-                          onTap: _showPasscodeResetDialog,
-                        ),
-                      ],
                     ],
                   ),
 
