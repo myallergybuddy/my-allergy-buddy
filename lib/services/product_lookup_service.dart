@@ -25,11 +25,10 @@ class ProductLookupService {
 
   /// Lookup product by barcode with multiple data sources.
   ///
-  /// Order: curated → local bundled (not myallergybuddy_barcode_database) →
+  /// Order: your bundled barcode file → other local entries →
   /// Open Food Facts → AU cache → USDA.
-  /// After those, [UserLearnedProductStore] overlays a
-  /// myallergybuddy_barcode_database entry when open sources miss or return
-  /// no usable ingredients.
+  /// After those, [UserLearnedProductStore] can fill a product saved only
+  /// on this phone when open sources miss or return no usable ingredients.
   /// Curated allergen statements still win. Database entries are never
   /// uploaded to Open Food Facts.
   static Future<Map<String, dynamic>> lookupProductByBarcode(String barcode) async {

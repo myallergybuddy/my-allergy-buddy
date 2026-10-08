@@ -46,7 +46,7 @@ flutter:
     - assets/images/
     - assets/images/icon.png
     - assets/images/icon2.png
-    - assets/myallergybuddy_barcode_database.json
+    - assets/myallergybuddy_barcode_database.enc
 
 flutter_launcher_icons:
   android: "launcher_icon"

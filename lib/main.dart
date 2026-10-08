@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'services/firebase_service.dart';
 import 'services/api_credentials_service.dart';
+import 'services/australian_curated_product_database.dart';
 import 'services/product_database_service.dart';
 import 'services/user_learned_product_store.dart';
 import 'splash_screen.dart';
@@ -23,6 +24,12 @@ void main() {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
     
+    try {
+      await AustralianCuratedProductDatabase.ensureLoaded();
+    } catch (e) {
+      debugPrint('Bundled barcode catalog failed to load: $e');
+    }
+
     try {
       // Initialize Firebase services (skip on web if not configured)
       if (!kIsWeb) {

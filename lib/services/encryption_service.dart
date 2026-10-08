@@ -25,6 +25,23 @@ class EncryptionService {
     return 'v1.${iv.base64}.${encrypted.base64}';
   }
 
+  /// Key for the catalog shipped in the app asset. Distinct from the
+  /// per-device key used for products learned on the phone.
+  static const bundledCatalogKeyBase64 =
+      'm9bod2NA03PyZwfqaqeM+kY1R6MHYW24pgY0rfLJ91I=';
+
+  /// Decrypt [assets/myallergybuddy_barcode_database.enc].
+  static String decryptBundledCatalog(String payload) {
+    final parts = payload.split('.');
+    if (parts.length != 3 || parts[0] != 'v1') {
+      throw const FormatException('Unsupported bundled catalog format');
+    }
+    final key = encrypt.Key.fromBase64(bundledCatalogKeyBase64);
+    final iv = encrypt.IV.fromBase64(parts[1]);
+    final encrypter = encrypt.Encrypter(encrypt.AES(key));
+    return encrypter.decrypt64(parts[2], iv: iv);
+  }
+
   /// Decrypt a payload produced by [encryptPrivatePayload].
   static Future<String> decryptPrivatePayload(String payload) async {
     final parts = payload.split('.');

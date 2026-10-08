@@ -3,11 +3,16 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:my_allergy_buddy/services/australian_curated_product_database.dart';
 import 'package:my_allergy_buddy/services/encryption_service.dart';
 import 'package:my_allergy_buddy/services/user_learned_product_store.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() async {
+    await AustralianCuratedProductDatabase.ensureLoaded();
+  });
 
   const testBarcode = '9415098765432';
   const paddedBarcode = '09415098765432';

@@ -2,6 +2,7 @@
 import 'package:flutter/foundation.dart';
 import 'barcode_utils.dart';
 import 'html_text_utils.dart';
+import 'australian_curated_product_database.dart';
 import 'open_food_facts_service.dart';
 import '../tree_nuts_grouping.dart';
 
@@ -699,6 +700,7 @@ class ProductDatabaseService {
   /// Load the curated barcode catalog into the runtime map.
   static Future<void> initialize() async {
     if (_initialized) return;
+    await AustralianCuratedProductDatabase.ensureLoaded();
     _initialized = true;
 
     for (final entry in OpenFoodFactsService.manualProductDatabase.entries) {

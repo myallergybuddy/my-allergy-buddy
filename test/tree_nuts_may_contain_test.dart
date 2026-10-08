@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_allergy_buddy/services/australian_curated_product_database.dart';
 import 'package:my_allergy_buddy/services/australian_food_database_service.dart';
@@ -5,6 +6,22 @@ import 'package:my_allergy_buddy/services/html_text_utils.dart';
 import 'package:my_allergy_buddy/services/product_database_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() async {
+    await AustralianCuratedProductDatabase.ensureLoaded();
+  });
+
+  test('bundled barcode catalog asset is ciphertext', () async {
+    final payload = await rootBundle.loadString(
+      AustralianCuratedProductDatabase.assetPath,
+    );
+    expect(payload.startsWith('v1.'), isTrue);
+    expect(payload.contains('San Remo'), isFalse);
+    expect(payload.contains('9310155000710'), isFalse);
+    expect(AustralianCuratedProductDatabase.count, 145);
+  });
+
   test('HtmlTextUtils keeps tree nuts after allergen-span entity decoding', () {
     const encoded = '&lt;span class=&quot;allergen&quot;&gt;tree nuts&lt;/span&gt;';
     expect(HtmlTextUtils.strip(encoded), 'tree nuts');
