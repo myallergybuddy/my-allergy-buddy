@@ -2016,7 +2016,10 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
       return Column(
         children: [
           Expanded(
-            child: Stack(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final scanTravel = (constraints.maxHeight - 80).clamp(0.0, double.infinity);
+                return Stack(
               children: [
                 if (hasCameraPermission && isCameraInitialized)
                   MobileScanner(
@@ -2087,7 +2090,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                   animation: _scanAnimation,
                   builder: (context, child) {
                     return Positioned(
-                      top: 40 + (_scanAnimation.value * (MediaQuery.of(context).size.height * 0.6 - 80)),
+                      top: 40 + (_scanAnimation.value * scanTravel),
                       left: 40,
                       right: 40,
                       child: IgnorePointer(
@@ -2182,6 +2185,8 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                     ),
                   ),
               ],
+            );
+              },
             ),
           ),
           Container(
@@ -2258,6 +2263,11 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
                 ),
               ],
             ),
+          ),
+          // Reserved for a banner ad between the scan buttons and bottom navigation.
+          const SizedBox(
+            height: 60,
+            width: double.infinity,
           ),
         ],
       );
