@@ -67,7 +67,7 @@ class _FAQScreenState extends State<FAQScreen> {
         },
         {
           'question': 'What is included in Premium?',
-          'answer': 'Premium includes up to 10 emergency contacts, the advanced allergen database, scan history, and priority support. The free plan includes 2 emergency contacts.',
+          'answer': 'Premium is ad free and includes up to 10 emergency contacts, the advanced allergen database, scan history, and priority support. The free plan includes 2 emergency contacts.',
         },
         {
           'question': 'Can I use the app offline?',

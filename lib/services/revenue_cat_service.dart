@@ -182,14 +182,14 @@ class RevenueCatService {
       {
         'identifier': RevenueCatConfig.productWeekly,
         'title': 'Premium Weekly',
-        'description': 'Access to all premium features for 1 week',
+        'description': 'Ad-free access to all premium features for 1 week',
         'priceString': r'$3.99',
         'price': 3.99,
       },
       {
         'identifier': RevenueCatConfig.productMonthly,
         'title': 'Premium Monthly',
-        'description': 'Access to all premium features for 1 month',
+        'description': 'Ad-free access to all premium features for 1 month',
         'priceString': r'$7.99',
         'price': 7.99,
       },
@@ -197,7 +197,7 @@ class RevenueCatService {
         'identifier': RevenueCatConfig.productYearly,
         'title': 'Premium Yearly',
         'description':
-            'Access to all premium features for 1 year (Save 27%)',
+            'Ad-free access to all premium features for 1 year (Save 27%)',
         'priceString': r'$69.99',
         'price': 69.99,
       },

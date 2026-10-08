@@ -20,6 +20,7 @@ class PremiumService {
     'Increased emergency contacts (up to 10 contacts)',
     'Premium customer support',
     'Custom emergency contact groups',
+    'Ad free',
   ];
   
   /// True for debug builds or dart-define installs. Store builds never inherit
@@ -185,7 +186,7 @@ class PremiumService {
         price: 3.99,
         currency: 'AUD',
         duration: '1 week',
-        description: 'Full premium access for 1 week',
+        description: 'Ad-free premium access for 1 week',
         features: premiumFeatures,
         isPopular: false,
       ),
@@ -195,7 +196,7 @@ class PremiumService {
         price: 7.99,
         currency: 'AUD',
         duration: '1 month',
-        description: 'Full premium access for 1 month',
+        description: 'Ad-free premium access for 1 month',
         features: premiumFeatures,
         isPopular: false,
       ),
@@ -205,7 +206,7 @@ class PremiumService {
         price: 69.99,
         currency: 'AUD',
         duration: '12 months',
-        description: 'Full premium access for 12 months (Save 27%)',
+        description: 'Ad-free premium access for 12 months (Save 27%)',
         features: premiumFeatures,
         isPopular: true,
         savings: 'Save 27%',
@@ -246,6 +247,7 @@ class PremiumService {
       'emergencyContacts': 'Up to 10 emergency contacts',
       'customerSupport': 'Priority premium support',
       'customAlerts': 'Advanced custom alerts',
+      'ads': 'Ad free',
     };
   }
 

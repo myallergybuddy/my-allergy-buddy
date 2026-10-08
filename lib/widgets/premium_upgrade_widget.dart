@@ -306,6 +306,7 @@ class _PremiumUpgradeWidgetState extends State<PremiumUpgradeWidget> {
                     _buildFeatureItem('Advanced Allergen Database'),
                     _buildFeatureItem('Priority Customer Support'),
                     _buildFeatureItem('Scan History'),
+                    _buildFeatureItem('Ad free'),
                   ],
                 ),
               ),
@@ -667,7 +668,7 @@ class _PremiumUpgradeWidgetState extends State<PremiumUpgradeWidget> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'You have access to all premium features!',
+                        'You have an ad-free app and access to all premium features!',
                         style: TextStyle(
                           color: const Color(0xFF4A9E9C),
                           fontWeight: FontWeight.w600,
