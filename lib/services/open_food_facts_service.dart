@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'australian_curated_product_database.dart';
 import 'barcode_utils.dart';
 import 'html_text_utils.dart';
-import 'premium_product_service.dart';
 
 class OpenFoodFactsService {
   /// Current product read API (v3.6). v2 remains a fallback; v0 is retired.
@@ -47,32 +46,7 @@ class OpenFoodFactsService {
   /// Get product information by barcode
   static Future<Map<String, dynamic>?> getProduct(String barcode) async {
     try {
-      // Check premium products first (highest priority for premium users)
-      final premiumProduct = await PremiumProductService.getPremiumProduct(barcode);
-      if (premiumProduct != null) {
-        if (kDebugMode) {
-          print('OpenFoodFacts: Found premium product: ${premiumProduct['name']}');
-        }
-        final premiumData = Map<String, dynamic>.from(premiumProduct);
-        premiumData['data_source'] = 'Premium Database';
-        premiumData['barcode'] = barcode;
-        premiumData['lookup_timestamp'] = DateTime.now().toIso8601String();
-        premiumData['premium_only'] = true;
-        
-        // Override cache with premium data
-        _cache[barcode] = premiumData;
-        
-        if (kDebugMode) {
-          print('OpenFoodFacts: Premium data - Name: ${premiumData['name']}');
-          print('OpenFoodFacts: Premium data - Category: ${premiumData['category']}');
-          print('OpenFoodFacts: Premium data - Ingredients: ${premiumData['ingredients']}');
-          print('OpenFoodFacts: Premium data - Allergens: ${premiumData['allergens']}');
-        }
-        
-        return premiumData;
-      }
-
-      // Check manual database second (including common barcode variants)
+      // Check the curated catalog first (including common barcode variants)
       final manualData = _lookupManualProduct(barcode);
       if (manualData != null) {
         if (kDebugMode) {

@@ -320,26 +320,6 @@ class AustralianCuratedProductDatabase {
     // 9310072037496 is the sibling code treated as the same product.
     '9310072037496': _arnottsBizzaShapes(),
     '9310072037493': _arnottsBizzaShapes(),
-    '9334169005004': {
-      'name': 'Test Product',
-      'brand': 'Test Brand',
-      'ingredients': [
-        'wheat flour',
-        'sugar',
-        'vegetable oil',
-        'salt',
-        'yeast',
-        'milk powder',
-        'egg powder',
-        'soy lecithin',
-        'peanut oil',
-      ],
-      'allergens': ['wheat', 'milk', 'egg', 'soy', 'peanut'],
-      'mayContainItems': [],
-      'crossContamination': [],
-      'isAustralianProduct': true,
-      'image': null,
-    },
     // Retail inner barcode is UPC 854116007558. Short form 5411600755 is a
     // lookup alias only. Pack has no contains allergens. MAY CONTAIN almond,
     // cashew, pistachio (named nuts, not a generic Tree Nuts line).

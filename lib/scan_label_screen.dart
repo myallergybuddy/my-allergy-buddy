@@ -1296,7 +1296,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
             TextField(
               controller: _manualBarcodeController,
               decoration: InputDecoration(
-                hintText: 'Enter product barcode (e.g., 9334169005004)',
+                hintText: 'Enter product barcode (e.g., 9310072010816)',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
