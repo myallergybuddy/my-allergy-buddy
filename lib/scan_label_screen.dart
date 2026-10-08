@@ -12,7 +12,6 @@ import 'services/product_database_service.dart';
 import 'services/firebase_service.dart';
 import 'services/revenue_cat_service.dart';
 import 'services/australian_food_database_service.dart';
-import 'services/spoonacular_service.dart';
 import 'services/ocr_service.dart';
 import 'services/health_record_store.dart';
 import 'services/user_learned_product_store.dart';
@@ -95,7 +94,6 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
     _scanAnimation = Tween<double>(begin: 0, end: 1).animate(_animationController);
     _loadUserAllergies();
     _loadPremiumStatus();
-    _initializeEnhancedServices();
     _checkCameraPermissions();
   }
 
@@ -105,17 +103,6 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
     _manualBarcodeController.dispose();
     _scannerController.dispose();
     super.dispose();
-  }
-
-  Future<void> _initializeEnhancedServices() async {
-    // Initialize Spoonacular service
-    await SpoonacularService.initializeApiKey();
-    
-    // Using ProductLookupService instead of EnhancedProductLookupService
-    if (kDebugMode) {
-      print('ScanLabelScreen: Product lookup services initialized');
-      print('ScanLabelScreen: Spoonacular API configured: ${SpoonacularService.isApiKeyConfigured()}');
-    }
   }
 
   Future<void> _loadUserAllergies() async {
@@ -308,7 +295,6 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
       
       // Also check Australian Food Database for additional information
       Map<String, dynamic>? australianData;
-      Map<String, dynamic>? spoonacularData;
       
       try {
         australianData = await AustralianFoodDatabaseService.getProductByBarcodeWithAutoDownload(barcode);
@@ -351,30 +337,6 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
         }
       }
       
-      // Check Spoonacular API for additional product information
-      if (SpoonacularService.isApiKeyConfigured()) {
-        try {
-          spoonacularData = await SpoonacularService.getProductByUPC(barcode);
-          if (spoonacularData != null) {
-            if (kDebugMode) {
-              print('ScanLabelScreen: Found product in Spoonacular database: ${spoonacularData['name']}');
-            }
-          } else {
-            if (kDebugMode) {
-              print('ScanLabelScreen: Product not found in Spoonacular database');
-            }
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            print('ScanLabelScreen: Error checking Spoonacular database: $e');
-          }
-        }
-      } else {
-        if (kDebugMode) {
-          print('ScanLabelScreen: Spoonacular API key not configured');
-        }
-      }
-      
       if (kDebugMode) {
         print('ScanLabelScreen: ProductLookupService result received');
         print('ScanLabelScreen: Result success: ${result['success']}');
@@ -389,12 +351,10 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
       }
       
       if (result['success']) {
-        // Enhance with Australian database and Spoonacular data if available
         List<Map<String, dynamic>> enhancedAllergens = List<Map<String, dynamic>>.from(result['detectedAllergens']);
         List<Map<String, dynamic>> crossContaminationWarnings = [];
         List<Map<String, dynamic>> processingFacilityWarnings = [];
         var dataSource = result['data_source']?.toString() ?? 'Unknown';
-        List<String> additionalIngredients = [];
         
         // Only show allergens that match the user's allergy profile.
         final userAllergyNames = userAllergies
@@ -425,35 +385,6 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
         final productLookupProcessingFacility = result['processingFacilityWarnings'] as List<dynamic>? ?? [];
         processingFacilityWarnings.addAll(productLookupProcessingFacility.map((w) => Map<String, dynamic>.from(w)));
         
-        if (spoonacularData != null) {
-          // Add Spoonacular allergens
-          final spoonacularAllergens = spoonacularData['allergens'] as List<dynamic>? ?? [];
-          for (var allergen in spoonacularAllergens) {
-            if (!enhancedAllergens.any((a) => a['name'] == allergen)) {
-              enhancedAllergens.add({
-                'name': allergen,
-                'severity': 'medium',
-                'confidence': 0.85,
-                'matchedIngredient': allergen,
-                'source': 'Spoonacular'
-              });
-            }
-          }
-          
-          // Add Spoonacular ingredients if not already present
-          final spoonacularIngredients = spoonacularData['ingredients'] as List<dynamic>? ?? [];
-          additionalIngredients.addAll(
-            HtmlTextUtils.forDisplayList(spoonacularIngredients),
-          );
-          
-          // Update data source to include Spoonacular
-          if (dataSource.contains('Spoonacular')) {
-            dataSource = dataSource;
-          } else {
-            dataSource = '$dataSource, Spoonacular';
-          }
-        }
-        
         // Check if ingredients are available
         final baseIngredients = HtmlTextUtils.forDisplayList(
           result['product']['ingredients'] ?? [],
@@ -464,7 +395,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
             : List<String>.from(curatedProduct['ingredients'] ?? []);
         final allIngredients = curatedIngredients.isNotEmpty
             ? curatedIngredients
-            : [...baseIngredients, ...additionalIngredients];
+            : baseIngredients;
         final rawIngredients = allIngredients.toSet().toList();
         final ingredients =
             ProductDatabaseService.ingredientsExcludingMayContain(rawIngredients);
@@ -534,7 +465,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
         if (enhancedAllergens.isNotEmpty) {
           recommendation = 'Avoid this product';
           confidence = 'High';
-          confidenceScore = _calculateConfidenceScore(australianData != null, spoonacularData != null, hasIngredients);
+          confidenceScore = _calculateConfidenceScore(australianData != null, hasIngredients);
         } else if (!hasIngredients) {
           recommendation = 'Ingredients not available - check product label manually';
           confidence = 'Low';
@@ -542,7 +473,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
         } else {
           recommendation = 'Safe to consume';
           confidence = 'High';
-          confidenceScore = _calculateConfidenceScore(australianData != null, spoonacularData != null, hasIngredients);
+          confidenceScore = _calculateConfidenceScore(australianData != null, hasIngredients);
         }
         
         final productForMayContain = Map<String, dynamic>.from(result['product'] ?? {});
@@ -583,7 +514,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
           isSafe: result['isSafe'],
           image: result['product']['image'],
           dataSource: dataSource,
-          analysisMethod: _getAnalysisMethod(australianData != null, spoonacularData != null),
+          analysisMethod: _getAnalysisMethod(australianData != null),
           confidenceScore: confidenceScore,
           riskLevel: enhancedAllergens.isNotEmpty ? 'High' : 'Low',
           processingTimeMs: 0,
@@ -593,10 +524,9 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
             'processingFacilityWarnings': processingFacilityWarnings,
             'totalIngredients': ingredients.length,
             'analyzedIngredients': ingredients.length,
-            'detectionMethod': _getDetectionMethod(australianData != null, spoonacularData != null),
+            'detectionMethod': _getDetectionMethod(australianData != null),
             'lastUpdated': DateTime.now().toIso8601String(),
             'australianDatabaseIncluded': australianData != null,
-            'spoonacularIncluded': spoonacularData != null,
           },
           crossContaminationRisk: {
             'risk': crossContaminationWarnings.isNotEmpty ? 'medium' : 'unknown',
@@ -1438,49 +1368,34 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
   }
 
   /// Calculate confidence score based on available data sources
-  double _calculateConfidenceScore(bool hasAustralianData, bool hasSpoonacularData, bool hasIngredients) {
-    double baseScore = 0.7; // Base confidence for standard analysis
-    
+  double _calculateConfidenceScore(bool hasAustralianData, bool hasIngredients) {
+    double baseScore = 0.7;
+
     if (hasAustralianData) {
-      baseScore += 0.15; // Australian database adds 15%
+      baseScore += 0.15;
     }
-    
-    if (hasSpoonacularData) {
-      baseScore += 0.1; // Spoonacular adds 10%
-    }
-    
+
     if (hasIngredients) {
-      baseScore += 0.05; // Having ingredients adds 5%
+      baseScore += 0.05;
     }
-    
-    // Cap at 0.95 to leave room for uncertainty
+
     return baseScore.clamp(0.3, 0.95);
   }
 
   /// Get analysis method description based on available data sources
-  String _getAnalysisMethod(bool hasAustralianData, bool hasSpoonacularData) {
-    if (hasAustralianData && hasSpoonacularData) {
-      return 'Enhanced allergen analysis with Australian database and Spoonacular API';
-    } else if (hasAustralianData) {
+  String _getAnalysisMethod(bool hasAustralianData) {
+    if (hasAustralianData) {
       return 'Enhanced allergen analysis with Australian database';
-    } else if (hasSpoonacularData) {
-      return 'Enhanced allergen analysis with Spoonacular API';
-    } else {
-      return 'Standard allergen analysis';
     }
+    return 'Standard allergen analysis';
   }
 
   /// Get detection method description based on available data sources
-  String _getDetectionMethod(bool hasAustralianData, bool hasSpoonacularData) {
-    if (hasAustralianData && hasSpoonacularData) {
-      return 'Enhanced database matching with Australian compliance data and Spoonacular nutritional analysis';
-    } else if (hasAustralianData) {
+  String _getDetectionMethod(bool hasAustralianData) {
+    if (hasAustralianData) {
       return 'Enhanced database matching with Australian compliance data';
-    } else if (hasSpoonacularData) {
-      return 'Enhanced database matching with Spoonacular nutritional analysis';
-    } else {
-      return 'Standard allergen database matching';
     }
+    return 'Standard allergen database matching';
   }
 
   void _showUpgradeDialog() {
@@ -1850,7 +1765,6 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
           'detectionMethod': 'OCR-based ingredient analysis',
           'lastUpdated': DateTime.now().toIso8601String(),
           'australianDatabaseIncluded': false,
-          'spoonacularIncluded': false,
           'ocrIncluded': true,
         },
         crossContaminationRisk: {

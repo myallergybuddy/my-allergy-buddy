@@ -1,13 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'api_credentials_service.dart';
 import 'australian_curated_product_database.dart';
 import 'australian_food_database_service.dart';
 import 'open_food_facts_service.dart';
 import 'product_database_service.dart';
 import 'usda_fooddata_service.dart';
-import 'edamam_service.dart';
-import 'nutritionix_service.dart';
-import 'spoonacular_service.dart';
 import 'user_learned_product_store.dart';
 
 class ProductLookupService {
@@ -30,7 +26,7 @@ class ProductLookupService {
   /// Lookup product by barcode with multiple data sources.
   ///
   /// Order: curated → local bundled (not myallergybuddy_barcode_database) →
-  /// Open Food Facts → AU cache → USDA → Edamam → Nutritionix → Spoonacular.
+  /// Open Food Facts → AU cache → USDA.
   /// After those, [UserLearnedProductStore] overlays a
   /// myallergybuddy_barcode_database entry when open sources miss or return
   /// no usable ingredients.
@@ -127,37 +123,6 @@ class ProductLookupService {
         print('ProductLookup: Found product in USDA FoodData Central');
       }
       return usdaResult;
-    }
-
-    // 5. Edamam (requires configured API keys)
-    if (ApiCredentialsService.isEdamamConfigured) {
-      final edamamResult = await searchEdamamByBarcode(barcode);
-      if (edamamResult['success'] == true) {
-        if (kDebugMode) {
-          print('ProductLookup: Found product in Edamam');
-        }
-        return edamamResult;
-      }
-    }
-
-    // 6. Nutritionix (requires configured API keys)
-    if (ApiCredentialsService.isNutritionixConfigured) {
-      final nutritionixResult = await searchNutritionixByBarcode(barcode);
-      if (nutritionixResult['success'] == true) {
-        if (kDebugMode) {
-          print('ProductLookup: Found product in Nutritionix');
-        }
-        return nutritionixResult;
-      }
-    }
-
-    // 7. Spoonacular (requires configured API key)
-    final spoonacularResult = await searchSpoonacularByBarcode(barcode);
-    if (spoonacularResult['success'] == true) {
-      if (kDebugMode) {
-        print('ProductLookup: Found product in Spoonacular');
-      }
-      return spoonacularResult;
     }
 
     if (_enableLocalFallback &&
@@ -356,146 +321,6 @@ class ProductLookupService {
         'success': false,
         'message': 'Error searching USDA FoodData Central: $e',
         'dataSource': 'USDA FoodData Central',
-      };
-    }
-  }
-
-  /// Search Edamam by barcode
-  static Future<Map<String, dynamic>> searchEdamamByBarcode(String barcode) async {
-    if (kDebugMode) {
-      print('ProductLookup: Searching Edamam for barcode: $barcode');
-    }
-
-    try {
-      final edamamResult = await EdamamService.searchByBarcode(barcode: barcode);
-      
-      if (edamamResult['success'] == false) {
-        return {
-          'success': false,
-          'message': 'Product not found in Edamam',
-          'dataSource': 'Edamam',
-        };
-      }
-
-      final allergenInfo = EdamamService.extractAllergenInfo(edamamResult['data']);
-      
-      final product = {
-        'barcode': barcode,
-        'name': edamamResult['data']['label']?.toString() ?? 'Unknown Product',
-        'brand': edamamResult['data']['brandOwner']?.toString() ?? 'Unknown Brand',
-        'ingredients': allergenInfo['ingredients'] ?? [],
-        'allergens': allergenInfo['allergens'] ?? [],
-        'nutritionInfo': allergenInfo['nutritionInfo'] ?? {},
-        'dataSource': 'Edamam',
-        'foodId': edamamResult['data']['foodId']?.toString() ?? '',
-        'isAustralianProduct': false,
-      };
-
-      return {
-        'success': true,
-        'message': 'Product found in Edamam',
-        'dataSource': 'Edamam',
-        'product': product,
-      };
-
-    } catch (e) {
-      if (kDebugMode) {
-        print('ProductLookup: Error searching Edamam: $e');
-      }
-      return {
-        'success': false,
-        'message': 'Error searching Edamam: $e',
-        'dataSource': 'Edamam',
-      };
-    }
-  }
-
-  /// Search Nutritionix by barcode
-  static Future<Map<String, dynamic>> searchNutritionixByBarcode(String barcode) async {
-    if (kDebugMode) {
-      print('ProductLookup: Searching Nutritionix for barcode: $barcode');
-    }
-
-    try {
-      final nutritionixResult = await NutritionixService.searchByBarcode(barcode: barcode);
-      
-      if (nutritionixResult['success'] == false) {
-        return {
-          'success': false,
-          'message': 'Product not found in Nutritionix',
-          'dataSource': 'Nutritionix',
-        };
-      }
-
-      final allergenInfo = NutritionixService.extractAllergenInfo(nutritionixResult['data']);
-      
-      final product = {
-        'barcode': barcode,
-        'name': allergenInfo['foodName'] ?? 'Unknown Product',
-        'brand': allergenInfo['brandName'] ?? 'Unknown Brand',
-        'ingredients': allergenInfo['ingredients'] ?? [],
-        'allergens': allergenInfo['allergens'] ?? [],
-        'nutritionInfo': allergenInfo['nutritionInfo'] ?? {},
-        'dataSource': 'Nutritionix',
-        'nixItemId': nutritionixResult['data']['foods']?[0]?['nix_item_id']?.toString() ?? '',
-        'isAustralianProduct': false,
-      };
-
-      return {
-        'success': true,
-        'message': 'Product found in Nutritionix',
-        'dataSource': 'Nutritionix',
-        'product': product,
-      };
-
-    } catch (e) {
-      if (kDebugMode) {
-        print('ProductLookup: Error searching Nutritionix: $e');
-      }
-      return {
-        'success': false,
-        'message': 'Error searching Nutritionix: $e',
-        'dataSource': 'Nutritionix',
-      };
-    }
-  }
-
-  /// Search Spoonacular by barcode
-  static Future<Map<String, dynamic>> searchSpoonacularByBarcode(String barcode) async {
-    if (kDebugMode) {
-      print('ProductLookup: Searching Spoonacular for barcode: $barcode');
-    }
-
-    try {
-      final product = await SpoonacularService.getProductByUPC(barcode);
-      if (product == null) {
-        return {
-          'success': false,
-          'message': 'Product not found in Spoonacular',
-          'dataSource': 'Spoonacular',
-        };
-      }
-
-      return _productResult('Spoonacular', {
-        'barcode': barcode,
-        'name': product['name'] ?? 'Unknown Product',
-        'brand': product['brand'] ?? 'Unknown Brand',
-        'ingredients': product['ingredients'] ?? [],
-        'allergens': product['allergens'] ?? [],
-        'image': product['image'],
-        'nutritionInfo': product['nutrition'] ?? {},
-        'dataSource': 'Spoonacular',
-        'data_source': 'Spoonacular',
-        'isAustralianProduct': false,
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print('ProductLookup: Error searching Spoonacular: $e');
-      }
-      return {
-        'success': false,
-        'message': 'Error searching Spoonacular: $e',
-        'dataSource': 'Spoonacular',
       };
     }
   }

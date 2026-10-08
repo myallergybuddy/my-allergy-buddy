@@ -4,8 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'usda_fooddata_service.dart';
-import 'edamam_service.dart';
-import 'nutritionix_service.dart';
 import 'open_food_facts_service.dart';
 import 'product_database_service.dart';
 import 'barcode_utils.dart';
@@ -376,18 +374,6 @@ class AustralianFoodDatabaseService {
         maxProducts: maxProducts,
       );
 
-      // 12. Search Edamam for Australian products
-      final edamamResults = await _searchEdamamForAllergens(
-        allergens: allergens,
-        maxProducts: maxProducts,
-      );
-
-      // 13. Search Nutritionix for Australian products
-      final nutritionixResults = await _searchNutritionixForAllergens(
-        allergens: allergens,
-        maxProducts: maxProducts,
-      );
-
       // Combine all results
       final allProducts = <Map<String, dynamic>>[];
       allProducts.addAll(openFoodFactsResults);
@@ -401,8 +387,6 @@ class AustralianFoodDatabaseService {
       allProducts.addAll(allergyAnaphylaxisResults);
       allProducts.addAll(coeliacResults);
       allProducts.addAll(usdaResults);
-      allProducts.addAll(edamamResults);
-      allProducts.addAll(nutritionixResults);
 
       // Filter and enhance products
       final enhancedProducts = await _enhanceProductsWithAllergenInfo(
@@ -435,8 +419,6 @@ class AustralianFoodDatabaseService {
           'Allergy & Anaphylaxis Australia',
           'Coeliac Australia',
           'USDA FoodData Central',
-          'Edamam',
-          'Nutritionix'
         ],
         'downloadTimestamp': DateTime.now().toIso8601String(),
       };
@@ -730,130 +712,6 @@ class AustralianFoodDatabaseService {
     } catch (e) {
       if (kDebugMode) {
         print('AustralianFoodDatabase: Error searching USDA FoodData Central: $e');
-      }
-    }
-    
-    return products;
-  }
-
-  /// Search Edamam for Australian products
-  static Future<List<Map<String, dynamic>>> _searchEdamamForAllergens({
-    required List<String> allergens,
-    required int maxProducts,
-  }) async {
-    final products = <Map<String, dynamic>>[];
-    
-    try {
-      if (kDebugMode) {
-        print('AustralianFoodDatabase: Searching Edamam for allergens: $allergens');
-      }
-
-      // Search for foods with allergens using Edamam service
-      final edamamResults = await EdamamService.searchFoodsWithAllergens(
-        allergens: allergens,
-        maxResults: maxProducts,
-      );
-
-      // Convert Edamam results to our format
-      for (var edamamFood in edamamResults) {
-        if (products.length >= maxProducts) break;
-
-        final allergenInfo = edamamFood['allergenInfo'] as Map<String, dynamic>? ?? {};
-        final allergens = allergenInfo['allergens'] as List<dynamic>? ?? [];
-        final ingredients = allergenInfo['ingredients'] as List<dynamic>? ?? [];
-
-        // Convert to our product format
-        final product = {
-          'barcode': edamamFood['foodId']?.toString() ?? '',
-          'name': edamamFood['label']?.toString() ?? 'Unknown Product',
-          'brand': edamamFood['brandOwner']?.toString() ?? 'Unknown Brand',
-          'ingredients': ingredients.map((e) => e.toString()).toList(),
-          'allergens': allergens.map((e) => e.toString()).toList(),
-          'searchedAllergen': edamamFood['searchedAllergen']?.toString() ?? '',
-          'image': null, // Edamam doesn't provide images
-          'supermarket': 'Edamam',
-          'nutritionGrade': null,
-          'quantity': null,
-          'categories': [edamamFood['category']?.toString() ?? ''],
-          'dataSource': 'Edamam',
-          'isAustralianProduct': false, // Edamam is global
-          'downloadDate': DateTime.now().toIso8601String(),
-          'nutritionInfo': allergenInfo['nutritionInfo'] ?? {},
-          'foodId': edamamFood['foodId']?.toString() ?? '',
-        };
-
-        products.add(product);
-      }
-
-      if (kDebugMode) {
-        print('AustralianFoodDatabase: Found ${products.length} products from Edamam');
-      }
-
-    } catch (e) {
-      if (kDebugMode) {
-        print('AustralianFoodDatabase: Error searching Edamam: $e');
-      }
-    }
-    
-    return products;
-  }
-
-  /// Search Nutritionix for Australian products
-  static Future<List<Map<String, dynamic>>> _searchNutritionixForAllergens({
-    required List<String> allergens,
-    required int maxProducts,
-  }) async {
-    final products = <Map<String, dynamic>>[];
-    
-    try {
-      if (kDebugMode) {
-        print('AustralianFoodDatabase: Searching Nutritionix for allergens: $allergens');
-      }
-
-      // Search for foods with allergens using Nutritionix service
-      final nutritionixResults = await NutritionixService.searchFoodsWithAllergens(
-        allergens: allergens,
-        maxResults: maxProducts,
-      );
-
-      // Convert Nutritionix results to our format
-      for (var nutritionixFood in nutritionixResults) {
-        if (products.length >= maxProducts) break;
-
-        final allergenInfo = nutritionixFood['allergenInfo'] as Map<String, dynamic>? ?? {};
-        final allergens = allergenInfo['allergens'] as List<dynamic>? ?? [];
-        final ingredients = allergenInfo['ingredients'] as List<dynamic>? ?? [];
-
-        // Convert to our product format
-        final product = {
-          'barcode': nutritionixFood['nix_item_id']?.toString() ?? '',
-          'name': allergenInfo['foodName']?.toString() ?? 'Unknown Product',
-          'brand': allergenInfo['brandName']?.toString() ?? 'Unknown Brand',
-          'ingredients': ingredients.map((e) => e.toString()).toList(),
-          'allergens': allergens.map((e) => e.toString()).toList(),
-          'searchedAllergen': nutritionixFood['searchedAllergen']?.toString() ?? '',
-          'image': nutritionixFood['photo']?['thumb']?.toString(),
-          'supermarket': 'Nutritionix',
-          'nutritionGrade': null,
-          'quantity': nutritionixFood['serving_qty']?.toString(),
-          'categories': [nutritionixFood['foodType']?.toString() ?? ''],
-          'dataSource': 'Nutritionix',
-          'isAustralianProduct': false, // Nutritionix is global
-          'downloadDate': DateTime.now().toIso8601String(),
-          'nutritionInfo': allergenInfo['nutritionInfo'] ?? {},
-          'nixItemId': nutritionixFood['nix_item_id']?.toString() ?? '',
-        };
-
-        products.add(product);
-      }
-
-      if (kDebugMode) {
-        print('AustralianFoodDatabase: Found ${products.length} products from Nutritionix');
-      }
-
-    } catch (e) {
-      if (kDebugMode) {
-        print('AustralianFoodDatabase: Error searching Nutritionix: $e');
       }
     }
     
@@ -2104,13 +1962,6 @@ class AustralianFoodDatabaseService {
   /// 16. Food Standards Agency (UK) - Limited public access
   /// 17. Food Safety and Standards Authority of India - Limited public access
   /// 
-  /// **Commercial APIs:**
-  /// 18. Spoonacular - ✅ Available (requires API key)
-  /// 19. Edamam - Available (requires API key)
-  /// 20. Nutritionix - Available (requires API key)
-  /// 21. Calorie Mama - Available (requires API key)
-  /// 22. FoodData Central API - Free tier available
-  /// 
   /// **Scraping Sources (if APIs unavailable):**
   /// 23. Woolworths website scraping
   /// 24. Coles website scraping
@@ -2166,33 +2017,6 @@ class AustralianFoodDatabaseService {
       'rate_limit': 'moderate',
       'coverage': 'global',
       'australian_products': 'limited',
-    },
-    'spoonacular': {
-      'name': 'Spoonacular',
-      'status': 'available',
-      'api_url': 'https://api.spoonacular.com/food/',
-      'requires_auth': true,
-      'rate_limit': 'moderate',
-      'coverage': 'global',
-      'australian_products': 'good',
-    },
-    'edamam': {
-      'name': 'Edamam',
-      'status': 'available',
-      'api_url': 'https://api.edamam.com/api/food-database/v2/',
-      'requires_auth': true,
-      'rate_limit': 'moderate',
-      'coverage': 'global',
-      'australian_products': 'moderate',
-    },
-    'nutritionix': {
-      'name': 'Nutritionix',
-      'status': 'available',
-      'api_url': 'https://trackapi.nutritionix.com/v2/',
-      'requires_auth': true,
-      'rate_limit': 'moderate',
-      'coverage': 'global',
-      'australian_products': 'moderate',
     },
   };
 
