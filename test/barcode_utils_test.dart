@@ -15,13 +15,6 @@ void main() {
       expect(BarcodeUtils.matches('123456789012', '0123456789012'), isTrue);
     });
 
-    test('includes known Australian pack aliases', () {
-      expect(
-        BarcodeUtils.lookupCandidates('931007201332'),
-        contains('9310072013312'),
-      );
-    });
-
     test('ignores non-digit formatting', () {
       expect(
         BarcodeUtils.matches('9310-155-000-710', '9310155000710'),

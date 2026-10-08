@@ -53,14 +53,6 @@ class ProductDatabaseService {
     'strawberry': ['strawberry', 'strawberries', 'strawberry extract', 'strawberry protein', 'fraise', 'fraises'],
   };
 
-  // Cross-contamination risk levels
-  static final Map<String, String> _crossContaminationRisk = {
-    'high': 'High risk of cross-contamination',
-    'medium': 'Medium risk of cross-contamination',
-    'low': 'Low risk of cross-contamination',
-    'none': 'No known cross-contamination risk'
-  };
-
   static Future<Map<String, dynamic>?> getProductByBarcode(String barcode) async {
     await initialize();
 
@@ -702,45 +694,6 @@ class ProductDatabaseService {
         .join(' ');
   }
 
-  static Map<String, dynamic> getScanResult(
-    String barcode,
-    List<Map<String, dynamic>> userAllergies,
-  ) {
-    final product = _productDatabase[barcode];
-    
-    if (product == null) {
-      return {
-        'success': false,
-        'message': 'Product not found in database',
-        'barcode': barcode,
-      };
-    }
-    
-    final detectedAllergens = analyzeAllergens(
-      List<String>.from(product['ingredients']),
-      userAllergies,
-    );
-    
-    // Enhanced result with cross-contamination and processing facility info
-    return {
-      'success': true,
-      'product': product,
-      'detectedAllergens': detectedAllergens,
-      'barcode': barcode,
-      'scanDate': DateTime.now().toIso8601String(),
-      'isSafe': detectedAllergens.isEmpty,
-      'crossContamination': product['crossContamination'] ?? [],
-      'processingFacility': product['processingFacility'] ?? 'No processing facility information available',
-      'allergenAnalysis': {
-        'totalIngredients': product['ingredients'].length,
-        'analyzedIngredients': product['ingredients'].length,
-        'detectionMethod': 'Comprehensive allergen database matching',
-        'lastUpdated': DateTime.now().toIso8601String(),
-      }
-    };
-  }
-
-  // Method to add a new product to the database (for testing)
   static bool _initialized = false;
 
   /// Load the curated barcode catalog into the runtime map.
@@ -754,18 +707,6 @@ class ProductDatabaseService {
 
     if (kDebugMode) {
       print('ProductDatabaseService: initialized with ${_productDatabase.length} products');
-    }
-  }
-
-  static void addProduct(String barcode, Map<String, dynamic> product) {
-    final existing = _productDatabase[barcode];
-    if (existing != null) {
-      _productDatabase[barcode] = {
-        ...Map<String, dynamic>.from(existing),
-        ...product,
-      };
-    } else {
-      _productDatabase[barcode] = Map<String, dynamic>.from(product);
     }
   }
 
@@ -791,88 +732,7 @@ class ProductDatabaseService {
         .toList();
   }
 
-  // Method to get all products (for testing)
   static Map<String, Map<String, dynamic>> getAllProducts() {
     return Map.from(_productDatabase);
-  }
-
-  // Method to get cross-contamination risk assessment
-  static Map<String, dynamic> getCrossContaminationRisk(String barcode) {
-    final product = _productDatabase[barcode];
-    if (product == null) {
-      return {
-        'risk': 'unknown',
-        'message': 'Product not found',
-        'crossContamination': [],
-        'processingFacility': 'Unknown'
-      };
-    }
-
-    final crossContamination = product['crossContamination'] ?? [];
-    String riskLevel = 'none';
-    
-    if (crossContamination.length > 3) {
-      riskLevel = 'high';
-    } else if (crossContamination.length > 1) {
-      riskLevel = 'medium';
-    } else if (crossContamination.length == 1) {
-      riskLevel = 'low';
-    }
-
-    return {
-      'risk': riskLevel,
-      'message': _crossContaminationRisk[riskLevel] ?? 'Unknown risk level',
-      'crossContamination': crossContamination,
-      'processingFacility': product['processingFacility'] ?? 'No information available'
-    };
-  }
-
-  // Method to search products by name or brand
-  static List<Map<String, dynamic>> searchProducts(String query) {
-    final results = <Map<String, dynamic>>[];
-    final lowerQuery = query.toLowerCase();
-    
-    for (String barcode in _productDatabase.keys) {
-      final product = _productDatabase[barcode]!;
-      final name = product['name'].toString().toLowerCase();
-      final brand = product['brand'].toString().toLowerCase();
-      
-      if (name.contains(lowerQuery) || brand.contains(lowerQuery)) {
-        results.add({
-          'barcode': barcode,
-          ...product,
-        });
-      }
-    }
-    
-    return results;
-  }
-
-  // Method to get allergen statistics
-  static Map<String, dynamic> getAllergenStatistics() {
-    final stats = <String, int>{};
-    final totalProducts = _productDatabase.length;
-    
-    for (String barcode in _productDatabase.keys) {
-      final product = _productDatabase[barcode]!;
-      final allergens = product['allergens'] as List<dynamic>? ?? [];
-      
-      for (String allergen in allergens) {
-        stats[allergen] = (stats[allergen] ?? 0) + 1;
-      }
-    }
-    
-    return {
-      'totalProducts': totalProducts,
-      'allergenCounts': stats,
-      'mostCommonAllergens': (() {
-        final sortedEntries = stats.entries.toList()
-          ..sort((a, b) => b.value.compareTo(a.value));
-        return sortedEntries
-          .take(5)
-          .map((e) => {'allergen': e.key, 'count': e.value})
-          .toList();
-      })(),
-    };
   }
 } 

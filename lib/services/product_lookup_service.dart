@@ -321,16 +321,6 @@ class ProductLookupService {
     OpenFoodFactsService.clearCache();
   }
 
-  /// Add a product to the local database (for testing or user contributions)
-  static void addProductToLocalDatabase(String barcode, Map<String, dynamic> product) {
-    ProductDatabaseService.addProduct(barcode, product);
-  }
-
-  /// Get all products from local database (for testing)
-  static Map<String, Map<String, dynamic>> getAllLocalProducts() {
-    return ProductDatabaseService.getAllProducts();
-  }
-
   /// Check if online lookup is enabled
   static bool get isOnlineLookupEnabled => _enableOnlineLookup;
 

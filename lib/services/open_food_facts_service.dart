@@ -1065,16 +1065,6 @@ class OpenFoodFactsService {
     }
   }
 
-  /// Add a product to the manual database (for testing)
-  static void addProductToManualDatabase(String barcode, Map<String, dynamic> productData) {
-    _manualProductDatabase[barcode] = productData;
-  }
-
-  /// Get all manual database barcodes
-  static List<String> getManualDatabaseBarcodes() {
-    return _manualProductDatabase.keys.toList();
-  }
-
   /// Clear cache
   static void clearCache() {
     _cache.clear();

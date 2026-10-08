@@ -286,7 +286,7 @@ class _ScanLabelScreenState extends State<ScanLabelScreen> with SingleTickerProv
     try {
       await UserLearnedProductStore.rememberLastScan(barcode: barcode);
       if (kDebugMode) {
-        print('ScanLabelScreen: About to call ProductLookupService.getScanResult');
+        print('ScanLabelScreen: About to call ProductLookupService.analyzeProduct');
         print('ScanLabelScreen: Barcode: $barcode');
         print('ScanLabelScreen: User allergies: $userAllergies');
       }

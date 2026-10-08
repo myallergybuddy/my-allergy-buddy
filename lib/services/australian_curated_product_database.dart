@@ -248,31 +248,6 @@ class AustralianCuratedProductDatabase {
       'isAustralianProduct': true,
       'image': null,
     },
-    '931007201332': {
-      'name': 'Arnott\'s Mint Slice Family Pack',
-      'brand': 'Arnott\'s',
-      'ingredients': [
-        'dark chocolate (37%) (sugar, cocoa mass, cocoa butter, vegetable oil (contains soy), milk solids, emulsifiers (soy lecithin, e476), flavour, salt)',
-        'sugar',
-        'wheat flour',
-        'vegetable oil (antioxidant (e307b from soy))',
-        'starch (wheat)',
-        'cocoa powder',
-        'salt',
-        'food colour (caramel iii)',
-        'baking powder',
-        'peppermint oil (0.04%)',
-        'emulsifier (soy lecithin)',
-        'may contain traces of egg, tree nuts, peanuts, sesame',
-      ],
-      'allergens': ['gluten', 'milk', 'soy', 'wheat'],
-      'mayContainItems': ['Egg', 'Tree Nuts', 'Peanuts', 'Sesame'],
-      'traces_tags': ['en:eggs', 'en:peanuts', 'en:sesame-seeds'],
-      'traces': 'eggs, peanuts, sesame seeds',
-      'crossContamination': ['egg', 'tree nuts', 'peanuts', 'sesame'],
-      'isAustralianProduct': true,
-      'image': null,
-    },
     '9352042002827': {
       'name': 'Bega Peanut Butter Crunchy',
       'brand': 'Bega',
@@ -316,12 +291,9 @@ class AustralianCuratedProductDatabase {
       'isAustralianProduct': true,
       'image': null,
     },
-    // Same Arnott's Bizza Shapes pack: 9310072037493 is the scanned EAN;
-    // 9310072037496 is the sibling code treated as the same product.
-    '9310072037496': _arnottsBizzaShapes(),
     '9310072037493': _arnottsBizzaShapes(),
-    // Retail inner barcode is UPC 854116007558. Short form 5411600755 is a
-    // lookup alias only. Pack has no contains allergens. MAY CONTAIN almond,
+    // Retail inner barcode is UPC 854116007558. Pack has no contains
+    // allergens. MAY CONTAIN almond,
     // cashew, pistachio (named nuts, not a generic Tree Nuts line).
     '854116007558': {
       'name': 'Temole Cauliflower Puffs - Sea Salt',

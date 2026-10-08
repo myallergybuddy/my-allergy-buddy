@@ -2,24 +2,13 @@
 class BarcodeUtils {
   BarcodeUtils._();
 
-  /// Known pack/label variants that differ by a single check digit or prefix.
-  static const Map<String, List<String>> knownAliases = {
-    '931007201332': ['9310072013312'],
-    '9310072013312': ['931007201332'],
-    '9310072037496': ['9310072037493'],
-    '9310072037493': ['9310072037496'],
-    '5411600755': ['854116007558'],
-    '854116007558': ['5411600755'],
-  };
-
   /// Digits-only form of a scanned or stored barcode.
   static String digitsOnly(String barcode) =>
       barcode.replaceAll(RegExp(r'[^0-9]'), '');
 
   /// Lookup candidates to try against APIs and local maps.
   ///
-  /// Includes UPC-A / EAN-13 / GTIN-14 padding variants plus a small set of
-  /// known Australian pack aliases.
+  /// Includes UPC-A / EAN-13 / GTIN-14 padding variants.
   static List<String> lookupCandidates(String barcode) {
     final original = barcode.trim();
     final digits = digitsOnly(original);
@@ -29,11 +18,6 @@ class BarcodeUtils {
     if (digits.isNotEmpty) {
       candidates.add(digits);
       candidates.addAll(_lengthVariants(digits));
-    }
-
-    for (final value in List<String>.from(candidates)) {
-      final aliases = knownAliases[value];
-      if (aliases != null) candidates.addAll(aliases);
     }
 
     return candidates.toList();
