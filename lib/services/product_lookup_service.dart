@@ -46,12 +46,10 @@ class ProductLookupService {
   static Future<Map<String, dynamic>> _lookupProductByBarcodeFromSources(
     String barcode,
   ) async {
-    // 1. Local bundled / curated database (fastest).
-    // Unverified synthetic 93006050000xx SKUs are deferred so they cannot
-    // shadow a real Open Food Facts product on the same barcode.
+    // 1. Curated catalog, then other local entries that are not the
+    // private on-device catalog. Those are applied after open sources.
     final curated = AustralianCuratedProductDatabase.lookup(barcode);
-    if (curated != null &&
-        !ProductDatabaseService.isUnverifiedSyntheticBarcode(barcode)) {
+    if (curated != null) {
       if (kDebugMode) {
         print('ProductLookup: Using curated allergen statements for $barcode');
       }
@@ -64,11 +62,8 @@ class ProductLookupService {
     Map<String, dynamic>? localResult;
     if (_enableLocalFallback) {
       localResult = await ProductDatabaseService.getProductByBarcode(barcode);
-      // Private-catalog rows must not shadow Open Food Facts / USDA / etc.
-      // They are applied after open sources via applyToLookupResult.
       if (localResult != null &&
-          !UserLearnedProductStore.isPrivateCatalogEntry(localResult) &&
-          !ProductDatabaseService.isUnverifiedSyntheticBarcode(barcode)) {
+          !UserLearnedProductStore.isPrivateCatalogEntry(localResult)) {
         if (kDebugMode) {
           print('ProductLookup: Found product in local database');
         }
@@ -123,15 +118,6 @@ class ProductLookupService {
         print('ProductLookup: Found product in USDA FoodData Central');
       }
       return usdaResult;
-    }
-
-    if (_enableLocalFallback &&
-        localResult != null &&
-        !UserLearnedProductStore.isPrivateCatalogEntry(localResult)) {
-      if (kDebugMode) {
-        print('ProductLookup: Falling back to local synthetic placeholder');
-      }
-      return _productResult('Local Database', localResult);
     }
 
     if (kDebugMode) {
