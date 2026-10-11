@@ -5167,5 +5167,48 @@
     ],
     "isAustralianProduct": true,
     "image": "https://images.openfoodfacts.org/images/products/930/060/509/9531/front_en.13.400.jpg"
+  },
+  "9310072032436": {
+    "name": "Arnott's Farmbake Chocolate Chip Fudge",
+    "brand": "Arnott's",
+    "ingredients": [
+      "wheat flour",
+      "sugar",
+      "vegetable oil (antioxidant (E307b from soy))",
+      "condensed milk (milk solids, sugar)",
+      "choc chips (7%) (sugar, vegetable oil, cocoa powder, emulsifiers (soy lecithin, E492), flavour)",
+      "cocoa powder",
+      "food colour (caramel III)",
+      "salt",
+      "starch (wheat)",
+      "raising agents (E500, E450)"
+    ],
+    "allergens": [
+      "gluten",
+      "milk",
+      "soy",
+      "wheat"
+    ],
+    "mayContainItems": [
+      "Egg",
+      "Tree Nuts",
+      "Peanuts",
+      "Sesame"
+    ],
+    "traces_tags": [
+      "en:eggs",
+      "en:nuts",
+      "en:peanuts",
+      "en:sesame-seeds"
+    ],
+    "traces": "eggs, nuts, peanuts, sesame seeds",
+    "crossContamination": [
+      "egg",
+      "tree nuts",
+      "peanuts",
+      "sesame"
+    ],
+    "isAustralianProduct": true,
+    "image": null
   }
 }
