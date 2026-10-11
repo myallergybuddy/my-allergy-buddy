@@ -5210,5 +5210,37 @@
     ],
     "isAustralianProduct": true,
     "image": null
+  },
+  "8710482534505": {
+    "name": "Bolletje Pretzel Sticks Salted Extra Thin",
+    "brand": "Bolletje",
+    "ingredients": [
+      "wheat flour",
+      "salt",
+      "emulsifier (lecithin)",
+      "acidity regulator (E524)"
+    ],
+    "allergens": [
+      "gluten",
+      "wheat"
+    ],
+    "mayContainItems": [
+      "Barley",
+      "Peanuts",
+      "Milk"
+    ],
+    "traces_tags": [
+      "en:barley",
+      "en:peanuts",
+      "en:milk"
+    ],
+    "traces": "barley, peanuts, milk",
+    "crossContamination": [
+      "barley",
+      "peanuts",
+      "milk"
+    ],
+    "isAustralianProduct": true,
+    "image": null
   }
 }
